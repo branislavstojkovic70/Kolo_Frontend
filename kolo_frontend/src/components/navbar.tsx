@@ -27,13 +27,14 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import { navy, useThemeMode } from "../theme";
+import { useAuth } from "../hooks/use-auth";
 
 const navItems = [
 	{ label: "Marketplace", icon: <Storefront />, path: "/ads" },
 	{ label: "Orders", icon: <ReceiptLong />, path: "/orders" },
 	{ label: "Disputes", icon: <Gavel />, path: "/disputes" },
 	{ label: "Notifications", icon: <NotificationsOutlined />, path: "/notifications" },
-	{ label: "Admin", icon: <AdminPanelSettingsOutlined />, path: "/admin" },
+	{ label: "Admin", icon: <AdminPanelSettingsOutlined />, path: "/admin", adminOnly: true },
 	{ label: "Profile", icon: <Person />, path: "/profile" },
 ];
 
@@ -43,15 +44,21 @@ export default function Navbar() {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 	const { mode, toggleMode } = useThemeMode();
+	const { isAdmin, logout } = useAuth();
 
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
-	const handleLogout = () => navigate("/login");
+	const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+
+	const handleLogout = async () => {
+		await logout();
+		navigate("/login", { replace: true });
+	};
 
 	return (
 		<Box
 			sx={{
-				height: "100%",
+				minHeight: "100vh",
 				width: "100%",
 				display: "flex",
 				flexDirection: "column",
@@ -103,7 +110,7 @@ export default function Navbar() {
 							flex: "1 1 0%",
 						}}
 					>
-						{navItems.map((item) => {
+						{visibleItems.map((item) => {
 							const isActive = location.pathname === item.path;
 							return (
 								<Button
@@ -174,7 +181,7 @@ export default function Navbar() {
 					onClick={() => setDrawerOpen(false)}
 				>
 					<List>
-						{navItems.map((item) => (
+						{visibleItems.map((item) => (
 							<ListItemButton
 								key={item.label}
 								onClick={() => navigate(item.path)}

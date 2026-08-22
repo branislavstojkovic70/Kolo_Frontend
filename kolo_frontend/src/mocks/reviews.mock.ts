@@ -1,0 +1,50 @@
+import type { Review } from "../types";
+
+export const mockReviews: Review[] = [
+	{
+		id: "r-001",
+		orderId: "o-001",
+		adId: "a-001",
+		buyerId: "u-001",
+		sellerId: "u-002",
+		rating: 5,
+		comment:
+			"Outstanding work. The component library alone saved us two sprints, and the dark theme was handled properly.",
+		status: "visible",
+		createdAt: "2026-08-02T10:10:00.000Z",
+	},
+	{
+		id: "r-002",
+		orderId: "o-003",
+		adId: "a-004",
+		buyerId: "u-004",
+		sellerId: "u-002",
+		rating: 4,
+		comment: "Solid audit, clear priorities. Would have liked more depth on schema markup.",
+		status: "visible",
+		createdAt: "2026-08-21T18:00:00.000Z",
+	},
+	{
+		id: "r-003",
+		orderId: "o-005",
+		adId: "a-008",
+		buyerId: "u-004",
+		sellerId: "u-003",
+		rating: 1,
+		comment: "Never delivered. Avoid.",
+		status: "visible",
+		createdAt: "2026-08-18T10:00:00.000Z",
+	},
+	{
+		id: "r-004",
+		orderId: "o-002",
+		adId: "a-002",
+		buyerId: "u-004",
+		sellerId: "u-001",
+		rating: 1,
+		comment: "buy followers cheap at spam-link.example.com",
+		status: "deleted",
+		deletedByAdminId: "u-admin",
+		createdAt: "2026-08-20T02:14:00.000Z",
+	},
+];

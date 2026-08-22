@@ -1,38 +1,15 @@
+import { createTheme, type Theme, type ThemeOptions } from "@mui/material/styles";
+
 export type ThemeMode = "dark" | "light";
 
-export interface ThemeColors {
-  primary: string;
-  secondary: string;
-  background: string;
-  surface: string;
-  text: string;
-  textSecondary: string;
-  border: string;
-}
-
-export const darkTheme: ThemeColors = {
+const brand = {
   primary: "#FF6500",
-  secondary: "#1E3E62",
-  background: "#000000",
-  surface: "#0B192C",
-  text: "#FFFFFF",
-  textSecondary: "#B0B8C1",
-  border: "#1E3E62",
-};
-
-export const lightTheme: ThemeColors = {
-  primary: "#FF6500",
-  secondary: "#5C86B8",
-  background: "#FFFFFF",
-  surface: "#F4F6F9",
-  text: "#0B192C",
-  textSecondary: "#3F5872",
-  border: "#D6DEE7",
-};
-
-export const themes: Record<ThemeMode, ThemeColors> = {
-  dark: darkTheme,
-  light: lightTheme,
+  secondaryDark: "#1E3E62",
+  surfaceDark: "#0B192C",
+  backgroundDark: "#000000",
+  secondaryLight: "#5C86B8",
+  surfaceLight: "#F4F6F9",
+  backgroundLight: "#FFFFFF",
 };
 
 export const rgb = {
@@ -50,6 +27,39 @@ export const rgb = {
   },
 };
 
-export function getTheme(mode: ThemeMode): ThemeColors {
-  return themes[mode];
+function getDesignTokens(mode: ThemeMode): ThemeOptions {
+  const isDark = mode === "dark";
+
+  return {
+    palette: {
+      mode,
+      primary: { main: brand.primary, contrastText: "#FFFFFF" },
+      secondary: {
+        main: isDark ? brand.secondaryDark : brand.secondaryLight,
+        contrastText: "#FFFFFF",
+      },
+      background: {
+        default: isDark ? brand.backgroundDark : brand.backgroundLight,
+        paper: isDark ? brand.surfaceDark : brand.surfaceLight,
+      },
+      text: {
+        primary: isDark ? "#FFFFFF" : "#0B192C",
+        secondary: isDark ? "#B0B8C1" : "#3F5872",
+      },
+      divider: isDark ? "#1E3E62" : "#D6DEE7",
+      success: { main: isDark ? "#4CAF50" : "#2E7D32" },
+      error: { main: isDark ? "#F44336" : "#D32F2F" },
+    },
+    shape: { borderRadius: 10 },
+  };
 }
+
+export function createAppTheme(mode: ThemeMode): Theme {
+  return createTheme(getDesignTokens(mode));
+}
+
+export const darkTheme = createAppTheme("dark");
+export const lightTheme = createAppTheme("light");
+
+const theme = darkTheme;
+export default theme;

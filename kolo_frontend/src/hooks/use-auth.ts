@@ -1,14 +1,17 @@
 import { createContext, useContext } from "react";
-import type { Credentials, RegisterPayload, User } from "../types";
+import type { User } from "../api/types";
 
 export interface AuthContextValue {
 	user: User | undefined;
 	loading: boolean;
 	isAdmin: boolean;
+	/** Every Kolo account can sell — kept for route/UI guards. */
 	isSeller: boolean;
-	login: (credentials: Credentials) => Promise<void>;
-	register: (payload: RegisterPayload) => Promise<void>;
-	logout: () => Promise<void>;
+	login: (email: string) => Promise<void>;
+	register: (email: string, username: string) => Promise<void>;
+	logout: () => void;
+	/** Re-fetches /me (e.g. after a profile update). */
+	refresh: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

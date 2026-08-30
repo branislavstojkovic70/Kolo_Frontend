@@ -1,121 +1,97 @@
 import { useState, type FormEvent } from "react";
-import {
-	Alert,
-	Box,
-	Button,
-	Card,
-	CardContent,
-	Container,
-	Divider,
-	Link as MuiLink,
-	Stack,
-	TextField,
-	Typography,
-} from "@mui/material";
-import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import AuthLayout from "../components/auth-layout";
+import { LockIcon } from "../components/icons";
 import { useAuth } from "../hooks/use-auth";
-import { navy } from "../theme";
 
 export default function Login() {
+	const { user, loading, login } = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const { login } = useAuth();
-
-	const [email, setEmail] = useState("branislav@kolo.dev");
-	const [password, setPassword] = useState("demo1234");
-	const [error, setError] = useState<string>();
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 	const [submitting, setSubmitting] = useState(false);
 
-	const redirectTo = (location.state as { from?: string } | null)?.from ?? "/";
+	const from = (location.state as { from?: string } | null)?.from ?? "/ads";
+
+	if (!loading && user) return <Navigate to={from} replace />;
 
 	const handleSubmit = async (event: FormEvent) => {
 		event.preventDefault();
-		setSubmitting(true);
-		setError(undefined);
+		if (!email.trim()) return;
 
+		setSubmitting(true);
 		try {
-			await login({ email, password });
-			toast.success("Welcome back");
-			navigate(redirectTo, { replace: true });
-		} catch (err: unknown) {
-			setError(err instanceof Error ? err.message : "Could not sign you in");
+			await login(email);
+			navigate(from, { replace: true });
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Sign in failed");
 		} finally {
 			setSubmitting(false);
 		}
 	};
 
 	return (
-		<Box
-			sx={{
-				minHeight: "100vh",
-				display: "flex",
-				alignItems: "center",
-				background: `linear-gradient(160deg, ${navy} 0%, #0B192C 60%, #000000 100%)`,
-			}}
-		>
-			<Container maxWidth="sm">
-				<Stack sx={{ mb: 3, alignItems: "center" }}>
-					<Box component="img" src="/logo.png" alt="Kolo" sx={{ height: 72 }} />
-				</Stack>
-
-				<Card variant="outlined">
-					<CardContent sx={{ p: 4 }}>
-						<Typography variant="h5" sx={{ fontWeight: 600 }}>
-							Sign in
-						</Typography>
-						<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
-							Access your orders, disputes and payouts.
-						</Typography>
-
-						{error && (
-							<Alert severity="error" sx={{ mb: 2 }}>
-								{error}
-							</Alert>
-						)}
-
-						<Box component="form" onSubmit={handleSubmit}>
-							<Stack spacing={2}>
-								<TextField
-									label="Email"
-									type="email"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									required
-									fullWidth
-								/>
-								<TextField
-									label="Password"
-									type="password"
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									required
-									fullWidth
-								/>
-
-								<Button type="submit" variant="contained" size="large" disabled={submitting}>
-									{submitting ? "Signing in..." : "Sign in"}
-								</Button>
-							</Stack>
-						</Box>
-
-						<Divider sx={{ my: 3 }} />
-
-						<Typography variant="body2" color="text.secondary" align="center">
-							No account yet?{" "}
-							<MuiLink component={Link} to="/register">
-								Create one
-							</MuiLink>
-						</Typography>
-
-						<Alert severity="info" sx={{ mt: 3 }}>
-							Demo build: any password works for a seeded account, e.g.{" "}
-							<strong>branislav@kolo.dev</strong> (seller) or <strong>admin@kolo.dev</strong>{" "}
-							(admin).
-						</Alert>
-					</CardContent>
-				</Card>
-			</Container>
-		</Box>
+		<AuthLayout>
+			<form onSubmit={handleSubmit}>
+				<h1
+					style={{
+						margin: "0 0 8px",
+						fontSize: 44,
+						lineHeight: 0.95,
+						textTransform: "uppercase",
+						letterSpacing: "-0.02em",
+					}}
+				>
+					Sign in
+				</h1>
+				<div className="text-muted" style={{ fontSize: 12.5, marginBottom: 26 }}>
+					New here? <Link to="/register">Create an account</Link> · it takes a minute.
+				</div>
+				<div className="field" style={{ marginBottom: 14 }}>
+					<label htmlFor="login-email">Email</label>
+					<input
+						id="login-email"
+						className="input"
+						type="email"
+						placeholder="you@example.com"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						autoFocus
+						required
+					/>
+				</div>
+				<div className="field" style={{ marginBottom: 8 }}>
+					<label htmlFor="login-password">Password</label>
+					<input
+						id="login-password"
+						className="input"
+						type="password"
+						placeholder="••••••••"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+					/>
+				</div>
+				<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
+					<a href="#" style={{ fontSize: 11.5 }} onClick={(e) => e.preventDefault()}>
+						Forgot password?
+					</a>
+				</div>
+				<button className="btn btn-primary btn-block" type="submit" disabled={submitting}>
+					{submitting ? "Signing in…" : "Sign in →"}
+				</button>
+				<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
+				<div
+					className="text-muted"
+					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}
+				>
+					<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
+					<span>
+						Protected by escrow and admin arbitration. Your funds move only when you confirm.
+					</span>
+				</div>
+			</form>
+		</AuthLayout>
 	);
 }

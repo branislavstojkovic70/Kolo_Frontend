@@ -1,141 +1,102 @@
 import { useState, type FormEvent } from "react";
-import {
-	Alert,
-	Box,
-	Button,
-	Card,
-	CardContent,
-	Container,
-	Divider,
-	Link as MuiLink,
-	Stack,
-	TextField,
-	Typography,
-} from "@mui/material";
-import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import AuthLayout from "../components/auth-layout";
+import { LockIcon } from "../components/icons";
 import { useAuth } from "../hooks/use-auth";
-import { navy } from "../theme";
 
 export default function Register() {
+	const { user, loading, register } = useAuth();
 	const navigate = useNavigate();
-	const { register } = useAuth();
-
 	const [displayName, setDisplayName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [confirm, setConfirm] = useState("");
-	const [error, setError] = useState<string>();
 	const [submitting, setSubmitting] = useState(false);
+
+	if (!loading && user) return <Navigate to="/ads" replace />;
 
 	const handleSubmit = async (event: FormEvent) => {
 		event.preventDefault();
-
-		if (password !== confirm) {
-			setError("Passwords do not match");
-			return;
-		}
-		if (password.length < 8) {
-			setError("Password must be at least 8 characters");
-			return;
-		}
+		if (!email.trim() || !displayName.trim()) return;
 
 		setSubmitting(true);
-		setError(undefined);
-
 		try {
-			await register({ email, password, displayName });
-			toast.success("Account created. Verify your email to start selling.");
-			navigate("/", { replace: true });
-		} catch (err: unknown) {
-			setError(err instanceof Error ? err.message : "Could not create your account");
+			await register(email, displayName.trim());
+			navigate("/ads", { replace: true });
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Registration failed");
 		} finally {
 			setSubmitting(false);
 		}
 	};
 
 	return (
-		<Box
-			sx={{
-				minHeight: "100vh",
-				display: "flex",
-				alignItems: "center",
-				py: 4,
-				background: `linear-gradient(160deg, ${navy} 0%, #0B192C 60%, #000000 100%)`,
-			}}
-		>
-			<Container maxWidth="sm">
-				<Stack sx={{ mb: 3, alignItems: "center" }}>
-					<Box component="img" src="/logo.png" alt="Kolo" sx={{ height: 72 }} />
-				</Stack>
-
-				<Card variant="outlined">
-					<CardContent sx={{ p: 4 }}>
-						<Typography variant="h5" sx={{ fontWeight: 600 }}>
-							Create your account
-						</Typography>
-						<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
-							Buy services right away. Verify your email and add a payout wallet to sell.
-						</Typography>
-
-						{error && (
-							<Alert severity="error" sx={{ mb: 2 }}>
-								{error}
-							</Alert>
-						)}
-
-						<Box component="form" onSubmit={handleSubmit}>
-							<Stack spacing={2}>
-								<TextField
-									label="Display name"
-									value={displayName}
-									onChange={(e) => setDisplayName(e.target.value)}
-									required
-									fullWidth
-								/>
-								<TextField
-									label="Email"
-									type="email"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									required
-									fullWidth
-								/>
-								<TextField
-									label="Password"
-									type="password"
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									helperText="At least 8 characters"
-									required
-									fullWidth
-								/>
-								<TextField
-									label="Confirm password"
-									type="password"
-									value={confirm}
-									onChange={(e) => setConfirm(e.target.value)}
-									required
-									fullWidth
-								/>
-
-								<Button type="submit" variant="contained" size="large" disabled={submitting}>
-									{submitting ? "Creating account..." : "Create account"}
-								</Button>
-							</Stack>
-						</Box>
-
-						<Divider sx={{ my: 3 }} />
-
-						<Typography variant="body2" color="text.secondary" align="center">
-							Already have an account?{" "}
-							<MuiLink component={Link} to="/login">
-								Sign in
-							</MuiLink>
-						</Typography>
-					</CardContent>
-				</Card>
-			</Container>
-		</Box>
+		<AuthLayout>
+			<form onSubmit={handleSubmit}>
+				<h1
+					style={{
+						margin: "0 0 8px",
+						fontSize: 44,
+						lineHeight: 0.95,
+						textTransform: "uppercase",
+						letterSpacing: "-0.02em",
+					}}
+				>
+					Create account
+				</h1>
+				<div className="text-muted" style={{ fontSize: 12.5, marginBottom: 26 }}>
+					Already on Kolo? <Link to="/login">Sign in</Link> instead.
+				</div>
+				<div className="field" style={{ marginBottom: 14 }}>
+					<label htmlFor="register-name">Display name</label>
+					<input
+						id="register-name"
+						className="input"
+						placeholder="How buyers and sellers see you"
+						value={displayName}
+						onChange={(e) => setDisplayName(e.target.value)}
+						autoFocus
+						required
+						minLength={2}
+					/>
+				</div>
+				<div className="field" style={{ marginBottom: 14 }}>
+					<label htmlFor="register-email">Email</label>
+					<input
+						id="register-email"
+						className="input"
+						type="email"
+						placeholder="you@example.com"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						required
+					/>
+				</div>
+				<div className="field" style={{ marginBottom: 20 }}>
+					<label htmlFor="register-password">Password</label>
+					<input
+						id="register-password"
+						className="input"
+						type="password"
+						placeholder="••••••••"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+					/>
+				</div>
+				<button className="btn btn-primary btn-block" type="submit" disabled={submitting}>
+					{submitting ? "Creating account…" : "Create account →"}
+				</button>
+				<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
+				<div
+					className="text-muted"
+					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}
+				>
+					<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
+					<span>
+						Protected by escrow and admin arbitration. Your funds move only when you confirm.
+					</span>
+				</div>
+			</form>
+		</AuthLayout>
 	);
 }

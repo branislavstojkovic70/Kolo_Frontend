@@ -64,7 +64,7 @@ export default function CreateAd() {
 	};
 
 	return (
-		<Page idx="01" title="Post an ad" sub={`List a service · ${FEE_PERCENT}% fee · escrow protected`}>
+		<Page title="Post an ad" sub={`List a service · ${FEE_PERCENT}% fee · escrow protected`}>
 			<div>
 				<button
 					className="btn btn-ghost"

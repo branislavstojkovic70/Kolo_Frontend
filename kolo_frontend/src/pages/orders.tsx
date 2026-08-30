@@ -49,7 +49,7 @@ export default function Orders() {
 	);
 
 	return (
-		<Page idx="02" title="Orders" sub="Payments, delivery and escrow release">
+		<Page title="Orders" sub="Payments, delivery and escrow release">
 			<div style={{ display: "flex", alignItems: "center", gap: 14 }}>
 				<div className="seg">
 					<label className="seg-opt">

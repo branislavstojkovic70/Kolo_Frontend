@@ -20,7 +20,7 @@ export default function Notifications() {
 	const seen = getLastSeen();
 
 	return (
-		<Page idx="04" title="Inbox" sub={`${unreadCount} unread · derived from your orders, disputes and payouts`}>
+		<Page title="Inbox" sub={`${unreadCount} unread · derived from your orders, disputes and payouts`}>
 			<div style={{ display: "flex", alignItems: "center" }}>
 				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
 					{unreadCount} UNREAD

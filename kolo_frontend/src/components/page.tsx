@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 
 interface PageProps {
-	/** Orange mono view index, e.g. "01". */
-	idx: string;
 	title: string;
 	/** Right-aligned mono subtitle; rendered uppercase. */
 	sub: string;
@@ -10,7 +8,7 @@ interface PageProps {
 }
 
 /** Content frame: 24px padding, 22px section gap, giant page header with 2px rule. */
-export default function Page({ idx, title, sub, children }: PageProps) {
+export default function Page({ title, sub, children }: PageProps) {
 	return (
 		<div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
 			<div
@@ -23,16 +21,6 @@ export default function Page({ idx, title, sub, children }: PageProps) {
 					animation: "fadeUp .4s ease both",
 				}}
 			>
-				<span
-					style={{
-						fontFamily: "var(--font-mono)",
-						fontSize: 12,
-						color: "var(--color-accent)",
-						paddingBottom: 9,
-					}}
-				>
-					{idx}
-				</span>
 				<h1
 					style={{
 						margin: 0,

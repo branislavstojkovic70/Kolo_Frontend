@@ -149,7 +149,7 @@ export default function OrderDetails() {
 
 	if (!order) {
 		return (
-			<Page idx="02" title="Order" sub="Payment, escrow flow and activity">
+			<Page title="Order" sub="Payment, escrow flow and activity">
 				<AsyncPanel loading={loading} error={error} isEmpty emptyMessage="Order not found">
 					<span />
 				</AsyncPanel>
@@ -213,7 +213,7 @@ export default function OrderDetails() {
 	}
 
 	return (
-		<Page idx="02" title={`Order ${shortRef(order.id)}`} sub={chip.label + " · escrow protected"}>
+		<Page title={`Order ${shortRef(order.id)}`} sub={chip.label + " · escrow protected"}>
 			<div>
 				<button
 					className="btn btn-ghost"

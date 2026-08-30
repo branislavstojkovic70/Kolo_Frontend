@@ -112,7 +112,7 @@ export default function Ads() {
 	const error = scope === "all" ? filtered.error : mine.error;
 
 	return (
-		<Page idx="01" title="Marketplace" sub="Browse digital services · pay in any crypto · escrow protected">
+		<Page title="Marketplace" sub="Browse digital services · pay in any crypto · escrow protected">
 			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
 				<StatCell label="SERVICES LIVE" sub={`across ${stats.categories} categories`} delay={0}>
 					<CountUp to={stats.total} />

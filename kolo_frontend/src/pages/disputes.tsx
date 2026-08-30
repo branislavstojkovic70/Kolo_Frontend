@@ -92,7 +92,7 @@ export default function Disputes() {
 	};
 
 	return (
-		<Page idx="03" title="Disputes" sub="Admin-arbitrated · evidence + Telegram chat">
+		<Page title="Disputes" sub="Admin-arbitrated · evidence + Telegram chat">
 			<AsyncPanel
 				loading={list.loading}
 				error={list.error}

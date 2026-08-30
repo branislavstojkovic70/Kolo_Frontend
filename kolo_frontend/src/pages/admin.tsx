@@ -140,7 +140,7 @@ export default function Admin() {
 	};
 
 	return (
-		<Page idx="06" title="Arbitration" sub="Admin · disputes, orders and payouts">
+		<Page title="Arbitration" sub="Admin · disputes, orders and payouts">
 			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
 				<StatCell label="GROSS VOLUME" sub={`${stats?.orders.total ?? 0} orders · ${stats?.users ?? 0} users`} value={usd(stats?.money.grossVolumeUsd ?? 0)} suffix="USDT" delay={0} />
 				<StatCell label="IN ESCROW" sub="seller money on the platform" value={usd(stats?.money.inEscrowUsd ?? 0)} suffix="USDT" delay={0.06} />

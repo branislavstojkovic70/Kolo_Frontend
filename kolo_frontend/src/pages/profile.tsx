@@ -157,7 +157,7 @@ export default function Profile() {
 	};
 
 	return (
-		<Page idx="05" title="Wallet" sub="Escrow · vesting · payouts">
+		<Page title="Wallet" sub="Escrow · vesting · payouts">
 			<div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
 				<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={52} fontSize={22} />
 				<div>

@@ -95,7 +95,7 @@ export default function AdDetails() {
 	};
 
 	return (
-		<Page idx="01" title="Service" sub="Subscription services · escrow protected · any crypto">
+		<Page title="Service" sub="Subscription services · escrow protected · any crypto">
 			<div>
 				<button
 					className="btn btn-ghost"
@@ -131,39 +131,6 @@ export default function AdDetails() {
 										· escrow protected · admin arbitration
 									</span>
 								</div>
-							</div>
-
-							<div className="grid-plate" style={{ height: 280, position: "relative", border: "1px solid var(--color-divider)" }}>
-								<span
-									aria-hidden="true"
-									style={{
-										position: "absolute",
-										inset: 0,
-										display: "grid",
-										placeItems: "center",
-										fontFamily: "var(--font-heading)",
-										fontWeight: 800,
-										fontSize: 120,
-										color: "color-mix(in srgb, var(--color-text) 8%, transparent)",
-										textTransform: "uppercase",
-										userSelect: "none",
-									}}
-								>
-									{(ad.category ?? ad.title).slice(0, 1)}
-								</span>
-								<span
-									className="text-muted"
-									style={{
-										position: "absolute",
-										bottom: 10,
-										left: 12,
-										...mono,
-										fontSize: 10,
-										letterSpacing: "0.12em",
-									}}
-								>
-									SELLER ARTWORK · COMING SOON
-								</span>
 							</div>
 
 							<div>

@@ -10,6 +10,7 @@ import QrPlate from "../components/qr-plate";
 import StatusTag from "../components/status-tag";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
+import { useNow } from "../hooks/use-now";
 import { formatDate, formatDateTime } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 import { orderStatusTag } from "../lib/order-ui";
@@ -132,6 +133,7 @@ export default function OrderDetails() {
 	);
 
 	const pending = order?.status === "PENDING_PAYMENT";
+	const now = useNow(pending ? 1000 : undefined);
 
 	// The OxaPay webhook flips the order — poll while the invoice is open.
 	useEffect(() => {
@@ -163,7 +165,7 @@ export default function OrderDetails() {
 		order.status === "PAID" &&
 		!dispute &&
 		!!order.paidAt &&
-		Date.now() - new Date(order.paidAt).getTime() < DISPUTE_WINDOW_MS;
+		now - new Date(order.paidAt).getTime() < DISPUTE_WINDOW_MS;
 
 	const copyPaymentUrl = () => {
 		if (!order.paymentUrl) return;
@@ -206,7 +208,7 @@ export default function OrderDetails() {
 			});
 		}
 	}
-	if (order.status === "PAID" && order.vestedAt && new Date(order.vestedAt).getTime() <= Date.now()) {
+	if (order.status === "PAID" && order.vestedAt && new Date(order.vestedAt).getTime() <= now) {
 		activity.push({ time: order.vestedAt, text: "Vesting complete · funds withdrawable", color: "var(--ok)" });
 	}
 
@@ -386,7 +388,7 @@ export default function OrderDetails() {
 										? "frozen · open dispute"
 										: order.withdrawalId
 											? "paid out"
-											: order.vestedAt && new Date(order.vestedAt).getTime() <= Date.now()
+											: order.vestedAt && new Date(order.vestedAt).getTime() <= now
 												? "withdrawable in wallet"
 												: "vesting"
 								}

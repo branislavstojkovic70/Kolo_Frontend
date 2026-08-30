@@ -9,6 +9,7 @@ import Page from "../components/page";
 import StatusTag from "../components/status-tag";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
+import { useNow } from "../hooks/use-now";
 import { withdrawalStatusTag } from "../lib/order-ui";
 import { formatDate } from "../utils/format";
 import { fmtUsd, sumUsd, usd } from "../utils/money";
@@ -81,6 +82,7 @@ export default function Profile() {
 	const [network, setNetwork] = useState(NETWORKS[0]);
 	const [busy, setBusy] = useState(false);
 
+	const now = useNow();
 	const balanceQ = useAsync(() => walletApi.balance(), []);
 	const rowsQ = useAsync(() => walletApi.orders(), []);
 	const withdrawalsQ = useAsync(() => walletApi.withdrawals(), []);
@@ -101,9 +103,9 @@ export default function Profile() {
 		if (!user) return 0;
 		return Math.max(
 			1,
-			Math.round((Date.now() - new Date(user.createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000))
+			Math.round((now - new Date(user.createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000))
 		);
-	}, [user]);
+	}, [user, now]);
 
 	const disputesLost = useMemo(() => {
 		if (!statsQ.data || !user) return 0;

@@ -9,13 +9,11 @@ import { getSessionEmail, setSessionEmail, usersApi, type User } from "../api";
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User>();
-	const [loading, setLoading] = useState(true);
+	// Only a stored session needs to resolve before the guards can decide.
+	const [loading, setLoading] = useState(() => !!getSessionEmail());
 
 	useEffect(() => {
-		if (!getSessionEmail()) {
-			setLoading(false);
-			return;
-		}
+		if (!getSessionEmail()) return;
 		usersApi
 			.me()
 			.then(setUser)

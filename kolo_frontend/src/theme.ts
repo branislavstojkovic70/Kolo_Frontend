@@ -28,6 +28,3 @@ export const ThemeModeContext = createContext<ThemeModeContextValue>({
 export function useThemeMode(): ThemeModeContextValue {
 	return useContext(ThemeModeContext);
 }
-
-/** @deprecated MUI-era brand color; only referenced by legacy pages awaiting redesign. */
-export const navy = "#1E3E62";

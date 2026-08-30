@@ -22,7 +22,7 @@ import Admin from "./pages/admin";
 import NotFound from "./pages/not-found";
 
 const router = createBrowserRouter([
-	// Auth pages render without the navbar.
+	// Auth pages render without the app shell.
 	{ path: "/login", element: <Login /> },
 	{ path: "/register", element: <Register /> },
 

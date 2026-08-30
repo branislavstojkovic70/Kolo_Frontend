@@ -1,7 +1,7 @@
 # Kolo — Crypto Services Marketplace (Frontend)
 
-Kolo is a marketplace for digital services — streaming slots, VPNs, IPTV, software keys, game
-passes — where buyers pay in cryptocurrency via [OxaPay](https://oxapay.com) and the platform
+Kolo is a marketplace for digital services, streaming slots, VPNs, IPTV, software keys, game
+passes, where buyers pay in cryptocurrency via [OxaPay](https://oxapay.com) and the platform
 holds the money in **escrow**. Sellers' earnings **vest** for 30 days per order before they can
 be withdrawn; buyers can open an **admin-arbitrated dispute** (run through a dedicated Telegram
 group) that freezes the escrow until a decision is made. The platform takes a flat **4% fee**.

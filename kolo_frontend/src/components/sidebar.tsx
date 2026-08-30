@@ -95,6 +95,12 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 		>
 			<div style={{ padding: "2px 10px 18px" }}>
 				<div
+					className="row-click"
+					title="Kolo marketplace"
+					onClick={() => {
+						navigate("/ads");
+						onNavigate?.();
+					}}
 					style={{
 						fontFamily: "var(--font-heading)",
 						fontWeight: 800,
@@ -102,6 +108,7 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 						letterSpacing: "-0.02em",
 						color: "var(--color-accent)",
 						lineHeight: 1,
+						width: "fit-content",
 					}}
 				>
 					Kolo

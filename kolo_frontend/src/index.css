@@ -431,6 +431,36 @@ select.input { appearance: none; }
 .poster-ink { color: #0a0f1a; }
 .poster-ink-soft { color: rgba(10, 15, 26, 0.78); }
 
+/* ── app shell ────────────────────────────────────────────────────────── */
+
+.snav {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	border: 0;
+	cursor: pointer;
+	padding: 10px;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	text-align: left;
+	background: transparent;
+	color: var(--color-text);
+}
+.snav:hover { transform: translateX(4px); }
+.snav.active {
+	background: var(--color-accent);
+	color: var(--color-bg);
+}
+
+.ticker-track {
+	display: flex;
+	width: max-content;
+	animation: marquee 38s linear infinite;
+}
+.ticker:hover .ticker-track { animation-play-state: paused; }
+
 /* ── animations (timing per handoff spec) ─────────────────────────────── */
 
 @keyframes fadeUp {

@@ -6,7 +6,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
 import { applyThemeMode, loadThemeMode, ThemeModeContext, type ThemeMode } from "./theme";
 import { AuthProvider } from "./components/auth-provider";
 import RequireAuth from "./components/require-auth";
-import Navbar from "./components/navbar";
+import AppShell from "./components/app-shell";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Ads from "./pages/ads";
@@ -30,7 +30,7 @@ const router = createBrowserRouter([
 		element: <RequireAuth />,
 		children: [
 			{
-				element: <Navbar />,
+				element: <AppShell />,
 				children: [
 					{ path: "/", element: <Navigate to="/ads" replace /> },
 					{ path: "/ads", element: <Ads /> },

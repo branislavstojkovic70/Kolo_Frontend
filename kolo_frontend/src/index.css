@@ -1,8 +1,115 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Kolo design system — brutalist/editorial, flat, hard-edged.
+   Tokens adopted from the design handoff (kolo-theme.css + styles.css).
+   Dark is the default theme; [data-theme="light"] is an override scope.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme="dark"] {
+	color-scheme: dark;
+
+	--color-bg: #0a0f1a;
+	--color-surface: #111a2b;
+	--color-text: #e9eef7;
+	--color-accent: #f97316;
+	--color-divider: color-mix(in srgb, #9db2cc 24%, transparent);
+	--ok: #3ecf8e;
+	--warn: #f5b62e;
+	--bad: #ff5c5c;
+
+	/* neutral ramp flipped for the dark ground: 100 = darkest fill, 900 = lightest text */
+	--color-neutral-100: #131c2b;
+	--color-neutral-200: #192436;
+	--color-neutral-300: #233145;
+	--color-neutral-400: #31435c;
+	--color-neutral-500: #546880;
+	--color-neutral-600: #7c8fa5;
+	--color-neutral-700: #a4b3c6;
+	--color-neutral-800: #c9d4e2;
+	--color-neutral-900: #e7edf5;
+
+	--color-accent-100: #2a1505;
+	--color-accent-200: #3d1e06;
+	--color-accent-300: #5a2b08;
+	--color-accent-400: #8b420b;
+	--color-accent-500: #f97316;
+	--color-accent-600: #fb8b3f;
+	--color-accent-700: #fda368;
+	--color-accent-800: #fec49a;
+	--color-accent-900: #ffe2cc;
+
+	/* dark ground: hairline edge + ambient darkness */
+	--shadow-sm: 0 0 0 1px color-mix(in srgb, #9db2cc 9%, transparent), 0 1px 2px rgba(0, 0, 0, 0.5);
+	--shadow-md: 0 0 0 1px color-mix(in srgb, #9db2cc 11%, transparent), 0 6px 16px rgba(0, 0, 0, 0.5);
+	--shadow-lg: 0 0 0 1px color-mix(in srgb, #9db2cc 13%, transparent), 0 18px 48px rgba(0, 0, 0, 0.6);
+
+	--font-heading: "Archivo", system-ui, sans-serif;
+	--font-heading-weight: 800;
+	--font-body: "Archivo", system-ui, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-6: 24px;
+	--space-8: 32px;
+
+	/* Zero border radius everywhere — no rounded corners. */
+	--radius-sm: 0px;
+	--radius-md: 0px;
+	--radius-lg: 0px;
+}
+
+[data-theme="light"] {
+	color-scheme: light;
+
+	--color-bg: #eef1f5;
+	--color-surface: #ffffff;
+	--color-text: #17263a;
+	--color-divider: color-mix(in srgb, #17263a 30%, transparent);
+	--ok: #1e9e63;
+	--warn: #a86e07;
+	--bad: #d33d2e;
+
+	--color-neutral-100: #f6f8fa;
+	--color-neutral-200: #e9edf2;
+	--color-neutral-300: #d5dce4;
+	--color-neutral-400: #b6c1ce;
+	--color-neutral-500: #93a1b2;
+	--color-neutral-600: #748496;
+	--color-neutral-700: #586a7e;
+	--color-neutral-800: #3d4f63;
+	--color-neutral-900: #233448;
+
+	--color-accent-100: #fef1e6;
+	--color-accent-200: #fddfc6;
+	--color-accent-300: #fcc394;
+	--color-accent-400: #fa9c52;
+	--color-accent-500: #f97316;
+	--color-accent-600: #d55f07;
+	--color-accent-700: #a84a05;
+	--color-accent-800: #7c3707;
+	--color-accent-900: #4e2405;
+
+	--shadow-sm: 0 1px 2px color-mix(in srgb, #233448 14%, transparent);
+	--shadow-md: 0 3px 10px color-mix(in srgb, #233448 16%, transparent);
+	--shadow-lg: 0 12px 32px color-mix(in srgb, #233448 22%, transparent);
+}
+
+/* ── base ─────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body,
 #root {
 	margin: 0;
-	padding: 0;
-	width: 100%;
-	min-height: 100vh;
+	height: 100%;
 }
 
 :root {
@@ -13,19 +120,397 @@
 }
 
 body {
-	margin: 0;
-	display: flex;
-	min-width: 320px;
-	min-height: 100vh;
-	overflow-x: hidden;
-	width: 100%;
-	font-family: 'Poppins', system-ui, sans-serif;
+	font-family: var(--font-body);
+	font-size: 15px;
+	line-height: 1.55;
+	font-weight: 400;
+	color: var(--color-text);
+	/* Graph-paper app ground: 1px lines every 28px at 3% text opacity. */
+	background:
+		repeating-linear-gradient(
+			0deg,
+			color-mix(in srgb, var(--color-text) 3%, transparent) 0 1px,
+			transparent 1px 28px
+		),
+		repeating-linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--color-text) 3%, transparent) 0 1px,
+			transparent 1px 28px
+		),
+		var(--color-bg);
 }
 
-h4 {
-	margin: 0;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	line-height: 1.12;
+	letter-spacing: -0.015em;
+	margin: 0 0 var(--space-2);
+}
+h1 { font-size: 42px; }
+h2 { font-size: 32px; }
+h3 { font-size: 25px; }
+h4 { font-size: 20px; }
+h5 { font-size: 16px; }
+h6 {
+	font-size: 13px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+p { margin: 0 0 var(--space-3); }
+a {
+	color: var(--color-accent);
+	text-underline-offset: 3px;
+}
+a:hover { color: var(--color-accent-600); }
+img {
+	display: block;
+	max-width: 100%;
+}
+figure { margin: 0; }
+
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.mono { font-family: var(--font-mono); }
+
+:focus { outline: none; }
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, #9db2cc 22%, transparent); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── rules ────────────────────────────────────────────────────────────── */
+
+.hr {
+	height: 2px;
+	border: 0;
+	margin: var(--space-4) 0;
+	background: var(--color-divider);
 }
 
-#logo:hover {
+/* ── buttons ──────────────────────────────────────────────────────────── */
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
 	cursor: pointer;
+	text-decoration: none;
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 14px;
+	line-height: 1.2;
+	color: var(--color-text);
+	background: transparent;
+	border: 1px solid transparent;
+	padding: var(--space-2) calc(var(--space-3) * 1.2);
+	border-radius: var(--radius-md);
+}
+.btn svg { display: block; }
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.btn-primary {
+	background: var(--color-accent);
+	color: var(--color-bg);
+}
+.btn-primary:hover {
+	background: var(--color-accent-600);
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-sm);
+}
+.btn-primary:active {
+	background: var(--color-accent-700);
+	transform: translateY(0);
+	box-shadow: none;
+}
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.btn-ghost {
+	color: var(--color-accent);
+	padding-inline: var(--space-1);
+}
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.btn-icon {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+}
+.btn-block {
+	width: 100%;
+	margin-top: var(--space-2);
+	justify-content: flex-start;
+	text-align: left;
+}
+
+/* ── forms ────────────────────────────────────────────────────────────── */
+
+.field > label {
+	display: block;
+	font-size: 12px;
+	margin-bottom: 5px;
+	color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.input {
+	width: 100%;
+	min-height: 36px;
+	padding: 6px 10px;
+	font: inherit;
+	font-size: 14px;
+	color: var(--color-text);
+	caret-color: var(--color-accent);
+	background: var(--color-surface);
+	border: 1px solid var(--color-divider);
+	border-radius: var(--radius-md);
+}
+.input::placeholder { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input:focus-visible {
+	border-color: var(--color-accent);
+	outline-offset: 0;
+}
+textarea.input {
+	min-height: 90px;
+	resize: vertical;
+}
+select.input { appearance: none; }
+
+.seg {
+	display: inline-flex;
+	overflow: hidden;
+	border: 1px solid var(--color-divider);
+	border-radius: var(--radius-md);
+}
+.seg-opt {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 12px;
+	font-size: 13px;
+	cursor: pointer;
+}
+.seg-opt input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+	pointer-events: none;
+}
+.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+.seg-opt:has(input:checked) {
+	background: var(--color-accent);
+	color: var(--color-bg);
+}
+.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.seg-opt:has(input:focus-visible) {
+	outline: 2px solid var(--color-accent);
+	outline-offset: -2px;
+}
+
+/* ── cards ────────────────────────────────────────────────────────────── */
+
+.card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+}
+.card-kicker {
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--color-accent);
+}
+.card-title {
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 17px;
+	line-height: 1.2;
+}
+.card-body {
+	margin: 0;
+	font-size: 13px;
+	opacity: 0.8;
+	flex: 1;
+}
+.card-meta {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* ── tags ─────────────────────────────────────────────────────────────── */
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	letter-spacing: 0.02em;
+	padding: 3px 10px;
+	border-radius: 0;
+}
+.tag-accent {
+	background: var(--color-accent-100);
+	color: var(--color-accent-800);
+}
+.tag-neutral {
+	background: var(--color-neutral-100);
+	color: var(--color-neutral-800);
+}
+.tag-outline {
+	border: 1px solid var(--color-accent);
+	color: var(--color-accent);
+}
+/* Solid inverted status chip: background = status color, ink = page bg. */
+.tag-status {
+	white-space: nowrap;
+	color: var(--color-bg);
+	font-weight: 600;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+}
+
+/* ── tables ───────────────────────────────────────────────────────────── */
+
+.table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+.table th {
+	text-align: left;
+	font-size: 11px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--color-text) 60%, transparent);
+	padding: var(--space-2);
+	border-bottom: 2px solid var(--color-divider);
+}
+.table td {
+	padding: var(--space-2);
+	border-bottom: 1px solid var(--color-divider);
+}
+.table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+
+/* ── poster panel (always orange, near-black ink, drifting stripes) ───── */
+
+.poster {
+	position: relative;
+	overflow: hidden;
+	background: var(--color-accent);
+}
+.poster-stripes {
+	position: absolute;
+	inset: -120%;
+	background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.09) 0 2px, transparent 2px 26px);
+	animation: drift 22s linear infinite;
+}
+.poster-ink { color: #0a0f1a; }
+.poster-ink-soft { color: rgba(10, 15, 26, 0.78); }
+
+/* ── animations (timing per handoff spec) ─────────────────────────────── */
+
+@keyframes fadeUp {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes growBar {
+	from { transform: scaleX(0); }
+	to { transform: scaleX(1); }
+}
+@keyframes pulseDot {
+	0%,
+	100% { opacity: 1; }
+	50% { opacity: 0.55; }
+}
+@keyframes marquee {
+	from { transform: translateX(0); }
+	to { transform: translateX(-50%); }
+}
+@keyframes scan {
+	0% {
+		transform: translateY(0);
+		opacity: 0.9;
+	}
+	100% {
+		transform: translateY(146px);
+		opacity: 0.9;
+	}
+}
+@keyframes sheen {
+	from { transform: translateX(-100%); }
+	to { transform: translateX(100%); }
+}
+@keyframes drift {
+	from { transform: translate(0, 0); }
+	to { transform: translate(74px, 74px); }
+}
+
+.fade-up { animation: fadeUp 0.45s ease both; }
+
+/* ── micro transitions ────────────────────────────────────────────────── */
+
+button,
+.btn,
+.tag,
+.input,
+.seg-opt,
+a {
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease,
+		border-color 0.16s ease,
+		box-shadow 0.16s ease,
+		transform 0.16s ease;
+}
+[data-theme],
+aside,
+header,
+.card,
+.table th,
+.table td,
+tr {
+	transition:
+		background-color 0.25s ease,
+		color 0.25s ease,
+		border-color 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }

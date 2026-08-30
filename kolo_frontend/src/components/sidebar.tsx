@@ -70,7 +70,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 	return (
 		<aside
 			style={{
-				width: 238,
+				width: 288,
 				flex: "none",
 				display: "flex",
 				flexDirection: "column",
@@ -108,12 +108,12 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 			</div>
 
 			<nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-				{item("market", "Marketplace", <StoreIcon />, "/ads")}
-				{item("orders", "Orders", <FileTextIcon />, "/orders")}
-				{item("disputes", "Disputes", <ShieldAlertIcon />, "/disputes")}
-				{item("notifs", "Notifications", <BellIcon />, "/notifications", unreadCount)}
-				{item("wallet", "Wallet & profile", <WalletIcon />, "/profile")}
-				{isAdmin && item("admin", "Arbitration", <ShieldCheckIcon />, "/admin")}
+				{item("market", "Marketplace", <StoreIcon size={17} />, "/ads")}
+				{item("orders", "Orders", <FileTextIcon size={17} />, "/orders")}
+				{item("disputes", "Disputes", <ShieldAlertIcon size={17} />, "/disputes")}
+				{item("notifs", "Notifications", <BellIcon size={17} />, "/notifications", unreadCount)}
+				{item("wallet", "Wallet & profile", <WalletIcon size={17} />, "/profile")}
+				{isAdmin && item("admin", "Arbitration", <ShieldCheckIcon size={17} />, "/admin")}
 			</nav>
 
 			<div style={{ height: 2, background: "var(--color-divider)", margin: "16px 10px" }} />
@@ -122,15 +122,15 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 				<div className="text-muted" style={monoLabel}>
 					WALLET
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 8 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 8 }}>
 					<span className="text-muted">In escrow</span>
 					<span style={{ fontFamily: "var(--font-mono)" }}>{held !== undefined ? fmtUsd(held) : "—"}</span>
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 5 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 5 }}>
 					<span className="text-muted">Vesting</span>
 					<span style={{ fontFamily: "var(--font-mono)" }}>{balance ? fmtUsd(balance.vesting) : "—"}</span>
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 5 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 5 }}>
 					<span className="text-muted">Available</span>
 					<span style={{ fontFamily: "var(--font-mono)", color: "var(--ok)" }}>
 						{balance ? fmtUsd(balance.available) : "—"}

@@ -436,13 +436,13 @@ select.input { appearance: none; }
 .snav {
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: 11px;
 	width: 100%;
 	border: 0;
 	cursor: pointer;
-	padding: 10px;
+	padding: 12px 12px;
 	font: inherit;
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 600;
 	text-align: left;
 	background: transparent;

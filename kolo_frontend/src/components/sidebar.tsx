@@ -28,11 +28,18 @@ function sectionOf(pathname: string): Section {
 
 const monoLabel: React.CSSProperties = {
 	fontFamily: "var(--font-mono)",
-	fontSize: 10,
+	fontSize: 10.5,
 	letterSpacing: "0.12em",
 };
 
-export default function Sidebar({ unreadCount }: { unreadCount: number }) {
+interface SidebarProps {
+	unreadCount: number;
+	/** Drawer state on narrow viewports; ignored on desktop. */
+	open?: boolean;
+	onNavigate?: () => void;
+}
+
+export default function Sidebar({ unreadCount, open = false, onNavigate }: SidebarProps) {
 	const { user, isAdmin, logout } = useAuth();
 	const navigate = useNavigate();
 	const active = sectionOf(useLocation().pathname);
@@ -45,7 +52,13 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 	const segmentsOn = balance ? Math.round(releasedShare * 12) : 0;
 
 	const item = (section: Section, label: string, icon: React.ReactNode, to: string, badge?: number) => (
-		<button className={`snav${active === section ? " active" : ""}`} onClick={() => navigate(to)}>
+		<button
+			className={`snav${active === section ? " active" : ""}`}
+			onClick={() => {
+				navigate(to);
+				onNavigate?.();
+			}}
+		>
 			{icon}
 			{label}
 			{badge !== undefined && badge > 0 && (
@@ -53,7 +66,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 					style={{
 						marginLeft: "auto",
 						fontFamily: "var(--font-mono)",
-						fontSize: 10,
+						fontSize: 10.5,
 						fontWeight: 600,
 						background: active === section ? "var(--color-bg)" : "var(--color-accent)",
 						color: active === section ? "var(--color-text)" : "var(--color-bg)",
@@ -69,8 +82,9 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 
 	return (
 		<aside
+			className={`app-sidebar${open ? " open" : ""}`}
 			style={{
-				width: 238,
+				width: 288,
 				flex: "none",
 				display: "flex",
 				flexDirection: "column",
@@ -81,6 +95,12 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 		>
 			<div style={{ padding: "2px 10px 18px" }}>
 				<div
+					className="row-click"
+					title="Kolo marketplace"
+					onClick={() => {
+						navigate("/ads");
+						onNavigate?.();
+					}}
 					style={{
 						fontFamily: "var(--font-heading)",
 						fontWeight: 800,
@@ -88,6 +108,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 						letterSpacing: "-0.02em",
 						color: "var(--color-accent)",
 						lineHeight: 1,
+						width: "fit-content",
 					}}
 				>
 					Kolo
@@ -102,18 +123,18 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 						transformOrigin: "left",
 					}}
 				/>
-				<div className="text-muted" style={{ ...monoLabel, fontSize: 9.5, letterSpacing: "0.14em", marginTop: 6 }}>
+				<div className="text-muted" style={{ ...monoLabel, fontSize: 10, letterSpacing: "0.14em", marginTop: 6 }}>
 					DIGITAL SERVICES · CRYPTO ESCROW
 				</div>
 			</div>
 
 			<nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-				{item("market", "Marketplace", <StoreIcon />, "/ads")}
-				{item("orders", "Orders", <FileTextIcon />, "/orders")}
-				{item("disputes", "Disputes", <ShieldAlertIcon />, "/disputes")}
-				{item("notifs", "Notifications", <BellIcon />, "/notifications", unreadCount)}
-				{item("wallet", "Wallet & profile", <WalletIcon />, "/profile")}
-				{isAdmin && item("admin", "Arbitration", <ShieldCheckIcon />, "/admin")}
+				{item("market", "Marketplace", <StoreIcon size={17} />, "/ads")}
+				{item("orders", "Orders", <FileTextIcon size={17} />, "/orders")}
+				{item("disputes", "Disputes", <ShieldAlertIcon size={17} />, "/disputes")}
+				{item("notifs", "Notifications", <BellIcon size={17} />, "/notifications", unreadCount)}
+				{item("wallet", "Wallet & profile", <WalletIcon size={17} />, "/profile")}
+				{isAdmin && item("admin", "Arbitration", <ShieldCheckIcon size={17} />, "/admin")}
 			</nav>
 
 			<div style={{ height: 2, background: "var(--color-divider)", margin: "16px 10px" }} />
@@ -122,15 +143,15 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 				<div className="text-muted" style={monoLabel}>
 					WALLET
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 8 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 8 }}>
 					<span className="text-muted">In escrow</span>
 					<span style={{ fontFamily: "var(--font-mono)" }}>{held !== undefined ? fmtUsd(held) : "—"}</span>
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 5 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 5 }}>
 					<span className="text-muted">Vesting</span>
 					<span style={{ fontFamily: "var(--font-mono)" }}>{balance ? fmtUsd(balance.vesting) : "—"}</span>
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 5 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 5 }}>
 					<span className="text-muted">Available</span>
 					<span style={{ fontFamily: "var(--font-mono)", color: "var(--ok)" }}>
 						{balance ? fmtUsd(balance.available) : "—"}
@@ -148,7 +169,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 					<span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 600 }}>
 						{balance ? Math.round(releasedShare * 100) : "—"}
 					</span>
-					<span className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+					<span className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
 						% released
 					</span>
 				</div>
@@ -169,7 +190,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 						/>
 					))}
 				</div>
-				<div className="text-muted" style={{ fontSize: 11 }}>
+				<div className="text-muted" style={{ fontSize: 12 }}>
 					{balance?.nextVestingAt
 						? `Next release ${formatDate(balance.nextVestingAt)}`
 						: "Funds vest 30 days per order"}
@@ -192,7 +213,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 				<div style={{ minWidth: 0 }}>
 					<div
 						style={{
-							fontSize: 13,
+							fontSize: 14,
 							fontWeight: 600,
 							whiteSpace: "nowrap",
 							overflow: "hidden",
@@ -201,7 +222,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 					>
 						{user?.username ?? user?.email}
 					</div>
-					<div className="text-muted" style={{ ...monoLabel, fontSize: 9.5, letterSpacing: "0.1em" }}>
+					<div className="text-muted" style={{ ...monoLabel, fontSize: 10, letterSpacing: "0.1em" }}>
 						{isAdmin ? "ADMIN" : "SELLER"} · ACTIVE
 					</div>
 				</div>

@@ -4,7 +4,7 @@ export default function NotFound() {
 	const navigate = useNavigate();
 
 	return (
-		<div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
+		<div className="page-frame">
 			<div
 				style={{
 					borderBottom: "2px solid var(--color-divider)",
@@ -15,14 +15,14 @@ export default function NotFound() {
 					animation: "fadeUp .4s ease both",
 				}}
 			>
-				<span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-accent)", paddingBottom: 9 }}>
+				<span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--color-accent)", paddingBottom: 9 }}>
 					404
 				</span>
-				<h1 style={{ margin: 0, fontSize: 52, lineHeight: 0.92, letterSpacing: "-0.025em", textTransform: "uppercase" }}>
+				<h1 style={{ margin: 0, fontSize: "clamp(32px, 8vw, 52px)", lineHeight: 0.92, letterSpacing: "-0.025em", textTransform: "uppercase" }}>
 					Not found
 				</h1>
 			</div>
-			<div className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: "0.06em" }}>
+			<div className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 13, letterSpacing: "0.06em" }}>
 				THIS PAGE ISN'T IN ESCROW · IT SIMPLY DOESN'T EXIST.
 			</div>
 			<div>

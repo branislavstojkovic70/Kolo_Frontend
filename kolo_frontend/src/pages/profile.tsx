@@ -15,7 +15,7 @@ import { formatDate } from "../utils/format";
 import { fmtUsd, sumUsd, usd } from "../utils/money";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-const monoLabel: React.CSSProperties = { ...mono, fontSize: 10, letterSpacing: "0.12em" };
+const monoLabel: React.CSSProperties = { ...mono, fontSize: 10.5, letterSpacing: "0.12em" };
 const VESTING_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const NETWORKS = ["TRC20", "BEP20", "ERC20", "TON", "SOL"];
@@ -62,11 +62,11 @@ function BalanceCard({
 			</div>
 			<div style={{ ...mono, fontSize: 34, fontWeight: 600, lineHeight: 1, color }}>
 				<CountUp to={value} dec={2} />{" "}
-				<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+				<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 					USDT
 				</span>
 			</div>
-			<div className="text-muted" style={{ fontSize: 11.5 }}>
+			<div className="text-muted" style={{ fontSize: 12 }}>
 				{caption}
 			</div>
 		</div>
@@ -157,7 +157,7 @@ export default function Profile() {
 	};
 
 	return (
-		<Page idx="05" title="Wallet" sub="Escrow · vesting · payouts">
+		<Page title="Wallet" sub="Escrow · vesting · payouts">
 			<div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
 				<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={52} fontSize={22} />
 				<div>
@@ -170,7 +170,7 @@ export default function Profile() {
 							Active
 						</span>
 					</div>
-					<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: 3 }}>
+					<div className="text-muted" style={{ ...mono, fontSize: 13, marginTop: 3 }}>
 						{user.email} · member since {formatDate(user.createdAt)}
 					</div>
 				</div>
@@ -179,12 +179,12 @@ export default function Profile() {
 						TELEGRAM · FOR DISPUTE CHATS
 					</div>
 					<div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-						<span style={{ ...mono, fontSize: 12 }}>
+						<span style={{ ...mono, fontSize: 13 }}>
 							{user.telegramUsername ? `@${user.telegramUsername}` : "not set"}
 						</span>
 						<button
 							className="btn btn-ghost"
-							style={{ fontSize: 12 }}
+							style={{ fontSize: 13 }}
 							onClick={() => {
 								setUsername(user.username ?? "");
 								setTelegram(user.telegramUsername ?? "");
@@ -216,7 +216,7 @@ export default function Profile() {
 				</div>
 			)}
 
-			<div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+			<div className="balance-grid">
 				<BalanceCard
 					label="IN ESCROW"
 					icon={<LockIcon size={14} />}
@@ -250,7 +250,7 @@ export default function Profile() {
 				<h6 style={{ margin: 0, flex: "none" }}>Withdraw</h6>
 				<input
 					className="input"
-					style={{ width: 280, flex: "none", ...mono }}
+					style={{ width: 280, maxWidth: "100%", flex: "none", ...mono }}
 					placeholder="Destination wallet address"
 					value={address}
 					onChange={(e) => setAddress(e.target.value)}
@@ -263,7 +263,7 @@ export default function Profile() {
 				<button className="btn btn-primary" style={{ whiteSpace: "nowrap" }} onClick={withdraw} disabled={busy || available < 1}>
 					Withdraw {fmtUsd(available)} USDT
 				</button>
-				<span className="text-muted" style={{ fontSize: 11, marginLeft: "auto" }}>
+				<span className="text-muted" style={{ fontSize: 12, marginLeft: "auto" }}>
 					Pays out the whole available bucket · min 1 USDT · orders still vesting stay untouched
 				</span>
 			</div>
@@ -276,6 +276,7 @@ export default function Profile() {
 					isEmpty={(rowsQ.data ?? []).length === 0}
 					emptyMessage="No escrowed orders yet"
 				>
+					<div className="table-wrap">
 					<table className="table">
 						<thead>
 							<tr>
@@ -296,13 +297,13 @@ export default function Profile() {
 								return (
 									<tr key={row.orderId}>
 										<td>
-											<div style={{ fontWeight: 600, fontSize: 13 }}>{row.title}</div>
-											<div className="text-muted" style={{ ...mono, fontSize: 11 }}>
+											<div style={{ fontWeight: 600, fontSize: 14 }}>{row.title}</div>
+											<div className="text-muted" style={{ ...mono, fontSize: 12 }}>
 												{row.orderId}
 											</div>
 										</td>
-										<td style={{ ...mono, fontSize: 12.5 }}>{fmtUsd(row.amount)} USDT</td>
-										<td className="text-muted" style={{ ...mono, fontSize: 12.5 }}>
+										<td style={{ ...mono, fontSize: 13.5 }}>{fmtUsd(row.amount)} USDT</td>
+										<td className="text-muted" style={{ ...mono, fontSize: 13.5 }}>
 											{row.vestedAt ? formatDate(row.vestedAt) : "—"}
 										</td>
 										<td>
@@ -343,10 +344,11 @@ export default function Profile() {
 							})}
 						</tbody>
 					</table>
+					</div>
 				</AsyncPanel>
 			</div>
 
-			<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 22, alignItems: "stretch" }}>
+			<div className="layout-two">
 				<div className="card" style={{ padding: 18, gap: 12 }}>
 					<h6 style={{ margin: 0 }}>Withdrawals</h6>
 					<AsyncPanel
@@ -368,16 +370,17 @@ export default function Profile() {
 											padding: "8px 10px",
 											borderLeft: `3px solid ${tag.color}`,
 											background: "var(--color-neutral-100)",
+											flexWrap: "wrap",
 										}}
 									>
-										<span style={{ ...mono, fontSize: 12.5, fontWeight: 600, width: 110 }}>
+										<span style={{ ...mono, fontSize: 13.5, fontWeight: 600, width: 110 }}>
 											{fmtUsd(w.amountUsd)} {w.currency}
 										</span>
-										<span className="text-muted" style={{ ...mono, fontSize: 11 }}>
+										<span className="text-muted" style={{ ...mono, fontSize: 12 }}>
 											{w.network} · {w.address.slice(0, 8)}…{w.address.slice(-4)} · {w.orderCount} orders
 										</span>
 										<span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-											<span className="text-muted" style={{ ...mono, fontSize: 11 }}>
+											<span className="text-muted" style={{ ...mono, fontSize: 12 }}>
 												{formatDate(w.createdAt)}
 											</span>
 											<StatusTag label={tag.label} color={tag.color} fontSize={10} />
@@ -387,7 +390,7 @@ export default function Profile() {
 							})}
 						</div>
 					</AsyncPanel>
-					<div className="text-muted" style={{ fontSize: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
+					<div className="text-muted" style={{ fontSize: 13, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
 						Each payout bundles every order that individually finished vesting. Failed payouts unlink
 						their orders — the money returns to your available bucket.
 					</div>
@@ -411,7 +414,7 @@ export default function Profile() {
 							style={{
 								display: "flex",
 								justifyContent: "space-between",
-								fontSize: 13,
+								fontSize: 14,
 								padding: "6px 0",
 								borderBottom: i === all.length - 1 ? undefined : "1px solid var(--color-divider)",
 							}}
@@ -420,7 +423,7 @@ export default function Profile() {
 							<span style={{ ...mono, color: row.color }}>{row.value}</span>
 						</div>
 					))}
-					<div className="text-muted" style={{ fontSize: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
+					<div className="text-muted" style={{ fontSize: 13, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
 						Every sale vests 30 days in escrow before payout. Losing a dispute refunds the buyer from
 						escrow immediately — deliver well and the money always releases on schedule.
 					</div>

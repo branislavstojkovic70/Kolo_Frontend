@@ -24,7 +24,7 @@ export default function AsyncPanel({
 					padding: "48px 0",
 					textAlign: "center",
 					fontFamily: "var(--font-mono)",
-					fontSize: 11,
+					fontSize: 12,
 					letterSpacing: "0.12em",
 					animation: "pulseDot 1.2s ease-in-out infinite",
 				}}
@@ -41,10 +41,10 @@ export default function AsyncPanel({
 					borderLeft: "3px solid var(--bad)",
 					background: "var(--color-neutral-100)",
 					padding: "14px 16px",
-					fontSize: 13,
+					fontSize: 14,
 				}}
 			>
-				<span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--bad)" }}>
+				<span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.12em", color: "var(--bad)" }}>
 					ERROR ·{" "}
 				</span>
 				{error}
@@ -60,7 +60,7 @@ export default function AsyncPanel({
 					padding: "48px 0",
 					textAlign: "center",
 					fontFamily: "var(--font-mono)",
-					fontSize: 11,
+					fontSize: 12,
 					letterSpacing: "0.12em",
 				}}
 			>

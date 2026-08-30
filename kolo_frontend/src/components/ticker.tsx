@@ -1,6 +1,6 @@
 const tickerSpan: React.CSSProperties = {
 	fontFamily: "var(--font-mono)",
-	fontSize: 10.5,
+	fontSize: 11,
 	letterSpacing: "0.07em",
 	padding: "7px 0 7px 28px",
 	whiteSpace: "nowrap",

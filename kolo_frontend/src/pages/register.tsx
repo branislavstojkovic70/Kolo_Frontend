@@ -44,7 +44,7 @@ export default function Register() {
 				>
 					Create account
 				</h1>
-				<div className="text-muted" style={{ fontSize: 12.5, marginBottom: 26 }}>
+				<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
 					Already on Kolo? <Link to="/login">Sign in</Link> instead.
 				</div>
 				<div className="field" style={{ marginBottom: 14 }}>
@@ -89,7 +89,7 @@ export default function Register() {
 				<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
 				<div
 					className="text-muted"
-					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}
+					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
 				>
 					<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 					<span>

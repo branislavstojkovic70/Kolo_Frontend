@@ -43,17 +43,17 @@ function MessagePlate({
 			}}
 		>
 			<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", lineHeight: 1.4 }}>
-				<span style={{ whiteSpace: "nowrap", flex: "none", ...mono, fontSize: 9.5, letterSpacing: "0.12em", color: roleColor[role] }}>
+				<span style={{ whiteSpace: "nowrap", flex: "none", ...mono, fontSize: 10, letterSpacing: "0.12em", color: roleColor[role] }}>
 					{role}
 				</span>
-				<span style={{ whiteSpace: "nowrap", flex: "none", fontSize: 12.5, fontWeight: 600 }}>{name}</span>
+				<span style={{ whiteSpace: "nowrap", flex: "none", fontSize: 13.5, fontWeight: 600 }}>{name}</span>
 				{time && (
-					<span className="text-muted" style={{ whiteSpace: "nowrap", marginLeft: "auto", ...mono, fontSize: 10.5 }}>
+					<span className="text-muted" style={{ whiteSpace: "nowrap", marginLeft: "auto", ...mono, fontSize: 11 }}>
 						{time}
 					</span>
 				)}
 			</div>
-			<div style={{ fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>{children}</div>
+			<div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 5 }}>{children}</div>
 		</div>
 	);
 }
@@ -92,16 +92,16 @@ export default function Disputes() {
 	};
 
 	return (
-		<Page idx="03" title="Disputes" sub="Admin-arbitrated · evidence + Telegram chat">
+		<Page title="Disputes" sub="Admin-arbitrated · evidence + Telegram chat">
 			<AsyncPanel
 				loading={list.loading}
 				error={list.error}
 				isEmpty={(list.data ?? []).length === 0}
 				emptyMessage="No disputes — that's a good thing"
 			>
-				<div style={{ display: "grid", gridTemplateColumns: "minmax(240px,320px) minmax(0,1fr)", gap: 22, alignItems: "start" }}>
+				<div className="layout-master">
 					<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-						<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+						<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 							{list.data?.length ?? 0} DISPUTES · {openCount} OPEN
 						</div>
 						{(list.data ?? []).map((entry, index) => {
@@ -125,13 +125,13 @@ export default function Disputes() {
 								>
 									<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
 										<StatusTag label={chip.label} color={chip.color} fontSize={10} />
-										<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 10 }}>
+										<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 10.5 }}>
 											{formatRelative(entry.createdAt).toUpperCase()}
 										</span>
 									</div>
 									<div
 										style={{
-											fontSize: 13.5,
+											fontSize: 14.5,
 											fontWeight: 600,
 											lineHeight: 1.4,
 											display: "-webkit-box",
@@ -142,7 +142,7 @@ export default function Disputes() {
 									>
 										{entry.reason}
 									</div>
-									<div className="text-muted" style={{ display: "flex", gap: 7, ...mono, fontSize: 10, letterSpacing: "0.08em" }}>
+									<div className="text-muted" style={{ display: "flex", gap: 7, ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
 										<span>{shortRef(entry.orderId)}</span>
 										<span>·</span>
 										<span>{fmtUsd(entry.order.amountUsd)} USDT</span>
@@ -152,7 +152,7 @@ export default function Disputes() {
 						})}
 						<div className="card" style={{ padding: 14, gap: 6 }}>
 							<h6 style={{ margin: 0 }}>How arbitration works</h6>
-							<div className="text-muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
+							<div className="text-muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
 								Opening a dispute freezes the order's escrow — even after vesting. A Telegram group is
 								created with the admins; buyer and seller join via invite link and post evidence there.
 								The admin then resolves for one side and the winner withdraws the escrow.
@@ -169,16 +169,16 @@ export default function Disputes() {
 										<span
 											className="text-muted row-click"
 											onClick={() => navigate(`/orders/${dispute.orderId}`)}
-											style={{ whiteSpace: "nowrap", flex: "none", ...mono, fontSize: 10.5, border: "1px solid var(--color-divider)", padding: "2px 8px" }}
+											style={{ whiteSpace: "nowrap", flex: "none", ...mono, fontSize: 11, border: "1px solid var(--color-divider)", padding: "2px 8px" }}
 										>
 											{dispute.orderId}
 										</span>
-										<span className="text-muted" style={{ whiteSpace: "nowrap", ...mono, fontSize: 10, letterSpacing: "0.08em" }}>
+										<span className="text-muted" style={{ whiteSpace: "nowrap", ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
 											OPENED {formatDate(dispute.createdAt).toUpperCase()} · BY BUYER
 										</span>
 									</div>
 									<h4 style={{ margin: "12px 0 0", fontSize: 19, lineHeight: 1.3 }}>{dispute.reason}</h4>
-									<div className="text-muted" style={{ display: "flex", gap: 16, marginTop: 12, ...mono, fontSize: 9.5, letterSpacing: "0.1em" }}>
+									<div className="text-muted" style={{ display: "flex", gap: 16, marginTop: 12, ...mono, fontSize: 10, letterSpacing: "0.1em" }}>
 										<span style={{ display: "flex", alignItems: "center", gap: 5 }}>
 											<span style={{ width: 8, height: 8, background: roleColor.BUYER }} />
 											BUYER
@@ -201,7 +201,7 @@ export default function Disputes() {
 											style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, border: "1px solid var(--color-divider)", padding: "4px 8px" }}
 										>
 											<PaperclipIcon size={12} />
-											<span style={{ ...mono, fontSize: 11 }}>
+											<span style={{ ...mono, fontSize: 12 }}>
 												{fmtUsd(dispute.order.sellerAmountUsd)} USDT frozen in escrow
 											</span>
 										</div>
@@ -217,10 +217,10 @@ export default function Disputes() {
 										<div
 											style={{ borderLeft: "3px solid var(--color-accent)", background: "var(--color-accent-100)", padding: "12px 14px", animation: "fadeUp .4s ease .3s both" }}
 										>
-											<div style={{ ...mono, fontSize: 9.5, letterSpacing: "0.12em", color: "var(--color-accent)" }}>
+											<div style={{ ...mono, fontSize: 10, letterSpacing: "0.12em", color: "var(--color-accent)" }}>
 												ADMIN DECISION · FINAL{dispute.resolvedAt ? ` · ${formatDate(dispute.resolvedAt).toUpperCase()}` : ""}
 											</div>
-											<div style={{ fontSize: 13, lineHeight: 1.5, marginTop: 5, color: "var(--color-accent-800)" }}>
+											<div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 5, color: "var(--color-accent-800)" }}>
 												{dispute.resolutionNote ??
 													(dispute.status === "RESOLVED_BUYER"
 														? `Resolved in the buyer's favour · ${fmtUsd(dispute.order.sellerAmountUsd)} USDT refunded from escrow, withdrawable by the buyer immediately.`
@@ -250,7 +250,7 @@ export default function Disputes() {
 									)}
 								</div>
 
-								<div style={{ display: "flex", gap: 8, padding: "14px 18px", borderTop: "2px solid var(--color-divider)", alignItems: "center" }}>
+								<div style={{ display: "flex", gap: 8, padding: "14px 18px", borderTop: "2px solid var(--color-divider)", alignItems: "center", flexWrap: "wrap" }}>
 									{dispute.telegramInviteLink ? (
 										<>
 											<a
@@ -263,12 +263,12 @@ export default function Disputes() {
 												<SendIcon size={14} />
 												Join dispute chat on Telegram
 											</a>
-											<span className="text-muted" style={{ fontSize: 11 }}>
+											<span className="text-muted" style={{ fontSize: 12 }}>
 												Evidence, replies and the admin's questions all happen in the group.
 											</span>
 										</>
 									) : (
-										<span className="text-muted" style={{ fontSize: 11 }}>
+										<span className="text-muted" style={{ fontSize: 12 }}>
 											Telegram group not available yet — the escrow is frozen regardless, and an admin
 											will follow up here.
 										</span>

@@ -14,7 +14,7 @@ import { fmtUsd, usd } from "../utils/money";
 type Tab = "disputes" | "orders" | "payouts";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-const monoLabel: React.CSSProperties = { ...mono, fontSize: 10, letterSpacing: "0.12em" };
+const monoLabel: React.CSSProperties = { ...mono, fontSize: 10.5, letterSpacing: "0.12em" };
 
 function StatCell({
 	label,
@@ -37,13 +37,13 @@ function StatCell({
 			<div style={{ ...mono, fontSize: 30, fontWeight: 600, marginTop: 6, lineHeight: 1, whiteSpace: "nowrap" }}>
 				<CountUp to={value} dec={suffix ? 2 : 0} />
 				{suffix && (
-					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						{" "}
 						{suffix}
 					</span>
 				)}
 			</div>
-			<div className="text-muted" style={{ fontSize: 11 }}>
+			<div className="text-muted" style={{ fontSize: 12 }}>
 				{sub}
 			</div>
 		</div>
@@ -76,18 +76,18 @@ function DisputeQueueItem({ dispute, onResolved }: { dispute: AdminDispute; onRe
 		<div className="card elev-sm" style={{ padding: 16, gap: 10 }}>
 			<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
 				<StatusTag {...disputeStatusTag(dispute.status)} />
-				<span className="text-muted" style={{ ...mono, fontSize: 10.5, border: "1px solid var(--color-divider)", padding: "2px 8px" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 11, border: "1px solid var(--color-divider)", padding: "2px 8px" }}>
 					{dispute.orderId}
 				</span>
-				<span className="text-muted" style={{ ...mono, fontSize: 10, letterSpacing: "0.08em" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
 					OPENED {formatDate(dispute.createdAt).toUpperCase()}
 				</span>
-				<span style={{ marginLeft: "auto", ...mono, fontSize: 13, fontWeight: 600 }}>
+				<span style={{ marginLeft: "auto", ...mono, fontSize: 14, fontWeight: 600 }}>
 					{fmtUsd(dispute.order.sellerAmountUsd)} USDT frozen
 				</span>
 			</div>
-			<div style={{ fontSize: 14, fontWeight: 600 }}>{dispute.reason}</div>
-			<div className="text-muted" style={{ fontSize: 12.5 }}>
+			<div style={{ fontSize: 15, fontWeight: 600 }}>{dispute.reason}</div>
+			<div className="text-muted" style={{ fontSize: 13.5 }}>
 				{dispute.order.titleSnapshot} · buyer {dispute.order.buyer.username ?? dispute.order.buyer.email} vs
 				seller {dispute.order.seller.username ?? dispute.order.seller.email}
 			</div>
@@ -140,8 +140,8 @@ export default function Admin() {
 	};
 
 	return (
-		<Page idx="06" title="Arbitration" sub="Admin · disputes, orders and payouts">
-			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+		<Page title="Arbitration" sub="Admin · disputes, orders and payouts">
+			<div className="stat-grid">
 				<StatCell label="GROSS VOLUME" sub={`${stats?.orders.total ?? 0} orders · ${stats?.users ?? 0} users`} value={usd(stats?.money.grossVolumeUsd ?? 0)} suffix="USDT" delay={0} />
 				<StatCell label="IN ESCROW" sub="seller money on the platform" value={usd(stats?.money.inEscrowUsd ?? 0)} suffix="USDT" delay={0.06} />
 				<StatCell label="FEES EARNED" sub="4% of confirmed payments" value={usd(stats?.money.platformFeesUsd ?? 0)} suffix="USDT" delay={0.12} />
@@ -177,7 +177,7 @@ export default function Admin() {
 				>
 					<div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 						{openDisputes.length === 0 && (
-							<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+							<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 								QUEUE EMPTY · NOTHING AWAITS ARBITRATION
 							</div>
 						)}
@@ -186,7 +186,7 @@ export default function Admin() {
 						))}
 						{resolvedDisputes.length > 0 && (
 							<>
-								<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em", marginTop: 8 }}>
+								<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em", marginTop: 8 }}>
 									RESOLVED
 								</div>
 								{resolvedDisputes.map((dispute) => (
@@ -203,8 +203,8 @@ export default function Admin() {
 										}}
 									>
 										<StatusTag {...disputeStatusTag(dispute.status)} fontSize={10} />
-										<span style={{ fontSize: 13, fontWeight: 600 }}>{dispute.reason}</span>
-										<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 11 }}>
+										<span style={{ fontSize: 14, fontWeight: 600 }}>{dispute.reason}</span>
+										<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 12 }}>
 											{fmtUsd(dispute.order.sellerAmountUsd)} USDT ·{" "}
 											{dispute.resolvedAt ? formatDate(dispute.resolvedAt) : ""}
 										</span>
@@ -223,6 +223,7 @@ export default function Admin() {
 					isEmpty={(ordersQ.data?.items ?? []).length === 0}
 					emptyMessage="No orders yet"
 				>
+					<div className="table-wrap">
 					<table className="table">
 						<thead>
 							<tr>
@@ -238,28 +239,29 @@ export default function Admin() {
 							{(ordersQ.data?.items ?? []).map((order) => (
 								<tr key={order.id}>
 									<td>
-										<div style={{ fontWeight: 600, fontSize: 13 }}>{order.titleSnapshot}</div>
-										<div className="text-muted" style={{ ...mono, fontSize: 11 }}>
+										<div style={{ fontWeight: 600, fontSize: 14 }}>{order.titleSnapshot}</div>
+										<div className="text-muted" style={{ ...mono, fontSize: 12 }}>
 											{order.id}
 										</div>
 									</td>
-									<td className="text-muted" style={{ fontSize: 12.5 }}>
+									<td className="text-muted" style={{ fontSize: 13.5 }}>
 										{order.buyer.username ?? order.buyer.email} → {order.seller.username ?? order.seller.email}
 									</td>
-									<td style={{ ...mono, fontSize: 13 }}>{fmtUsd(order.amountUsd)}</td>
-									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+									<td style={{ ...mono, fontSize: 14 }}>{fmtUsd(order.amountUsd)}</td>
+									<td className="text-muted" style={{ ...mono, fontSize: 13 }}>
 										{fmtUsd(order.feeUsd)}
 									</td>
 									<td>
 										<StatusTag {...orderStatusTag(order.status)} />
 									</td>
-									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+									<td className="text-muted" style={{ ...mono, fontSize: 13 }}>
 										{formatDate(order.createdAt)}
 									</td>
 								</tr>
 							))}
 						</tbody>
 					</table>
+					</div>
 				</AsyncPanel>
 			)}
 
@@ -270,6 +272,7 @@ export default function Admin() {
 					isEmpty={(withdrawalsQ.data?.items ?? []).length === 0}
 					emptyMessage="No payouts yet"
 				>
+					<div className="table-wrap">
 					<table className="table">
 						<thead>
 							<tr>
@@ -284,34 +287,35 @@ export default function Admin() {
 						<tbody>
 							{(withdrawalsQ.data?.items ?? []).map((w) => (
 								<tr key={w.id}>
-									<td style={{ fontSize: 12.5 }}>{w.user.username ?? w.user.email}</td>
-									<td style={{ ...mono, fontSize: 13 }}>
+									<td style={{ fontSize: 13.5 }}>{w.user.username ?? w.user.email}</td>
+									<td style={{ ...mono, fontSize: 14 }}>
 										{fmtUsd(w.amountUsd)} {w.currency}
 									</td>
-									<td className="text-muted" style={{ ...mono, fontSize: 11.5 }}>
+									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
 										{w.network} · {w.address.slice(0, 10)}…{w.address.slice(-4)}
 									</td>
-									<td style={{ ...mono, fontSize: 12.5 }}>{w.orderCount}</td>
+									<td style={{ ...mono, fontSize: 13.5 }}>{w.orderCount}</td>
 									<td>
 										<StatusTag {...withdrawalStatusTag(w.status)} />
 										{w.error && (
-											<div className="text-muted" style={{ fontSize: 11, color: "var(--bad)" }}>
+											<div className="text-muted" style={{ fontSize: 12, color: "var(--bad)" }}>
 												{w.error}
 											</div>
 										)}
 									</td>
-									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+									<td className="text-muted" style={{ ...mono, fontSize: 13 }}>
 										{formatDate(w.createdAt)}
 									</td>
 								</tr>
 							))}
 						</tbody>
 					</table>
+					</div>
 				</AsyncPanel>
 			)}
 
-			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14 }}>
-				<span className="text-muted" style={{ fontSize: 11 }}>
+			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14, flexWrap: "wrap" }}>
+				<span className="text-muted" style={{ fontSize: 12 }}>
 					Buyer wins → order refunded, buyer withdraws from escrow immediately. Seller wins → order back
 					to paid, normal vesting continues.
 				</span>

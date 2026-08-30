@@ -37,7 +37,7 @@ export default function Page({ title, sub, children }: PageProps) {
 					style={{
 						marginLeft: "auto",
 						fontFamily: "var(--font-mono)",
-						fontSize: 10.5,
+						fontSize: 11,
 						letterSpacing: "0.08em",
 						paddingBottom: 9,
 						textAlign: "right",

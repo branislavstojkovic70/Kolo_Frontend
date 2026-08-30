@@ -46,7 +46,7 @@ export default function Login() {
 				>
 					Sign in
 				</h1>
-				<div className="text-muted" style={{ fontSize: 12.5, marginBottom: 26 }}>
+				<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
 					New here? <Link to="/register">Create an account</Link> · it takes a minute.
 				</div>
 				<div className="field" style={{ marginBottom: 14 }}>
@@ -74,7 +74,7 @@ export default function Login() {
 					/>
 				</div>
 				<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-					<a href="#" style={{ fontSize: 11.5 }} onClick={(e) => e.preventDefault()}>
+					<a href="#" style={{ fontSize: 12 }} onClick={(e) => e.preventDefault()}>
 						Forgot password?
 					</a>
 				</div>
@@ -84,7 +84,7 @@ export default function Login() {
 				<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
 				<div
 					className="text-muted"
-					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}
+					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
 				>
 					<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 					<span>

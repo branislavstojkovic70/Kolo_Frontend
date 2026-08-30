@@ -15,7 +15,7 @@ export default function RequireAuth({ adminOnly = false }: { adminOnly?: boolean
 					justifyContent: "center",
 					paddingTop: 120,
 					fontFamily: "var(--font-mono)",
-					fontSize: 11,
+					fontSize: 12,
 					letterSpacing: "0.12em",
 					animation: "pulseDot 1.2s ease-in-out infinite",
 				}}

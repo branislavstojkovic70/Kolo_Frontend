@@ -65,7 +65,7 @@ export default function Orders() {
 						Selling
 					</label>
 				</div>
-				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 					{rows.length} ORDERS · {fmtUsd(inEscrow)} USDT IN ESCROW
 				</span>
 			</div>
@@ -95,14 +95,14 @@ export default function Orders() {
 									style={{ animation: `fadeUp .35s ease ${(index * 0.05).toFixed(2)}s both` }}
 								>
 									<td>
-										<div style={{ fontWeight: 600, fontSize: 13.5 }}>{order.titleSnapshot}</div>
-										<div className="text-muted" style={{ ...mono, fontSize: 11 }}>
+										<div style={{ fontWeight: 600, fontSize: 14.5 }}>{order.titleSnapshot}</div>
+										<div className="text-muted" style={{ ...mono, fontSize: 12 }}>
 											{order.id}
 										</div>
 									</td>
-									<td style={{ fontSize: 13 }}>{order.role}</td>
-									<td style={{ ...mono, fontSize: 13 }}>{fmtUsd(order.amountUsd)}</td>
-									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+									<td style={{ fontSize: 14 }}>{order.role}</td>
+									<td style={{ ...mono, fontSize: 14 }}>{fmtUsd(order.amountUsd)}</td>
+									<td className="text-muted" style={{ ...mono, fontSize: 13 }}>
 										{fmtUsd(order.feeUsd)}
 									</td>
 									<td>
@@ -127,7 +127,7 @@ export default function Orders() {
 									<td>
 										<StatusTag label={chip.label} color={chip.color} />
 									</td>
-									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+									<td className="text-muted" style={{ ...mono, fontSize: 13 }}>
 										{formatDate(order.createdAt)}
 									</td>
 								</tr>
@@ -137,7 +137,7 @@ export default function Orders() {
 				</table>
 			</AsyncPanel>
 
-			<div className="text-muted" style={{ fontSize: 11 }}>
+			<div className="text-muted" style={{ fontSize: 12 }}>
 				Click an order to see payment, escrow flow and activity. Escrow bar: payment → escrow → delivery →
 				vesting → released.
 			</div>

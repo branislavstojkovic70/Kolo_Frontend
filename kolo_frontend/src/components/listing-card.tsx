@@ -59,7 +59,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 						top: 10,
 						left: 12,
 						...mono,
-						fontSize: 10,
+						fontSize: 10.5,
 						letterSpacing: "0.12em",
 						background: "color-mix(in srgb, var(--color-bg) 78%, transparent)",
 						padding: "2px 7px",
@@ -79,7 +79,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 							color: "var(--color-bg)",
 							fontWeight: 600,
 							...mono,
-							fontSize: 10,
+							fontSize: 10.5,
 						}}
 					>
 						{listing.status === "ACTIVE" ? "Live" : "Paused"}
@@ -91,7 +91,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 					style={{
 						fontFamily: "var(--font-heading)",
 						fontWeight: 800,
-						fontSize: 15,
+						fontSize: 16,
 						lineHeight: 1.25,
 						minHeight: 38,
 					}}
@@ -105,7 +105,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 						size={18}
 						fontSize={10}
 					/>
-					<span className="text-muted" style={{ fontSize: 12 }}>
+					<span className="text-muted" style={{ fontSize: 13 }}>
 						{listing.seller.username ?? "Seller"}
 					</span>
 					<span
@@ -115,7 +115,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 							flex: "none",
 							marginLeft: "auto",
 							...mono,
-							fontSize: 10,
+							fontSize: 10.5,
 							padding: "1px 6px",
 							border: "1px solid var(--color-divider)",
 						}}
@@ -126,7 +126,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 				<div
 					className="text-muted"
 					style={{
-						fontSize: 12,
+						fontSize: 13,
 						lineHeight: 1.5,
 						display: "-webkit-box",
 						WebkitLineClamp: 2,
@@ -136,7 +136,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 				>
 					{listing.description}
 				</div>
-				<div className="text-muted" style={{ ...mono, fontSize: 11, marginTop: "auto" }}>
+				<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: "auto" }}>
 					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · 4% flat fee
 				</div>
 			</div>
@@ -148,16 +148,16 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 					padding: "10px 14px",
 				}}
 			>
-				<span style={{ ...mono, fontSize: 16, fontWeight: 600 }}>
+				<span style={{ ...mono, fontSize: 17, fontWeight: 600 }}>
 					{fmtUsd(listing.priceUsd)}{" "}
-					<span className="text-muted" style={{ fontSize: 11, fontWeight: 400 }}>
+					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
 						USDT
 					</span>
 				</span>
-				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 10, letterSpacing: "0.08em" }}>
+				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
 					NO.{String(index + 1).padStart(2, "0")}
 				</span>
-				<span style={{ marginLeft: 12, fontSize: 12, fontWeight: 600, color: "var(--color-accent)" }}>
+				<span style={{ marginLeft: 12, fontSize: 13, fontWeight: 600, color: "var(--color-accent)" }}>
 					View →
 				</span>
 			</div>

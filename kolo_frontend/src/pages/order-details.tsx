@@ -107,7 +107,7 @@ function useCountdown(expiresAt: number | undefined, active: boolean): string {
 
 function Row({ label, value, color }: { label: string; value: string; color?: string }) {
 	return (
-		<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+		<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
 			<span className="text-muted">{label}</span>
 			<span style={{ ...mono, color }}>{value}</span>
 		</div>
@@ -227,10 +227,10 @@ export default function OrderDetails() {
 
 			<div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
 				<StatusTag label={chip.label} color={chip.color} />
-				<span className="text-muted" style={{ fontSize: 13 }}>
+				<span className="text-muted" style={{ fontSize: 14 }}>
 					{order.titleSnapshot} · seller {order.seller.username ?? "—"}
 				</span>
-				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 12 }}>
+				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 13 }}>
 					created {formatDate(order.createdAt)}
 				</span>
 			</div>
@@ -250,14 +250,14 @@ export default function OrderDetails() {
 						>
 							<div
 								style={{
-									fontSize: 12.5,
+									fontSize: 13.5,
 									fontWeight: 600,
 									color: step.state === "done" || step.state === "future" ? "inherit" : stepColor[step.state],
 								}}
 							>
 								{step.t}
 							</div>
-							<div className="text-muted" style={{ ...mono, fontSize: 10.5, marginTop: 3 }}>
+							<div className="text-muted" style={{ ...mono, fontSize: 11, marginTop: 3 }}>
 								{step.d}
 							</div>
 						</div>
@@ -271,15 +271,15 @@ export default function OrderDetails() {
 						<div className="card elev-md" style={{ padding: 18, gap: 14, animation: "fadeUp .45s ease .08s both", flex: 1 }}>
 							<div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
 								<h5 style={{ margin: 0 }}>Pay {fmtUsd(order.amountUsd)} USDT</h5>
-								<span style={{ ...mono, fontSize: 11, color: "var(--warn)" }}>{countdown}</span>
+								<span style={{ ...mono, fontSize: 12, color: "var(--warn)" }}>{countdown}</span>
 							</div>
-							<div className="text-muted" style={{ fontSize: 12 }}>
+							<div className="text-muted" style={{ fontSize: 13 }}>
 								Seller accepts <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>100+ crypto assets</span> —
 								pick yours at the OxaPay checkout; the USDT price is fixed for this invoice.
 							</div>
 							<div style={{ display: "flex", gap: 16 }}>
 								<QrPlate value={order.paymentUrl} />
-								<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5 }}>
+								<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5 }}>
 									<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
 										<span className="text-muted">Network</span>
 										<span style={{ ...mono, whiteSpace: "nowrap" }}>any · via OxaPay</span>
@@ -293,11 +293,11 @@ export default function OrderDetails() {
 										<span style={{ ...mono, whiteSpace: "nowrap" }}>oxapay #{order.oxapayTrackId ?? "—"}</span>
 									</div>
 									<div>
-										<div className="text-muted" style={{ fontSize: 11, marginBottom: 4 }}>
+										<div className="text-muted" style={{ fontSize: 12, marginBottom: 4 }}>
 											Invoice link
 										</div>
 										<div style={{ display: "flex", alignItems: "center", gap: 6, border: "1px solid var(--color-divider)", padding: "7px 9px" }}>
-											<span style={{ ...mono, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+											<span style={{ ...mono, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
 												{order.paymentUrl}
 											</span>
 											<button
@@ -321,7 +321,7 @@ export default function OrderDetails() {
 								Open OxaPay checkout · 100+ assets
 								<ExternalLinkIcon size={13} />
 							</a>
-							<div className="text-muted" style={{ fontSize: 11 }}>
+							<div className="text-muted" style={{ fontSize: 12 }}>
 								Pay the exact amount in one transaction. Confirmation usually lands within 1–2 minutes; the
 								order then moves to escrow automatically — this page refreshes itself.
 							</div>
@@ -331,7 +331,7 @@ export default function OrderDetails() {
 					{order.status === "EXPIRED" && (
 						<div className="card elev-md" style={{ padding: 18, gap: 12, flex: 1 }}>
 							<h5 style={{ margin: 0 }}>Invoice expired</h5>
-							<div className="text-muted" style={{ fontSize: 13 }}>
+							<div className="text-muted" style={{ fontSize: 14 }}>
 								This OxaPay invoice was not paid in time. The order is closed — you can re-order the
 								service to get a fresh invoice.
 							</div>
@@ -345,14 +345,14 @@ export default function OrderDetails() {
 						<div className="card elev-md" style={{ padding: 18, gap: 12, flex: 1 }}>
 							<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
 								<h5 style={{ margin: 0 }}>Your delivery</h5>
-								<span className="tag tag-status" style={{ background: "var(--ok)", fontSize: 10 }}>
+								<span className="tag tag-status" style={{ background: "var(--ok)", fontSize: 10.5 }}>
 									Unlocked
 								</span>
 							</div>
 							<div
 								style={{
 									...mono,
-									fontSize: 12.5,
+									fontSize: 13.5,
 									lineHeight: 1.6,
 									whiteSpace: "pre-wrap",
 									background: "var(--color-neutral-100)",
@@ -363,7 +363,7 @@ export default function OrderDetails() {
 							>
 								{order.deliveryInfo || "The seller left no delivery note — contact them via a dispute if nothing arrived."}
 							</div>
-							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}>
+							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
 								<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 								<span>
 									Only you can see this. If something is wrong, open a dispute within 30 days of payment —
@@ -393,7 +393,7 @@ export default function OrderDetails() {
 												: "vesting"
 								}
 							/>
-							<div className="text-muted" style={{ fontSize: 11 }}>
+							<div className="text-muted" style={{ fontSize: 12 }}>
 								The buyer's delivery details unlocked the moment payment confirmed. Funds release to your
 								wallet once vesting passes{order.status === "DISPUTED" ? " and the dispute resolves" : ""}.
 							</div>
@@ -414,12 +414,12 @@ export default function OrderDetails() {
 					</div>
 					<div className="card" style={{ padding: 16, gap: 10 }}>
 						<h6 style={{ marginBottom: 2 }}>Parties</h6>
-						<div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+						<div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
 							<BlockAvatar name={order.buyer.username} imageUrl={order.buyer.imageUrl} size={22} fontSize={10} />
 							<span style={{ fontWeight: 600 }}>{order.buyer.username ?? "Buyer"}</span>
 							<span className="text-muted">· buyer{isBuyer ? " (you)" : ""}</span>
 						</div>
-						<div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+						<div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
 							<BlockAvatar name={order.seller.username} imageUrl={order.seller.imageUrl} size={22} fontSize={10} />
 							<span style={{ fontWeight: 600 }}>{order.seller.username ?? "Seller"}</span>
 							<span className="text-muted">· seller{!isBuyer ? " (you)" : ""}</span>
@@ -428,7 +428,7 @@ export default function OrderDetails() {
 					<div className="card" style={{ padding: 16, gap: 8, flex: 1 }}>
 						<h6 style={{ marginBottom: 4 }}>Activity</h6>
 						{activity.map((entry, i) => (
-							<div key={i} style={{ display: "flex", gap: 10, fontSize: 12.5 }}>
+							<div key={i} style={{ display: "flex", gap: 10, fontSize: 13.5 }}>
 								<span className="text-muted" style={{ ...mono, flex: "none" }}>
 									{formatDateTime(entry.time)}
 								</span>
@@ -436,7 +436,7 @@ export default function OrderDetails() {
 							</div>
 						))}
 						{pending && (
-							<div style={{ display: "flex", gap: 10, fontSize: 12.5 }}>
+							<div style={{ display: "flex", gap: 10, fontSize: 13.5 }}>
 								<span className="text-muted" style={{ ...mono, flex: "none" }}>
 									- now
 								</span>
@@ -450,7 +450,7 @@ export default function OrderDetails() {
 			{disputeOpen && (
 				<div className="card elev-md" style={{ padding: 18, gap: 12 }}>
 					<h6 style={{ margin: 0 }}>Open a dispute</h6>
-					<div className="text-muted" style={{ fontSize: 12 }}>
+					<div className="text-muted" style={{ fontSize: 13 }}>
 						The escrow freezes immediately and an admin arbitrates in a dedicated Telegram group with
 						both parties. Describe what went wrong:
 					</div>
@@ -483,7 +483,7 @@ export default function OrderDetails() {
 						View dispute →
 					</button>
 				)}
-				<span className="text-muted" style={{ fontSize: 11 }}>
+				<span className="text-muted" style={{ fontSize: 12 }}>
 					{pending
 						? "Disputes become available once payment is confirmed."
 						: canDispute
@@ -492,7 +492,7 @@ export default function OrderDetails() {
 								? "This order has a dispute on file."
 								: "Escrow releases automatically once vesting completes."}
 				</span>
-				<span className="text-muted" style={{ marginLeft: "auto", whiteSpace: "nowrap", ...mono, fontSize: 11 }}>
+				<span className="text-muted" style={{ marginLeft: "auto", whiteSpace: "nowrap", ...mono, fontSize: 12 }}>
 					{order.id} · created {formatDate(order.createdAt)}
 				</span>
 			</div>

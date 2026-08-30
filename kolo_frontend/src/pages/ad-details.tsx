@@ -112,22 +112,22 @@ export default function AdDetails() {
 					<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 360px", gap: 24, alignItems: "start" }}>
 						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 							<div>
-								<div style={{ ...mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--color-accent)" }}>
+								<div style={{ ...mono, fontSize: 10.5, letterSpacing: "0.14em", color: "var(--color-accent)" }}>
 									{(ad.category ?? "SERVICE").toUpperCase()} · LISTED {formatDate(ad.createdAt).toUpperCase()}
 								</div>
 								<h2 style={{ fontSize: 27, margin: "6px 0 10px" }}>{ad.title}</h2>
 								<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
 									<BlockAvatar name={ad.seller.username} imageUrl={ad.seller.imageUrl} size={24} fontSize={11} />
-									<span style={{ fontSize: 13, fontWeight: 600 }}>{ad.seller.username ?? "Seller"}</span>
+									<span style={{ fontSize: 14, fontWeight: 600 }}>{ad.seller.username ?? "Seller"}</span>
 									{ad.status !== "ACTIVE" && (
 										<span
 											className="tag tag-status"
-											style={{ background: "var(--warn)", fontSize: 10 }}
+											style={{ background: "var(--warn)", fontSize: 10.5 }}
 										>
 											{ad.status === "PAUSED" ? "Paused" : ad.status}
 										</span>
 									)}
-									<span className="text-muted" style={{ fontSize: 12 }}>
+									<span className="text-muted" style={{ fontSize: 13 }}>
 										· escrow protected · admin arbitration
 									</span>
 								</div>
@@ -138,7 +138,7 @@ export default function AdDetails() {
 								{ad.description.split(/\n{2,}/).map((paragraph, i, all) => (
 									<p
 										key={i}
-										style={{ fontSize: 14, maxWidth: "64ch", marginBottom: i === all.length - 1 ? 0 : undefined }}
+										style={{ fontSize: 15, maxWidth: "64ch", marginBottom: i === all.length - 1 ? 0 : undefined }}
 									>
 										{paragraph}
 									</p>
@@ -147,7 +147,7 @@ export default function AdDetails() {
 
 							<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px", maxWidth: 640 }}>
 								{GUARANTEES.map((item) => (
-									<div key={item} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+									<div key={item} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
 										<CheckIcon size={14} strokeWidth={2.5} style={{ color: "var(--color-accent)", flex: "none" }} />
 										{item}
 									</div>
@@ -167,8 +167,8 @@ export default function AdDetails() {
 													onClick={() => navigate(`/ads/${l.id}`)}
 													style={{ borderLeft: "2px solid var(--color-divider)", padding: "2px 0 2px 14px" }}
 												>
-													<div style={{ fontSize: 13, fontWeight: 600 }}>{l.title}</div>
-													<div className="text-muted" style={{ ...mono, fontSize: 11 }}>
+													<div style={{ fontSize: 14, fontWeight: 600 }}>{l.title}</div>
+													<div className="text-muted" style={{ ...mono, fontSize: 12 }}>
 														{fmtUsd(l.priceUsd)} USDT · {(l.category ?? "service").toLowerCase()} · listed{" "}
 														{formatDate(l.createdAt)}
 													</div>
@@ -186,12 +186,12 @@ export default function AdDetails() {
 						>
 							<div>
 								<span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmtUsd(ad.priceUsd)}</span>
-								<span className="text-muted" style={{ fontSize: 12 }}>
+								<span className="text-muted" style={{ fontSize: 13 }}>
 									{" "}
 									USDT · any crypto
 								</span>
 							</div>
-							<div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
+							<div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14 }}>
 								<div style={{ display: "flex", justifyContent: "space-between" }}>
 									<span className="text-muted">Category</span>
 									<span style={mono}>{ad.category ?? "Service"}</span>
@@ -210,7 +210,7 @@ export default function AdDetails() {
 								</div>
 								<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
 									<span className="text-muted">Seller accepts</span>
-									<span style={{ ...mono, fontSize: 11, textAlign: "right" }}>100+ assets via OxaPay</span>
+									<span style={{ ...mono, fontSize: 12, textAlign: "right" }}>100+ assets via OxaPay</span>
 								</div>
 							</div>
 							<div style={{ height: 2, background: "var(--color-divider)" }} />
@@ -230,7 +230,7 @@ export default function AdDetails() {
 														: { background: "var(--color-accent)" }),
 												}}
 											/>
-											<span style={{ fontSize: 12, paddingBottom: i === ESCROW_FLOW.length - 1 ? 0 : 10 }}>
+											<span style={{ fontSize: 13, paddingBottom: i === ESCROW_FLOW.length - 1 ? 0 : 10 }}>
 												{step}
 											</span>
 										</div>
@@ -239,7 +239,7 @@ export default function AdDetails() {
 							</div>
 							{isOwnAd ? (
 								<>
-									<div className="text-muted" style={{ fontSize: 12 }}>
+									<div className="text-muted" style={{ fontSize: 13 }}>
 										This is your listing — buyers see it {ad.status === "ACTIVE" ? "right now" : "only once you re-activate it"}.
 									</div>
 									<button className="btn btn-secondary btn-block" onClick={handleToggleStatus} disabled={busy}>
@@ -261,7 +261,7 @@ export default function AdDetails() {
 									{busy ? "Creating order…" : `Order · ${fmtUsd(ad.priceUsd)} USDT · any crypto`}
 								</button>
 							)}
-							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}>
+							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
 								<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 								<span>Held by Kolo escrow through the vesting period. Admin arbitration if anything goes wrong.</span>
 							</div>

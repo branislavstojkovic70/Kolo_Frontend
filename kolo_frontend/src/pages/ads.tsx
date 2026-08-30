@@ -38,13 +38,13 @@ function StatCell({
 				animation: `fadeUp .45s ease ${delay}s both`,
 			}}
 		>
-			<div className="text-muted" style={{ ...mono, fontSize: 10, letterSpacing: "0.12em" }}>
+			<div className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
 				{label}
 			</div>
 			<div style={{ ...mono, fontSize: 30, fontWeight: 600, marginTop: 6, lineHeight: 1, whiteSpace: "nowrap" }}>
 				{children}
 			</div>
-			<div className="text-muted" style={{ fontSize: 11 }}>
+			<div className="text-muted" style={{ fontSize: 12 }}>
 				{sub}
 			</div>
 		</div>
@@ -119,19 +119,19 @@ export default function Ads() {
 				</StatCell>
 				<StatCell label="CATALOGUE VALUE" sub="sum of live asking prices" delay={0.06}>
 					<CountUp to={stats.value} dec={2} />{" "}
-					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						USDT
 					</span>
 				</StatCell>
 				<StatCell label="MEDIAN PRICE" sub="per service · any crypto" delay={0.12}>
 					<CountUp to={stats.median} dec={2} />{" "}
-					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						USDT
 					</span>
 				</StatCell>
 				<StatCell label="PLATFORM FEE" sub="flat · no hidden charges" delay={0.18}>
 					4
-					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						%
 					</span>
 				</StatCell>
@@ -182,10 +182,10 @@ export default function Ads() {
 			</div>
 
 			<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 					{items.length} OF {stats.total} SERVICES
 				</span>
-				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 					SORTED BY NEWEST
 				</span>
 			</div>
@@ -228,7 +228,7 @@ export default function Ads() {
 						<br />
 						VESTED. RELEASED.
 					</div>
-					<div className="poster-ink-soft" style={{ ...mono, fontSize: 12, marginTop: 14 }}>
+					<div className="poster-ink-soft" style={{ ...mono, fontSize: 13, marginTop: 14 }}>
 						Every order on Kolo moves through the same four steps · no exceptions, no trust required.
 					</div>
 				</div>

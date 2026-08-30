@@ -35,7 +35,7 @@ export default function Topbar() {
 				className="text-muted"
 				style={{
 					fontFamily: "var(--font-mono)",
-					fontSize: 11,
+					fontSize: 12,
 					letterSpacing: "0.12em",
 					whiteSpace: "nowrap",
 					overflow: "hidden",
@@ -51,7 +51,7 @@ export default function Topbar() {
 					style={{
 						whiteSpace: "nowrap",
 						fontFamily: "var(--font-mono)",
-						fontSize: 11,
+						fontSize: 12,
 						border: "1px solid var(--color-divider)",
 						padding: "5px 9px",
 					}}

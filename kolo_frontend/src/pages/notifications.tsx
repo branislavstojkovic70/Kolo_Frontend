@@ -22,7 +22,7 @@ export default function Notifications() {
 	return (
 		<Page title="Inbox" sub={`${unreadCount} unread · derived from your orders, disputes and payouts`}>
 			<div style={{ display: "flex", alignItems: "center" }}>
-				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 					{unreadCount} UNREAD
 				</span>
 				<button className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={markAllRead}>
@@ -56,15 +56,15 @@ export default function Notifications() {
 								}}
 							>
 								<div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-									<span style={{ fontSize: 14, fontWeight: 700 }}>{event.title}</span>
-									<span className="tag tag-neutral" style={{ ...mono, fontSize: 10 }}>
+									<span style={{ fontSize: 15, fontWeight: 700 }}>{event.title}</span>
+									<span className="tag tag-neutral" style={{ ...mono, fontSize: 10.5 }}>
 										{event.tag}
 									</span>
-									<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 11 }}>
+									<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 12 }}>
 										{formatRelative(event.time)}
 									</span>
 								</div>
-								<div className="text-muted" style={{ fontSize: 13, maxWidth: "80ch" }}>
+								<div className="text-muted" style={{ fontSize: 14, maxWidth: "80ch" }}>
 									{event.body}
 								</div>
 							</div>

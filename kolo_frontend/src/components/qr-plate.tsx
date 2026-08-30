@@ -47,7 +47,7 @@ export default function QrPlate({ value }: { value: string }) {
 						display: "grid",
 						placeItems: "center",
 						fontFamily: "var(--font-mono)",
-						fontSize: 10,
+						fontSize: 10.5,
 						textAlign: "center",
 					}}
 				>

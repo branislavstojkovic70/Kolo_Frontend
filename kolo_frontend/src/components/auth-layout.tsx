@@ -40,7 +40,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 					<div
 						style={{
 							fontFamily: "var(--font-mono)",
-							fontSize: 10,
+							fontSize: 10.5,
 							letterSpacing: "0.14em",
 							color: "rgba(10,15,26,0.7)",
 							marginTop: 7,
@@ -73,7 +73,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 						className="poster-ink-soft"
 						style={{
 							fontFamily: "var(--font-mono)",
-							fontSize: 12,
+							fontSize: 13,
 							marginTop: 16,
 							maxWidth: "46ch",
 						}}
@@ -89,7 +89,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 						gap: 26,
 						flexWrap: "wrap",
 						fontFamily: "var(--font-mono)",
-						fontSize: 11,
+						fontSize: 12,
 						letterSpacing: "0.06em",
 						color: "rgba(10,15,26,0.85)",
 					}}

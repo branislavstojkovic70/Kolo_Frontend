@@ -28,7 +28,7 @@ function sectionOf(pathname: string): Section {
 
 const monoLabel: React.CSSProperties = {
 	fontFamily: "var(--font-mono)",
-	fontSize: 10,
+	fontSize: 10.5,
 	letterSpacing: "0.12em",
 };
 
@@ -53,7 +53,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 					style={{
 						marginLeft: "auto",
 						fontFamily: "var(--font-mono)",
-						fontSize: 10,
+						fontSize: 10.5,
 						fontWeight: 600,
 						background: active === section ? "var(--color-bg)" : "var(--color-accent)",
 						color: active === section ? "var(--color-text)" : "var(--color-bg)",
@@ -102,7 +102,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 						transformOrigin: "left",
 					}}
 				/>
-				<div className="text-muted" style={{ ...monoLabel, fontSize: 9.5, letterSpacing: "0.14em", marginTop: 6 }}>
+				<div className="text-muted" style={{ ...monoLabel, fontSize: 10, letterSpacing: "0.14em", marginTop: 6 }}>
 					DIGITAL SERVICES · CRYPTO ESCROW
 				</div>
 			</div>
@@ -122,15 +122,15 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 				<div className="text-muted" style={monoLabel}>
 					WALLET
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 8 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 8 }}>
 					<span className="text-muted">In escrow</span>
 					<span style={{ fontFamily: "var(--font-mono)" }}>{held !== undefined ? fmtUsd(held) : "—"}</span>
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 5 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 5 }}>
 					<span className="text-muted">Vesting</span>
 					<span style={{ fontFamily: "var(--font-mono)" }}>{balance ? fmtUsd(balance.vesting) : "—"}</span>
 				</div>
-				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 5 }}>
+				<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 5 }}>
 					<span className="text-muted">Available</span>
 					<span style={{ fontFamily: "var(--font-mono)", color: "var(--ok)" }}>
 						{balance ? fmtUsd(balance.available) : "—"}
@@ -148,7 +148,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 					<span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 600 }}>
 						{balance ? Math.round(releasedShare * 100) : "—"}
 					</span>
-					<span className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+					<span className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
 						% released
 					</span>
 				</div>
@@ -169,7 +169,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 						/>
 					))}
 				</div>
-				<div className="text-muted" style={{ fontSize: 11 }}>
+				<div className="text-muted" style={{ fontSize: 12 }}>
 					{balance?.nextVestingAt
 						? `Next release ${formatDate(balance.nextVestingAt)}`
 						: "Funds vest 30 days per order"}
@@ -192,7 +192,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 				<div style={{ minWidth: 0 }}>
 					<div
 						style={{
-							fontSize: 13,
+							fontSize: 14,
 							fontWeight: 600,
 							whiteSpace: "nowrap",
 							overflow: "hidden",
@@ -201,7 +201,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 					>
 						{user?.username ?? user?.email}
 					</div>
-					<div className="text-muted" style={{ ...monoLabel, fontSize: 9.5, letterSpacing: "0.1em" }}>
+					<div className="text-muted" style={{ ...monoLabel, fontSize: 10, letterSpacing: "0.1em" }}>
 						{isAdmin ? "ADMIN" : "SELLER"} · ACTIVE
 					</div>
 				</div>

@@ -12,7 +12,7 @@ const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 const rowBetween: React.CSSProperties = {
 	display: "flex",
 	justifyContent: "space-between",
-	fontSize: 13,
+	fontSize: 14,
 };
 
 export default function CreateAd() {
@@ -154,7 +154,7 @@ export default function CreateAd() {
 								placeItems: "center",
 							}}
 						>
-							<span className="text-muted" style={{ ...mono, fontSize: 10, letterSpacing: "0.12em" }}>
+							<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
 								SELLER ARTWORK · UPLOADS COMING SOON
 							</span>
 						</div>
@@ -164,19 +164,19 @@ export default function CreateAd() {
 				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 					<div className="card elev-md" style={{ padding: 18, gap: 10 }}>
 						<h6 style={{ margin: 0 }}>Listing preview</h6>
-						<div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16, lineHeight: 1.3 }}>
+						<div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 17, lineHeight: 1.3 }}>
 							{title || "Your service title appears here"}
 						</div>
-						<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+						<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 							{(category || "CATEGORY").toUpperCase()} · ESCROW PROTECTED
 						</div>
 						<div style={{ ...mono, fontSize: 20, fontWeight: 600 }}>
 							{fmtUsd(priceNum)}{" "}
-							<span className="text-muted" style={{ fontSize: 11, fontWeight: 400 }}>
+							<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
 								USDT
 							</span>
 						</div>
-						<div className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.06em" }}>
+						<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.06em" }}>
 							ACCEPTS: 100+ ASSETS VIA OXAPAY
 						</div>
 						<div style={{ height: 2, background: "var(--color-divider)", margin: "4px 0" }} />
@@ -206,7 +206,7 @@ export default function CreateAd() {
 						<button className="btn btn-secondary btn-block" onClick={() => submit(true)} disabled={busy}>
 							Save as draft
 						</button>
-						<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11 }}>
+						<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
 							<ShieldCheckIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 							<span>
 								Drafts stay paused and invisible to buyers until you activate them. Earnings from every

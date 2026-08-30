@@ -1,4 +1,5 @@
 import { disputesApi, ordersApi, walletApi } from "../api";
+import { shortRef } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 
 /**
@@ -20,8 +21,6 @@ export interface AppEvent {
 
 const SEEN_KEY = "kolo-notifications-seen";
 
-const shortId = (id: string) => id.slice(-6).toUpperCase();
-
 export async function fetchEvents(): Promise<AppEvent[]> {
 	const [purchases, sales, disputes, withdrawals] = await Promise.all([
 		ordersApi.purchases(),
@@ -41,7 +40,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 			tag: "Order",
 			body: `You ordered “${order.titleSnapshot}” for ${fmtUsd(order.amountUsd)} USDT.`,
 			href: `/orders/${order.id}`,
-			ticker: `ORDER ${shortId(order.id)} PLACED · ${fmtUsd(order.amountUsd)} USDT`,
+			ticker: `ORDER ${shortRef(order.id)} PLACED · ${fmtUsd(order.amountUsd)} USDT`,
 		});
 		if (order.paidAt) {
 			events.push({
@@ -51,7 +50,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 				tag: "Payment",
 				body: `Payment for “${order.titleSnapshot}” confirmed — delivery details are unlocked on the order.`,
 				href: `/orders/${order.id}`,
-				ticker: `PAYMENT CONFIRMED ${shortId(order.id)} · ${fmtUsd(order.amountUsd)} USDT ▸ ESCROW`,
+				ticker: `PAYMENT CONFIRMED ${shortRef(order.id)} · ${fmtUsd(order.amountUsd)} USDT ▸ ESCROW`,
 			});
 		}
 	}
@@ -64,7 +63,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 			tag: "Sale",
 			body: `${order.buyer.username ?? "A buyer"} ordered “${order.titleSnapshot}” · ${fmtUsd(order.amountUsd)} USDT.`,
 			href: `/orders/${order.id}`,
-			ticker: `NEW ORDER ${shortId(order.id)} · ${order.titleSnapshot.toUpperCase().slice(0, 32)}`,
+			ticker: `NEW ORDER ${shortRef(order.id)} · ${order.titleSnapshot.toUpperCase().slice(0, 32)}`,
 		});
 		if (order.paidAt) {
 			events.push({
@@ -74,7 +73,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 				tag: "Escrow",
 				body: `${fmtUsd(order.sellerAmountUsd)} USDT moved to escrow for “${order.titleSnapshot}” after the platform fee.`,
 				href: `/orders/${order.id}`,
-				ticker: `${fmtUsd(order.sellerAmountUsd)} USDT ▸ ESCROW · ${shortId(order.id)}`,
+				ticker: `${fmtUsd(order.sellerAmountUsd)} USDT ▸ ESCROW · ${shortRef(order.id)}`,
 			});
 		}
 		if (order.vestedAt && new Date(order.vestedAt).getTime() <= now && order.status === "PAID") {
@@ -98,7 +97,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 			tag: "Dispute",
 			body: `“${dispute.order.titleSnapshot}” — ${dispute.reason}`,
 			href: `/disputes/${dispute.id}`,
-			ticker: `DISPUTE ${shortId(dispute.id)} OPENED · ${shortId(dispute.orderId)}`,
+			ticker: `DISPUTE ${shortRef(dispute.id)} OPENED · ${shortRef(dispute.orderId)}`,
 		});
 		if (dispute.resolvedAt) {
 			const winner = dispute.status === "RESOLVED_BUYER" ? "buyer" : "seller";
@@ -111,7 +110,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 					dispute.resolutionNote ??
 					`The dispute on “${dispute.order.titleSnapshot}” was decided for the ${winner}.`,
 				href: `/disputes/${dispute.id}`,
-				ticker: `DISPUTE ${shortId(dispute.id)} RESOLVED · ${winner.toUpperCase()}`,
+				ticker: `DISPUTE ${shortRef(dispute.id)} RESOLVED · ${winner.toUpperCase()}`,
 			});
 		}
 	}

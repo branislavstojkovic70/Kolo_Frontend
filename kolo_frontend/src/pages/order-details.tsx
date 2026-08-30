@@ -11,7 +11,7 @@ import StatusTag from "../components/status-tag";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { useNow } from "../hooks/use-now";
-import { formatDate, formatDateTime } from "../utils/format";
+import { formatDate, formatDateTime, shortRef } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 import { orderStatusTag } from "../lib/order-ui";
 
@@ -213,7 +213,7 @@ export default function OrderDetails() {
 	}
 
 	return (
-		<Page idx="02" title={`Order ${order.id.slice(-6)}`} sub={chip.label + " · escrow protected"}>
+		<Page idx="02" title={`Order ${shortRef(order.id)}`} sub={chip.label + " · escrow protected"}>
 			<div>
 				<button
 					className="btn btn-ghost"

@@ -9,7 +9,7 @@ import StatusTag from "../components/status-tag";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { disputeStatusTag } from "../lib/order-ui";
-import { formatDate, formatRelative } from "../utils/format";
+import { formatDate, formatRelative, shortRef } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
@@ -143,7 +143,7 @@ export default function Disputes() {
 										{entry.reason}
 									</div>
 									<div className="text-muted" style={{ display: "flex", gap: 7, ...mono, fontSize: 10, letterSpacing: "0.08em" }}>
-										<span>{entry.orderId.slice(-8)}</span>
+										<span>{shortRef(entry.orderId)}</span>
 										<span>·</span>
 										<span>{fmtUsd(entry.order.amountUsd)} USDT</span>
 									</div>

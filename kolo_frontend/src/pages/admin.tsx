@@ -1,541 +1,324 @@
 import { useState } from "react";
-import {
-	Box,
-	Button,
-	Card,
-	CardContent,
-	Chip,
-	Grid,
-	Stack,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableRow,
-	Tab,
-	Tabs,
-	Typography,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import AsyncSection from "../components/async-section";
-import PageContainer from "../components/page-container";
-import StatCard from "../components/stat-card";
-import StatusChip from "../components/status-chip";
-import {
-	useAdminActions,
-	useAllAds,
-	useFinanceSummary,
-	useReviews,
-	useUsers,
-} from "../hooks/use-admin";
-import { useAuth } from "../hooks/use-auth";
-import { useDisputes } from "../hooks/use-disputes";
-import { useAllVestingEntries } from "../hooks/use-wallet";
-import * as adminService from "../services/admin.service";
-import * as adsService from "../services/ads.service";
-import * as usersService from "../services/users.service";
-import * as walletService from "../services/wallet.service";
-import { formatCurrency, formatDate, formatDateTime, formatRelative, humanise } from "../utils/format";
+import { useNavigate } from "react-router-dom";
+import { adminApi, type AdminDispute } from "../api";
+import AsyncPanel from "../components/async-panel";
+import CountUp from "../components/count-up";
+import Page from "../components/page";
+import StatusTag from "../components/status-tag";
+import { useAsync } from "../hooks/use-async";
+import { disputeStatusTag, orderStatusTag, withdrawalStatusTag } from "../lib/order-ui";
+import { formatDate } from "../utils/format";
+import { fmtUsd, usd } from "../utils/money";
 
-type TabKey = "disputes" | "users" | "ads" | "reviews" | "finance" | "audit";
+type Tab = "disputes" | "orders" | "payouts";
 
-export default function Admin() {
-	const navigate = useNavigate();
-	const { user } = useAuth();
-	const [tab, setTab] = useState<TabKey>("disputes");
+const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+const monoLabel: React.CSSProperties = { ...mono, fontSize: 10, letterSpacing: "0.12em" };
 
-	const disputes = useDisputes();
-	const users = useUsers();
-	const ads = useAllAds();
-	const reviews = useReviews();
-	const finance = useFinanceSummary();
-	const vesting = useAllVestingEntries();
-	const audit = useAdminActions();
+function StatCell({
+	label,
+	sub,
+	value,
+	suffix,
+	delay,
+}: {
+	label: string;
+	sub: string;
+	value: number;
+	suffix?: string;
+	delay: number;
+}) {
+	return (
+		<div style={{ borderTop: "2px solid var(--color-divider)", paddingTop: 10, animation: `fadeUp .45s ease ${delay}s both` }}>
+			<div className="text-muted" style={monoLabel}>
+				{label}
+			</div>
+			<div style={{ ...mono, fontSize: 30, fontWeight: 600, marginTop: 6, lineHeight: 1, whiteSpace: "nowrap" }}>
+				<CountUp to={value} dec={suffix ? 2 : 0} />
+				{suffix && (
+					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+						{" "}
+						{suffix}
+					</span>
+				)}
+			</div>
+			<div className="text-muted" style={{ fontSize: 11 }}>
+				{sub}
+			</div>
+		</div>
+	);
+}
 
-	const act = async (label: string, run: () => Promise<unknown>, reload: () => void) => {
+function DisputeQueueItem({ dispute, onResolved }: { dispute: AdminDispute; onResolved: () => void }) {
+	const [note, setNote] = useState("");
+	const [busy, setBusy] = useState(false);
+
+	const act = async (action: "BUYER" | "SELLER" | "telegram") => {
+		setBusy(true);
 		try {
-			await run();
-			toast.success(label);
-			reload();
-			audit.reload();
-		} catch {
-			toast.error("Action failed");
+			if (action === "telegram") {
+				await adminApi.telegramRetry(dispute.id);
+				toast.success("Telegram group created");
+			} else {
+				await adminApi.resolveDispute(dispute.id, action, note.trim() || undefined);
+				toast.success(`Resolved for the ${action.toLowerCase()}`);
+			}
+			onResolved();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Action failed");
+		} finally {
+			setBusy(false);
 		}
 	};
 
-	const openDisputes = (disputes.data ?? []).filter((d) =>
-		["open", "under_review"].includes(d.status)
+	return (
+		<div className="card elev-sm" style={{ padding: 16, gap: 10 }}>
+			<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+				<StatusTag {...disputeStatusTag(dispute.status)} />
+				<span className="text-muted" style={{ ...mono, fontSize: 10.5, border: "1px solid var(--color-divider)", padding: "2px 8px" }}>
+					{dispute.orderId}
+				</span>
+				<span className="text-muted" style={{ ...mono, fontSize: 10, letterSpacing: "0.08em" }}>
+					OPENED {formatDate(dispute.createdAt).toUpperCase()}
+				</span>
+				<span style={{ marginLeft: "auto", ...mono, fontSize: 13, fontWeight: 600 }}>
+					{fmtUsd(dispute.order.sellerAmountUsd)} USDT frozen
+				</span>
+			</div>
+			<div style={{ fontSize: 14, fontWeight: 600 }}>{dispute.reason}</div>
+			<div className="text-muted" style={{ fontSize: 12.5 }}>
+				{dispute.order.titleSnapshot} · buyer {dispute.order.buyer.username ?? dispute.order.buyer.email} vs
+				seller {dispute.order.seller.username ?? dispute.order.seller.email}
+			</div>
+			<div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+				<input
+					className="input"
+					style={{ flex: 1, minWidth: 220 }}
+					placeholder="Resolution note (optional)"
+					value={note}
+					onChange={(e) => setNote(e.target.value)}
+				/>
+				<button className="btn btn-primary" disabled={busy} onClick={() => act("BUYER")}>
+					Buyer wins · refund
+				</button>
+				<button className="btn btn-secondary" disabled={busy} onClick={() => act("SELLER")}>
+					Seller wins · release
+				</button>
+				{dispute.telegramInviteLink ? (
+					<a className="btn btn-ghost" href={dispute.telegramInviteLink} target="_blank" rel="noreferrer">
+						Open Telegram →
+					</a>
+				) : (
+					<button className="btn btn-ghost" disabled={busy} onClick={() => act("telegram")}>
+						Retry Telegram group
+					</button>
+				)}
+			</div>
+		</div>
 	);
+}
+
+export default function Admin() {
+	const navigate = useNavigate();
+	const [tab, setTab] = useState<Tab>("disputes");
+
+	const statsQ = useAsync(() => adminApi.stats(), []);
+	const disputesQ = useAsync(() => adminApi.disputes({ limit: 50 }), []);
+	const ordersQ = useAsync(() => adminApi.orders({ limit: 50 }), []);
+	const withdrawalsQ = useAsync(() => adminApi.withdrawals({ limit: 50 }), []);
+
+	const stats = statsQ.data;
+	const openDisputes = (disputesQ.data?.items ?? []).filter((d) => d.status === "OPEN");
+	const resolvedDisputes = (disputesQ.data?.items ?? []).filter((d) => d.status !== "OPEN");
+
+	const refreshAll = () => {
+		statsQ.reload();
+		disputesQ.reload();
+		ordersQ.reload();
+		withdrawalsQ.reload();
+	};
 
 	return (
-		<PageContainer
-			title="Admin panel"
-			subtitle="Moderation, dispute resolution and platform finances. Every action here is logged."
-		>
-			<Tabs
-				value={tab}
-				onChange={(_, value: TabKey) => setTab(value)}
-				variant="scrollable"
-				scrollButtons="auto"
-				sx={{ mb: 3 }}
-			>
-				<Tab label={`Dispute queue (${openDisputes.length})`} value="disputes" />
-				<Tab label="Users" value="users" />
-				<Tab label="Ads" value="ads" />
-				<Tab label="Reviews" value="reviews" />
-				<Tab label="Finance" value="finance" />
-				<Tab label="Audit log" value="audit" />
-			</Tabs>
+		<Page idx="06" title="Arbitration" sub="Admin · disputes, orders and payouts">
+			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+				<StatCell label="GROSS VOLUME" sub={`${stats?.orders.total ?? 0} orders · ${stats?.users ?? 0} users`} value={usd(stats?.money.grossVolumeUsd ?? 0)} suffix="USDT" delay={0} />
+				<StatCell label="IN ESCROW" sub="seller money on the platform" value={usd(stats?.money.inEscrowUsd ?? 0)} suffix="USDT" delay={0.06} />
+				<StatCell label="FEES EARNED" sub="4% of confirmed payments" value={usd(stats?.money.platformFeesUsd ?? 0)} suffix="USDT" delay={0.12} />
+				<StatCell label="OPEN DISPUTES" sub={`${stats?.disputes.total ?? 0} lifetime`} value={stats?.disputes.open ?? 0} delay={0.18} />
+			</div>
+
+			<div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+				<div className="seg">
+					<label className="seg-opt">
+						<input type="radio" name="atab" checked={tab === "disputes"} onChange={() => setTab("disputes")} />
+						Disputes
+					</label>
+					<label className="seg-opt">
+						<input type="radio" name="atab" checked={tab === "orders"} onChange={() => setTab("orders")} />
+						Orders
+					</label>
+					<label className="seg-opt">
+						<input type="radio" name="atab" checked={tab === "payouts"} onChange={() => setTab("payouts")} />
+						Payouts
+					</label>
+				</div>
+				<button className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={refreshAll}>
+					Refresh
+				</button>
+			</div>
 
 			{tab === "disputes" && (
-				<AsyncSection
-					loading={disputes.loading}
-					error={disputes.error}
-					isEmpty={openDisputes.length === 0}
-					emptyMessage="No open disputes."
+				<AsyncPanel
+					loading={disputesQ.loading}
+					error={disputesQ.error}
+					isEmpty={(disputesQ.data?.items ?? []).length === 0}
+					emptyMessage="No disputes on the platform"
 				>
-					<Card variant="outlined">
-						<Box sx={{ overflowX: "auto" }}>
-							<Table>
-								<TableHead>
-									<TableRow>
-										<TableCell>Reason</TableCell>
-										<TableCell>Order</TableCell>
-										<TableCell>Status</TableCell>
-										<TableCell>Age</TableCell>
-										<TableCell align="right">Action</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{openDisputes.map((dispute) => (
-										<TableRow key={dispute.id} hover>
-											<TableCell sx={{ maxWidth: 400 }}>
-												<Typography variant="body2" noWrap>
-													{dispute.reason}
-												</Typography>
-											</TableCell>
-											<TableCell>{dispute.orderId}</TableCell>
-											<TableCell>
-												<StatusChip status={dispute.status} />
-											</TableCell>
-											<TableCell>{formatRelative(dispute.createdAt)}</TableCell>
-											<TableCell align="right">
-												<Button size="small" onClick={() => navigate(`/disputes/${dispute.id}`)}>
-													Review
-												</Button>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</Box>
-					</Card>
-				</AsyncSection>
+					<div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+						{openDisputes.length === 0 && (
+							<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+								QUEUE EMPTY · NOTHING AWAITS ARBITRATION
+							</div>
+						)}
+						{openDisputes.map((dispute) => (
+							<DisputeQueueItem key={dispute.id} dispute={dispute} onResolved={refreshAll} />
+						))}
+						{resolvedDisputes.length > 0 && (
+							<>
+								<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em", marginTop: 8 }}>
+									RESOLVED
+								</div>
+								{resolvedDisputes.map((dispute) => (
+									<div
+										key={dispute.id}
+										style={{
+											display: "flex",
+											alignItems: "center",
+											gap: 12,
+											padding: "10px 12px",
+											borderLeft: "3px solid var(--ok)",
+											background: "var(--color-neutral-100)",
+											flexWrap: "wrap",
+										}}
+									>
+										<StatusTag {...disputeStatusTag(dispute.status)} fontSize={10} />
+										<span style={{ fontSize: 13, fontWeight: 600 }}>{dispute.reason}</span>
+										<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 11 }}>
+											{fmtUsd(dispute.order.sellerAmountUsd)} USDT ·{" "}
+											{dispute.resolvedAt ? formatDate(dispute.resolvedAt) : ""}
+										</span>
+									</div>
+								))}
+							</>
+						)}
+					</div>
+				</AsyncPanel>
 			)}
 
-			{tab === "users" && (
-				<AsyncSection loading={users.loading} error={users.error}>
-					<Card variant="outlined">
-						<Box sx={{ overflowX: "auto" }}>
-							<Table>
-								<TableHead>
-									<TableRow>
-										<TableCell>User</TableCell>
-										<TableCell>Role</TableCell>
-										<TableCell>Status</TableCell>
-										<TableCell align="right">Reputation</TableCell>
-										<TableCell align="right">Actions</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{(users.data ?? []).map((row) => (
-										<TableRow key={row.id} hover>
-											<TableCell>
-												<Typography variant="body2" sx={{ fontWeight: 500 }}>
-													{row.displayName}
-												</Typography>
-												<Typography variant="caption" color="text.secondary">
-													{row.email}
-												</Typography>
-											</TableCell>
-											<TableCell>
-												<Chip size="small" label={humanise(row.role)} />
-											</TableCell>
-											<TableCell>
-												<Chip
-													size="small"
-													variant="outlined"
-													color={row.status === "blocked" ? "error" : "default"}
-													label={humanise(row.status)}
-												/>
-											</TableCell>
-											<TableCell align="right">{row.reputationScore}</TableCell>
-											<TableCell align="right">
-												<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-													<Button
-														size="small"
-														onClick={() =>
-															act(
-																"Reputation adjusted",
-																async () => {
-																	await usersService.adjustReputation(
-																		row.id,
-																		5,
-																		"Manual admin adjustment"
-																	);
-																	await adminService.logAdminAction(
-																		user!.id,
-																		"adjust_reputation",
-																		"user",
-																		row.id,
-																		"Manual admin adjustment (+5)"
-																	);
-																},
-																users.reload
-															)
-														}
-													>
-														+5 rep
-													</Button>
-													<Button
-														size="small"
-														color={row.status === "blocked" ? "success" : "error"}
-														disabled={row.role === "admin"}
-														onClick={() =>
-															act(
-																row.status === "blocked" ? "User unblocked" : "User blocked",
-																async () => {
-																	const blocking = row.status !== "blocked";
-																	await usersService.setUserBlocked(row.id, blocking);
-																	await adminService.logAdminAction(
-																		user!.id,
-																		blocking ? "block_user" : "unblock_user",
-																		"user",
-																		row.id,
-																		blocking ? "Policy violation" : "Appeal accepted"
-																	);
-																},
-																users.reload
-															)
-														}
-													>
-														{row.status === "blocked" ? "Unblock" : "Block"}
-													</Button>
-												</Stack>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</Box>
-					</Card>
-				</AsyncSection>
+			{tab === "orders" && (
+				<AsyncPanel
+					loading={ordersQ.loading}
+					error={ordersQ.error}
+					isEmpty={(ordersQ.data?.items ?? []).length === 0}
+					emptyMessage="No orders yet"
+				>
+					<table className="table">
+						<thead>
+							<tr>
+								<th>Service</th>
+								<th>Buyer → Seller</th>
+								<th>Amount</th>
+								<th>Fee</th>
+								<th>Status</th>
+								<th>Created</th>
+							</tr>
+						</thead>
+						<tbody>
+							{(ordersQ.data?.items ?? []).map((order) => (
+								<tr key={order.id}>
+									<td>
+										<div style={{ fontWeight: 600, fontSize: 13 }}>{order.titleSnapshot}</div>
+										<div className="text-muted" style={{ ...mono, fontSize: 11 }}>
+											{order.id}
+										</div>
+									</td>
+									<td className="text-muted" style={{ fontSize: 12.5 }}>
+										{order.buyer.username ?? order.buyer.email} → {order.seller.username ?? order.seller.email}
+									</td>
+									<td style={{ ...mono, fontSize: 13 }}>{fmtUsd(order.amountUsd)}</td>
+									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+										{fmtUsd(order.feeUsd)}
+									</td>
+									<td>
+										<StatusTag {...orderStatusTag(order.status)} />
+									</td>
+									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+										{formatDate(order.createdAt)}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</AsyncPanel>
 			)}
 
-			{tab === "ads" && (
-				<AsyncSection loading={ads.loading} error={ads.error}>
-					<Card variant="outlined">
-						<Box sx={{ overflowX: "auto" }}>
-							<Table>
-								<TableHead>
-									<TableRow>
-										<TableCell>Title</TableCell>
-										<TableCell align="right">Price</TableCell>
-										<TableCell>Status</TableCell>
-										<TableCell align="right">Actions</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{(ads.data ?? []).map((ad) => (
-										<TableRow key={ad.id} hover>
-											<TableCell sx={{ maxWidth: 420 }}>
-												<Typography variant="body2" noWrap>
-													{ad.title}
-												</Typography>
-											</TableCell>
-											<TableCell align="right">{formatCurrency(ad.price)}</TableCell>
-											<TableCell>
-												<StatusChip status={ad.status} />
-											</TableCell>
-											<TableCell align="right">
-												<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-													<Button size="small" onClick={() => navigate(`/ads/${ad.id}`)}>
-														View
-													</Button>
-													<Button
-														size="small"
-														disabled={ad.status === "active"}
-														onClick={() =>
-															act(
-																"Ad approved",
-																async () => {
-																	await adsService.updateAd(ad.id, { status: "active" });
-																	await adminService.logAdminAction(
-																		user!.id,
-																		"approve_ad",
-																		"ad",
-																		ad.id,
-																		"Meets content policy"
-																	);
-																},
-																ads.reload
-															)
-														}
-													>
-														Approve
-													</Button>
-													<Button
-														size="small"
-														color="error"
-														disabled={ad.status === "removed"}
-														onClick={() =>
-															act(
-																"Ad removed",
-																async () => {
-																	await adsService.updateAd(ad.id, { status: "removed" });
-																	await adminService.logAdminAction(
-																		user!.id,
-																		"remove_ad",
-																		"ad",
-																		ad.id,
-																		"Violates content policy"
-																	);
-																},
-																ads.reload
-															)
-														}
-													>
-														Remove
-													</Button>
-												</Stack>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</Box>
-					</Card>
-				</AsyncSection>
+			{tab === "payouts" && (
+				<AsyncPanel
+					loading={withdrawalsQ.loading}
+					error={withdrawalsQ.error}
+					isEmpty={(withdrawalsQ.data?.items ?? []).length === 0}
+					emptyMessage="No payouts yet"
+				>
+					<table className="table">
+						<thead>
+							<tr>
+								<th>User</th>
+								<th>Amount</th>
+								<th>Destination</th>
+								<th>Orders</th>
+								<th>Status</th>
+								<th>Created</th>
+							</tr>
+						</thead>
+						<tbody>
+							{(withdrawalsQ.data?.items ?? []).map((w) => (
+								<tr key={w.id}>
+									<td style={{ fontSize: 12.5 }}>{w.user.username ?? w.user.email}</td>
+									<td style={{ ...mono, fontSize: 13 }}>
+										{fmtUsd(w.amountUsd)} {w.currency}
+									</td>
+									<td className="text-muted" style={{ ...mono, fontSize: 11.5 }}>
+										{w.network} · {w.address.slice(0, 10)}…{w.address.slice(-4)}
+									</td>
+									<td style={{ ...mono, fontSize: 12.5 }}>{w.orderCount}</td>
+									<td>
+										<StatusTag {...withdrawalStatusTag(w.status)} />
+										{w.error && (
+											<div className="text-muted" style={{ fontSize: 11, color: "var(--bad)" }}>
+												{w.error}
+											</div>
+										)}
+									</td>
+									<td className="text-muted" style={{ ...mono, fontSize: 12 }}>
+										{formatDate(w.createdAt)}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</AsyncPanel>
 			)}
 
-			{tab === "reviews" && (
-				<AsyncSection loading={reviews.loading} error={reviews.error}>
-					<Card variant="outlined">
-						<Box sx={{ overflowX: "auto" }}>
-							<Table>
-								<TableHead>
-									<TableRow>
-										<TableCell>Comment</TableCell>
-										<TableCell align="right">Rating</TableCell>
-										<TableCell>Status</TableCell>
-										<TableCell align="right">Action</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{(reviews.data ?? []).map((review) => (
-										<TableRow key={review.id} hover>
-											<TableCell sx={{ maxWidth: 420 }}>
-												<Typography variant="body2" noWrap>
-													{review.comment}
-												</Typography>
-												<Typography variant="caption" color="text.secondary">
-													{formatDate(review.createdAt)}
-												</Typography>
-											</TableCell>
-											<TableCell align="right">{review.rating}/5</TableCell>
-											<TableCell>
-												<Chip
-													size="small"
-													variant="outlined"
-													color={review.status === "deleted" ? "error" : "success"}
-													label={humanise(review.status)}
-												/>
-											</TableCell>
-											<TableCell align="right">
-												<Button
-													size="small"
-													color={review.status === "deleted" ? "success" : "error"}
-													onClick={() =>
-														act(
-															review.status === "deleted" ? "Review restored" : "Review deleted",
-															async () => {
-																const deleting = review.status !== "deleted";
-																await adminService.setReviewDeleted(
-																	review.id,
-																	deleting,
-																	user!.id
-																);
-																await adminService.logAdminAction(
-																	user!.id,
-																	deleting ? "delete_review" : "restore_review",
-																	"review",
-																	review.id,
-																	deleting ? "Spam or abusive content" : "Restored after appeal"
-																);
-															},
-															reviews.reload
-														)
-													}
-												>
-													{review.status === "deleted" ? "Restore" : "Delete"}
-												</Button>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</Box>
-					</Card>
-				</AsyncSection>
-			)}
-
-			{tab === "finance" && (
-				<AsyncSection loading={finance.loading} error={finance.error}>
-					{finance.data && (
-						<Stack spacing={3}>
-							<Grid container spacing={2}>
-								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-									<StatCard
-										label="Fees collected"
-										value={formatCurrency(finance.data.totalFeesCollected)}
-										hint="4% of every payment"
-									/>
-								</Grid>
-								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-									<StatCard label="In escrow" value={formatCurrency(finance.data.inEscrow)} />
-								</Grid>
-								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-									<StatCard label="Vesting" value={formatCurrency(finance.data.inVesting)} />
-								</Grid>
-								<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-									<StatCard label="Refunded" value={formatCurrency(finance.data.refunded)} />
-								</Grid>
-							</Grid>
-
-							<Card variant="outlined">
-								<CardContent>
-									<Typography variant="h6">Vesting entries</Typography>
-									<Typography variant="body2" color="text.secondary">
-										Override a release or freeze funds while a dispute is open.
-									</Typography>
-								</CardContent>
-								<Box sx={{ overflowX: "auto" }}>
-									<Table size="small">
-										<TableHead>
-											<TableRow>
-												<TableCell>Order</TableCell>
-												<TableCell align="right">Amount</TableCell>
-												<TableCell>Releases</TableCell>
-												<TableCell>Status</TableCell>
-												<TableCell align="right">Actions</TableCell>
-											</TableRow>
-										</TableHead>
-										<TableBody>
-											{(vesting.data ?? []).map((entry) => (
-												<TableRow key={entry.id}>
-													<TableCell>{entry.orderId}</TableCell>
-													<TableCell align="right">{formatCurrency(entry.amount)}</TableCell>
-													<TableCell>{formatDate(entry.releaseAt)}</TableCell>
-													<TableCell>
-														<StatusChip status={entry.status} />
-													</TableCell>
-													<TableCell align="right">
-														<Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-															<Button
-																size="small"
-																disabled={entry.status === "available"}
-																onClick={() =>
-																	act(
-																		"Vesting released",
-																		async () => {
-																			await walletService.setVestingStatus(entry.id, "available");
-																			await adminService.logAdminAction(
-																				user!.id,
-																				"release_vesting",
-																				"vesting_entry",
-																				entry.id,
-																				"Manual early release"
-																			);
-																		},
-																		vesting.reload
-																	)
-																}
-															>
-																Release
-															</Button>
-															<Button
-																size="small"
-																color="warning"
-																disabled={entry.status === "frozen"}
-																onClick={() =>
-																	act(
-																		"Vesting frozen",
-																		async () => {
-																			await walletService.setVestingStatus(entry.id, "frozen");
-																			await adminService.logAdminAction(
-																				user!.id,
-																				"freeze_vesting",
-																				"vesting_entry",
-																				entry.id,
-																				"Frozen pending dispute"
-																			);
-																		},
-																		vesting.reload
-																	)
-																}
-															>
-																Freeze
-															</Button>
-														</Stack>
-													</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-								</Box>
-							</Card>
-						</Stack>
-					)}
-				</AsyncSection>
-			)}
-
-			{tab === "audit" && (
-				<AsyncSection loading={audit.loading} error={audit.error}>
-					<Card variant="outlined">
-						<Box sx={{ overflowX: "auto" }}>
-							<Table>
-								<TableHead>
-									<TableRow>
-										<TableCell>Action</TableCell>
-										<TableCell>Target</TableCell>
-										<TableCell>Reason</TableCell>
-										<TableCell>When</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{(audit.data ?? []).map((action) => (
-										<TableRow key={action.id}>
-											<TableCell>
-												<Chip size="small" variant="outlined" label={humanise(action.actionType)} />
-											</TableCell>
-											<TableCell>
-												{humanise(action.targetType)} · {action.targetId}
-											</TableCell>
-											<TableCell sx={{ maxWidth: 360 }}>
-												<Typography variant="body2" color="text.secondary">
-													{action.reason}
-												</Typography>
-											</TableCell>
-											<TableCell>{formatDateTime(action.createdAt)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</Box>
-					</Card>
-				</AsyncSection>
-			)}
-		</PageContainer>
+			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14 }}>
+				<span className="text-muted" style={{ fontSize: 11 }}>
+					Buyer wins → order refunded, buyer withdraws from escrow immediately. Seller wins → order back
+					to paid, normal vesting continues.
+				</span>
+				<button className="btn btn-ghost" style={{ marginLeft: "auto", whiteSpace: "nowrap" }} onClick={() => navigate("/ads")}>
+					Back to marketplace →
+				</button>
+			</div>
+		</Page>
 	);
 }

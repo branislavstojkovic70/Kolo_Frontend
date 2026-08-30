@@ -1,91 +1,77 @@
-import {
-	Box,
-	Button,
-	Card,
-	Chip,
-	List,
-	ListItemButton,
-	ListItemText,
-	Stack,
-	Typography,
-} from "@mui/material";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import AsyncSection from "../components/async-section";
-import PageContainer from "../components/page-container";
-import { useAuth } from "../hooks/use-auth";
-import { useNotifications } from "../hooks/use-notifications";
-import { formatRelative, humanise } from "../utils/format";
+import AsyncPanel from "../components/async-panel";
+import Page from "../components/page";
+import { useSharedEvents } from "../hooks/use-events";
+import { getLastSeen } from "../lib/events";
+import { formatRelative } from "../utils/format";
+
+const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
 export default function Notifications() {
 	const navigate = useNavigate();
-	const { user } = useAuth();
-	const { notifications, unreadCount, loading, error, markAsRead, markAllAsRead } =
-		useNotifications(user?.id);
+	const { events, loading, error, unreadCount, markAllRead, reload } = useSharedEvents();
 
-	const open = async (id: string, link?: string) => {
-		await markAsRead(id);
-		if (link) navigate(link);
-	};
+	// Freshen the shared feed when the inbox opens.
+	useEffect(() => {
+		reload();
+	}, [reload]);
+
+	const seen = getLastSeen();
 
 	return (
-		<PageContainer
-			title="Notifications"
-			subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You are all caught up"}
-			action={
-				unreadCount > 0 && <Button onClick={markAllAsRead}>Mark all as read</Button>
-			}
-		>
-			<AsyncSection
+		<Page idx="04" title="Inbox" sub={`${unreadCount} unread · derived from your orders, disputes and payouts`}>
+			<div style={{ display: "flex", alignItems: "center" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+					{unreadCount} UNREAD
+				</span>
+				<button className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={markAllRead}>
+					Mark all as read
+				</button>
+			</div>
+
+			<AsyncPanel
 				loading={loading}
 				error={error}
-				isEmpty={notifications.length === 0}
-				emptyMessage="No notifications yet."
+				isEmpty={events.length === 0}
+				emptyMessage="Nothing yet — activity on your orders lands here"
 			>
-				<Card variant="outlined">
-					<List disablePadding>
-						{notifications.map((notification) => (
-							<ListItemButton
-								key={notification.id}
-								onClick={() => open(notification.id, notification.link)}
-								sx={{
-									borderLeft: 3,
-									borderColor: notification.read ? "transparent" : "primary.main",
-									py: 2,
+				<div style={{ borderTop: "2px solid var(--color-divider)" }}>
+					{events.map((event, index) => {
+						const unread = event.time > seen;
+						return (
+							<div
+								key={event.id}
+								className="row-click"
+								onClick={() => navigate(event.href)}
+								style={{
+									display: "flex",
+									flexDirection: "column",
+									gap: 4,
+									padding: "14px 16px",
+									borderLeft: `3px solid ${unread ? "var(--color-accent)" : "transparent"}`,
+									background: unread ? "var(--color-neutral-100)" : "transparent",
+									borderBottom: "1px solid var(--color-divider)",
+									animation: `fadeUp .4s ease ${(Math.min(index, 12) * 0.05).toFixed(2)}s both`,
 								}}
 							>
-								<ListItemText
-									primary={
-										<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-											<Typography
-												variant="subtitle2"
-												sx={{ fontWeight: notification.read ? 500 : 700 }}
-											>
-												{notification.title}
-											</Typography>
-											<Chip size="small" variant="outlined" label={humanise(notification.type)} />
-										</Stack>
-									}
-									secondary={
-										<Box component="span" sx={{ display: "block", mt: 0.5 }}>
-											<Typography variant="body2" color="text.secondary" component="span">
-												{notification.body}
-											</Typography>
-											<Typography
-												variant="caption"
-												color="text.secondary"
-												component="span"
-												sx={{ display: "block", mt: 0.5 }}
-											>
-												{formatRelative(notification.createdAt)}
-											</Typography>
-										</Box>
-									}
-								/>
-							</ListItemButton>
-						))}
-					</List>
-				</Card>
-			</AsyncSection>
-		</PageContainer>
+								<div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+									<span style={{ fontSize: 14, fontWeight: 700 }}>{event.title}</span>
+									<span className="tag tag-neutral" style={{ ...mono, fontSize: 10 }}>
+										{event.tag}
+									</span>
+									<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 11 }}>
+										{formatRelative(event.time)}
+									</span>
+								</div>
+								<div className="text-muted" style={{ fontSize: 13, maxWidth: "80ch" }}>
+									{event.body}
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			</AsyncPanel>
+		</Page>
 	);
 }

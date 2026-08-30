@@ -1,8 +1,17 @@
-import { useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { countUnread, fetchEvents, markAllSeen, type AppEvent } from "../lib/events";
 import { useAsync } from "./use-async";
 
-export function useEvents() {
+export interface EventsState {
+	events: AppEvent[];
+	loading: boolean;
+	error: string | undefined;
+	reload: () => void;
+	unreadCount: number;
+	markAllRead: () => void;
+}
+
+export function useEvents(): EventsState {
 	const { data, loading, error, reload } = useAsync<AppEvent[]>(fetchEvents, []);
 	const [seenNonce, setSeenNonce] = useState(0);
 
@@ -16,4 +25,13 @@ export function useEvents() {
 	}, []);
 
 	return { events, loading, error, reload, unreadCount, markAllRead };
+}
+
+/** One shared feed per app shell, so the inbox and the sidebar badge stay in sync. */
+export const EventsContext = createContext<EventsState | null>(null);
+
+export function useSharedEvents(): EventsState {
+	const context = useContext(EventsContext);
+	if (!context) throw new Error("useSharedEvents must be used inside the app shell");
+	return context;
 }

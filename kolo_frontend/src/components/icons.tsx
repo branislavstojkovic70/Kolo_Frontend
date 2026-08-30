@@ -185,3 +185,11 @@ export const PauseIcon = icon(
 );
 
 export const PlayIcon = icon(<path d="m6 3 14 9-14 9z" />);
+
+export const MenuIcon = icon(
+	<>
+		<path d="M4 6h16" />
+		<path d="M4 12h16" />
+		<path d="M4 18h16" />
+	</>
+);

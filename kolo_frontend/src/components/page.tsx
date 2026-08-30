@@ -15,6 +15,7 @@ export default function Page({ title, sub, children }: PageProps) {
 				style={{
 					display: "flex",
 					alignItems: "flex-end",
+					flexWrap: "wrap",
 					gap: 18,
 					borderBottom: "2px solid var(--color-divider)",
 					paddingBottom: 14,
@@ -24,7 +25,7 @@ export default function Page({ title, sub, children }: PageProps) {
 				<h1
 					style={{
 						margin: 0,
-						fontSize: 52,
+						fontSize: "clamp(32px, 5.5vw, 52px)",
 						lineHeight: 0.92,
 						letterSpacing: "-0.025em",
 						textTransform: "uppercase",

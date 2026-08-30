@@ -498,6 +498,137 @@ select.input { appearance: none; }
 		var(--color-neutral-100);
 }
 
+/* ── responsive layout utilities ──────────────────────────────────────── */
+
+.stat-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 20px;
+}
+.balance-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 20px;
+}
+.card-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 2px;
+	background: var(--color-divider);
+	border: 2px solid var(--color-divider);
+}
+.layout-detail {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 360px;
+	gap: 24px;
+	align-items: start;
+}
+.layout-form {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 380px;
+	gap: 24px;
+	align-items: start;
+}
+.layout-two {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 22px;
+	align-items: stretch;
+}
+.layout-master {
+	display: grid;
+	grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+	gap: 22px;
+	align-items: start;
+}
+.filter-bar {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+.filter-bar > input { min-width: 200px; }
+.table-wrap { overflow-x: auto; }
+.table-wrap .table { min-width: 640px; }
+.flow-row {
+	display: flex;
+	gap: 14px;
+	flex-wrap: wrap;
+}
+.flow-row > div { min-width: 150px; }
+
+@media (max-width: 1280px) {
+	.card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1150px) {
+	.stat-grid { grid-template-columns: repeat(2, 1fr); }
+	.balance-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 1080px) {
+	.layout-detail,
+	.layout-form,
+	.layout-two,
+	.layout-master {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+@media (max-width: 760px) {
+	.card-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 500px) {
+	.stat-grid { grid-template-columns: 1fr; }
+}
+
+/* Collapsible sidebar below tablet width. */
+.nav-backdrop { display: none; }
+.menu-btn { display: none; }
+@media (max-width: 980px) {
+	.app-sidebar {
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 60;
+		transform: translateX(-102%);
+		transition:
+			transform 0.25s ease,
+			background-color 0.25s ease;
+		background: var(--color-bg);
+	}
+	.app-sidebar.open {
+		transform: none;
+		box-shadow: var(--shadow-lg);
+	}
+	.nav-backdrop.show {
+		display: block;
+		position: fixed;
+		inset: 0;
+		z-index: 55;
+		background: color-mix(in srgb, var(--color-bg) 55%, transparent);
+	}
+	.menu-btn { display: inline-flex; }
+}
+@media (max-width: 700px) {
+	.hide-md { display: none; }
+}
+
+/* Auth split screen stacks on small viewports. */
+@media (max-width: 900px) {
+	.auth-split {
+		flex-direction: column;
+		overflow-y: auto !important;
+	}
+	.auth-poster {
+		flex: none !important;
+		min-height: 300px;
+		padding: 24px !important;
+	}
+	.auth-pane {
+		flex: none !important;
+		padding: 32px 20px 48px !important;
+	}
+}
+
 /* ── animations (timing per handoff spec) ─────────────────────────────── */
 
 @keyframes fadeUp {

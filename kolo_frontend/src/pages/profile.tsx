@@ -216,7 +216,7 @@ export default function Profile() {
 				</div>
 			)}
 
-			<div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+			<div className="balance-grid">
 				<BalanceCard
 					label="IN ESCROW"
 					icon={<LockIcon size={14} />}
@@ -250,7 +250,7 @@ export default function Profile() {
 				<h6 style={{ margin: 0, flex: "none" }}>Withdraw</h6>
 				<input
 					className="input"
-					style={{ width: 280, flex: "none", ...mono }}
+					style={{ width: 280, maxWidth: "100%", flex: "none", ...mono }}
 					placeholder="Destination wallet address"
 					value={address}
 					onChange={(e) => setAddress(e.target.value)}
@@ -276,6 +276,7 @@ export default function Profile() {
 					isEmpty={(rowsQ.data ?? []).length === 0}
 					emptyMessage="No escrowed orders yet"
 				>
+					<div className="table-wrap">
 					<table className="table">
 						<thead>
 							<tr>
@@ -343,10 +344,11 @@ export default function Profile() {
 							})}
 						</tbody>
 					</table>
+					</div>
 				</AsyncPanel>
 			</div>
 
-			<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 22, alignItems: "stretch" }}>
+			<div className="layout-two">
 				<div className="card" style={{ padding: 18, gap: 12 }}>
 					<h6 style={{ margin: 0 }}>Withdrawals</h6>
 					<AsyncPanel

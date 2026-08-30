@@ -113,7 +113,7 @@ export default function Ads() {
 
 	return (
 		<Page title="Marketplace" sub="Browse digital services · pay in any crypto · escrow protected">
-			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+			<div className="stat-grid">
 				<StatCell label="SERVICES LIVE" sub={`across ${stats.categories} categories`} delay={0}>
 					<CountUp to={stats.total} />
 				</StatCell>
@@ -137,7 +137,7 @@ export default function Ads() {
 				</StatCell>
 			</div>
 
-			<div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+			<div className="filter-bar">
 				<input
 					className="input"
 					style={{ flex: 1 }}
@@ -196,15 +196,7 @@ export default function Ads() {
 				isEmpty={items.length === 0}
 				emptyMessage={scope === "mine" ? "You have no listings yet — post an ad" : "No services match"}
 			>
-				<div
-					style={{
-						display: "grid",
-						gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-						gap: 2,
-						background: "var(--color-divider)",
-						border: "2px solid var(--color-divider)",
-					}}
-				>
+				<div className="card-grid">
 					{items.map((listing, index) => (
 						<ListingCard key={listing.id} listing={listing} index={index} showStatus={scope === "mine"} />
 					))}

@@ -32,7 +32,14 @@ const monoLabel: React.CSSProperties = {
 	letterSpacing: "0.12em",
 };
 
-export default function Sidebar({ unreadCount }: { unreadCount: number }) {
+interface SidebarProps {
+	unreadCount: number;
+	/** Drawer state on narrow viewports; ignored on desktop. */
+	open?: boolean;
+	onNavigate?: () => void;
+}
+
+export default function Sidebar({ unreadCount, open = false, onNavigate }: SidebarProps) {
 	const { user, isAdmin, logout } = useAuth();
 	const navigate = useNavigate();
 	const active = sectionOf(useLocation().pathname);
@@ -45,7 +52,13 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 	const segmentsOn = balance ? Math.round(releasedShare * 12) : 0;
 
 	const item = (section: Section, label: string, icon: React.ReactNode, to: string, badge?: number) => (
-		<button className={`snav${active === section ? " active" : ""}`} onClick={() => navigate(to)}>
+		<button
+			className={`snav${active === section ? " active" : ""}`}
+			onClick={() => {
+				navigate(to);
+				onNavigate?.();
+			}}
+		>
 			{icon}
 			{label}
 			{badge !== undefined && badge > 0 && (
@@ -69,6 +82,7 @@ export default function Sidebar({ unreadCount }: { unreadCount: number }) {
 
 	return (
 		<aside
+			className={`app-sidebar${open ? " open" : ""}`}
 			style={{
 				width: 288,
 				flex: "none",

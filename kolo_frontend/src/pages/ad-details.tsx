@@ -109,7 +109,7 @@ export default function AdDetails() {
 
 			<AsyncPanel loading={loading} error={error} isEmpty={!ad} emptyMessage="Listing not found">
 				{ad && (
-					<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 360px", gap: 24, alignItems: "start" }}>
+					<div className="layout-detail">
 						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 							<div>
 								<div style={{ ...mono, fontSize: 10.5, letterSpacing: "0.14em", color: "var(--color-accent)" }}>
@@ -145,7 +145,7 @@ export default function AdDetails() {
 								))}
 							</div>
 
-							<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px", maxWidth: 640 }}>
+							<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "8px 24px", maxWidth: 640 }}>
 								{GUARANTEES.map((item) => (
 									<div key={item} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
 										<CheckIcon size={14} strokeWidth={2.5} style={{ color: "var(--color-accent)", flex: "none" }} />

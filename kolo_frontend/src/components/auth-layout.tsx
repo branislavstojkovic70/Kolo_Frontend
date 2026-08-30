@@ -13,9 +13,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 	const { data: listings } = useAsync(() => listingsApi.list({ limit: 1 }), []);
 
 	return (
-		<div style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
+		<div className="auth-split" style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
 			<div
-				className="poster"
+				className="poster auth-poster"
 				style={{
 					flex: 1.25,
 					display: "flex",
@@ -55,7 +55,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 						style={{
 							fontFamily: "var(--font-heading)",
 							fontWeight: 800,
-							fontSize: 58,
+							fontSize: "clamp(36px, 7.5vw, 58px)",
 							lineHeight: 0.94,
 							letterSpacing: "-0.025em",
 							textTransform: "uppercase",
@@ -100,6 +100,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 				</div>
 			</div>
 			<div
+				className="auth-pane"
 				style={{
 					flex: 1,
 					position: "relative",

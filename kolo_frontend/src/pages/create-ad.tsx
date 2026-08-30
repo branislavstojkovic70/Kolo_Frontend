@@ -76,7 +76,7 @@ export default function CreateAd() {
 				</button>
 			</div>
 
-			<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 380px", gap: 24, alignItems: "start" }}>
+			<div className="layout-form">
 				<div className="card" style={{ padding: 18, gap: 14 }}>
 					<h5 style={{ margin: 0 }}>Service details</h5>
 					<div className="field">
@@ -89,7 +89,7 @@ export default function CreateAd() {
 							placeholder="e.g. Netflix Premium 4K · private slot, 12 months"
 						/>
 					</div>
-					<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+					<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
 						<div className="field">
 							<label htmlFor="ad-category">Category</label>
 							<input

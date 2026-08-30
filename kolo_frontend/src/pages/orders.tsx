@@ -71,6 +71,7 @@ export default function Orders() {
 			</div>
 
 			<AsyncPanel loading={loading} error={error} isEmpty={rows.length === 0} emptyMessage="No orders yet">
+				<div className="table-wrap">
 				<table className="table">
 					<thead>
 						<tr>
@@ -135,6 +136,7 @@ export default function Orders() {
 						})}
 					</tbody>
 				</table>
+				</div>
 			</AsyncPanel>
 
 			<div className="text-muted" style={{ fontSize: 12 }}>

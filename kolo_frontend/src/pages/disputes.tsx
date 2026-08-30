@@ -99,7 +99,7 @@ export default function Disputes() {
 				isEmpty={(list.data ?? []).length === 0}
 				emptyMessage="No disputes — that's a good thing"
 			>
-				<div style={{ display: "grid", gridTemplateColumns: "minmax(240px,320px) minmax(0,1fr)", gap: 22, alignItems: "start" }}>
+				<div className="layout-master">
 					<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 						<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
 							{list.data?.length ?? 0} DISPUTES · {openCount} OPEN
@@ -250,7 +250,7 @@ export default function Disputes() {
 									)}
 								</div>
 
-								<div style={{ display: "flex", gap: 8, padding: "14px 18px", borderTop: "2px solid var(--color-divider)", alignItems: "center" }}>
+								<div style={{ display: "flex", gap: 8, padding: "14px 18px", borderTop: "2px solid var(--color-divider)", alignItems: "center", flexWrap: "wrap" }}>
 									{dispute.telegramInviteLink ? (
 										<>
 											<a

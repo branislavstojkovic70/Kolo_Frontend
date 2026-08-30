@@ -141,7 +141,7 @@ export default function Admin() {
 
 	return (
 		<Page title="Arbitration" sub="Admin · disputes, orders and payouts">
-			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+			<div className="stat-grid">
 				<StatCell label="GROSS VOLUME" sub={`${stats?.orders.total ?? 0} orders · ${stats?.users ?? 0} users`} value={usd(stats?.money.grossVolumeUsd ?? 0)} suffix="USDT" delay={0} />
 				<StatCell label="IN ESCROW" sub="seller money on the platform" value={usd(stats?.money.inEscrowUsd ?? 0)} suffix="USDT" delay={0.06} />
 				<StatCell label="FEES EARNED" sub="4% of confirmed payments" value={usd(stats?.money.platformFeesUsd ?? 0)} suffix="USDT" delay={0.12} />
@@ -223,6 +223,7 @@ export default function Admin() {
 					isEmpty={(ordersQ.data?.items ?? []).length === 0}
 					emptyMessage="No orders yet"
 				>
+					<div className="table-wrap">
 					<table className="table">
 						<thead>
 							<tr>
@@ -260,6 +261,7 @@ export default function Admin() {
 							))}
 						</tbody>
 					</table>
+					</div>
 				</AsyncPanel>
 			)}
 
@@ -270,6 +272,7 @@ export default function Admin() {
 					isEmpty={(withdrawalsQ.data?.items ?? []).length === 0}
 					emptyMessage="No payouts yet"
 				>
+					<div className="table-wrap">
 					<table className="table">
 						<thead>
 							<tr>
@@ -307,6 +310,7 @@ export default function Admin() {
 							))}
 						</tbody>
 					</table>
+					</div>
 				</AsyncPanel>
 			)}
 

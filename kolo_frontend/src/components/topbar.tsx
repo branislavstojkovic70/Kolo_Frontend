@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useThemeMode } from "../theme";
-import { MoonIcon, PlusIcon, SunIcon } from "./icons";
+import { MenuIcon, MoonIcon, PlusIcon, SunIcon } from "./icons";
 
 function crumbOf(pathname: string): string {
 	if (pathname.startsWith("/ads/new")) return "MARKETPLACE / POST AN AD";
@@ -14,7 +14,7 @@ function crumbOf(pathname: string): string {
 	return "MARKETPLACE";
 }
 
-export default function Topbar() {
+export default function Topbar({ onMenu }: { onMenu?: () => void }) {
 	const { mode, toggleMode } = useThemeMode();
 	const navigate = useNavigate();
 	const crumb = crumbOf(useLocation().pathname);
@@ -31,6 +31,9 @@ export default function Topbar() {
 				borderBottom: "2px solid var(--color-divider)",
 			}}
 		>
+			<button className="btn btn-icon btn-secondary menu-btn" onClick={onMenu} title="Menu">
+				<MenuIcon size={16} />
+			</button>
 			<div
 				className="text-muted"
 				style={{
@@ -47,7 +50,7 @@ export default function Topbar() {
 			</div>
 			<div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
 				<span
-					className="text-muted"
+					className="text-muted hide-md"
 					style={{
 						whiteSpace: "nowrap",
 						fontFamily: "var(--font-mono)",

@@ -237,7 +237,7 @@ export default function OrderDetails() {
 
 			<div className="card" style={{ padding: 18 }}>
 				<h6 style={{ marginBottom: 12 }}>Money flow</h6>
-				<div style={{ display: "flex", gap: 14 }}>
+				<div className="flow-row">
 					{flow.map((step, i) => (
 						<div
 							key={step.t}
@@ -265,7 +265,7 @@ export default function OrderDetails() {
 				</div>
 			</div>
 
-			<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 22, alignItems: "stretch" }}>
+			<div className="layout-two">
 				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 					{pending && order.paymentUrl && (
 						<div className="card elev-md" style={{ padding: 18, gap: 14, animation: "fadeUp .45s ease .08s both", flex: 1 }}>
@@ -277,7 +277,7 @@ export default function OrderDetails() {
 								Seller accepts <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>100+ crypto assets</span> —
 								pick yours at the OxaPay checkout; the USDT price is fixed for this invoice.
 							</div>
-							<div style={{ display: "flex", gap: 16 }}>
+							<div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
 								<QrPlate value={order.paymentUrl} />
 								<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5 }}>
 									<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>

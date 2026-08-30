@@ -314,7 +314,7 @@ export default function Admin() {
 				</AsyncPanel>
 			)}
 
-			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14 }}>
+			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14, flexWrap: "wrap" }}>
 				<span className="text-muted" style={{ fontSize: 12 }}>
 					Buyer wins → order refunded, buyer withdraws from escrow immediately. Seller wins → order back
 					to paid, normal vesting continues.

@@ -70,7 +70,7 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
 					onClick={() => navigate("/ads/new")}
 				>
 					<PlusIcon size={15} />
-					Post an ad
+					<span className="hide-xs">Post an ad</span>
 				</button>
 			</div>
 		</header>

@@ -10,7 +10,7 @@ interface PageProps {
 /** Content frame: 24px padding, 22px section gap, giant page header with 2px rule. */
 export default function Page({ title, sub, children }: PageProps) {
 	return (
-		<div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 22 }}>
+		<div className="page-frame">
 			<div
 				style={{
 					display: "flex",

@@ -55,7 +55,7 @@ export default function Notifications() {
 									animation: `fadeUp .4s ease ${(Math.min(index, 12) * 0.05).toFixed(2)}s both`,
 								}}
 							>
-								<div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+								<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
 									<span style={{ fontSize: 15, fontWeight: 700 }}>{event.title}</span>
 									<span className="tag tag-neutral" style={{ ...mono, fontSize: 10.5 }}>
 										{event.tag}

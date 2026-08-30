@@ -14,7 +14,7 @@ export default function AppShell() {
 
 	return (
 		<EventsContext.Provider value={events}>
-			<div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+			<div className="app-frame">
 				<Sidebar
 					unreadCount={events.unreadCount}
 					open={navOpen}

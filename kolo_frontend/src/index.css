@@ -500,6 +500,40 @@ select.input { appearance: none; }
 
 /* ── responsive layout utilities ──────────────────────────────────────── */
 
+/* App frame uses the dynamic viewport so mobile URL bars don't clip the UI. */
+.app-frame {
+	display: flex;
+	height: 100vh;
+	height: 100dvh;
+	overflow: hidden;
+}
+.auth-split {
+	display: flex;
+	width: 100%;
+	height: 100vh;
+	height: 100dvh;
+	overflow: hidden;
+}
+.page-frame {
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+}
+@media (max-width: 700px) {
+	.page-frame {
+		padding: 16px 14px 28px;
+		gap: 18px;
+	}
+}
+/* 16px inputs stop iOS Safari from zooming the page on focus. */
+@media (max-width: 980px) {
+	.input { font-size: 16px; }
+}
+@media (max-width: 520px) {
+	.hide-xs { display: none; }
+}
+
 .stat-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);

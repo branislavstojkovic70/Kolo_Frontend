@@ -211,7 +211,7 @@ export default function Ads() {
 						style={{
 							fontFamily: "var(--font-heading)",
 							fontWeight: 800,
-							fontSize: 46,
+							fontSize: "clamp(28px, 6vw, 46px)",
 							lineHeight: 0.98,
 							letterSpacing: "-0.02em",
 						}}

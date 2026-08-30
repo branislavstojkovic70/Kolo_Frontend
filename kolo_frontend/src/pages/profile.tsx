@@ -370,6 +370,7 @@ export default function Profile() {
 											padding: "8px 10px",
 											borderLeft: `3px solid ${tag.color}`,
 											background: "var(--color-neutral-100)",
+											flexWrap: "wrap",
 										}}
 									>
 										<span style={{ ...mono, fontSize: 13.5, fontWeight: 600, width: 110 }}>

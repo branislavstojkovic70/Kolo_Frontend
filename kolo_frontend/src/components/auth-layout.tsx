@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 	const { data: listings } = useAsync(() => listingsApi.list({ limit: 1 }), []);
 
 	return (
-		<div className="auth-split" style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
+		<div className="auth-split">
 			<div
 				className="poster auth-poster"
 				style={{

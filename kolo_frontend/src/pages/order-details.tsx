@@ -289,8 +289,10 @@ export default function OrderDetails() {
 										<span style={{ ...mono, whiteSpace: "nowrap" }}>{fmtUsd(order.amountUsd)} USDT</span>
 									</div>
 									<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-										<span className="text-muted">Invoice</span>
-										<span style={{ ...mono, whiteSpace: "nowrap" }}>oxapay #{order.oxapayTrackId ?? "—"}</span>
+										<span className="text-muted" style={{ flex: "none" }}>Invoice</span>
+										<span style={{ ...mono, wordBreak: "break-all", textAlign: "right" }}>
+											oxapay #{order.oxapayTrackId ?? "—"}
+										</span>
 									</div>
 									<div>
 										<div className="text-muted" style={{ fontSize: 12, marginBottom: 4 }}>
@@ -472,7 +474,7 @@ export default function OrderDetails() {
 				</div>
 			)}
 
-			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14 }}>
+			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14, flexWrap: "wrap" }}>
 				{canDispute && !disputeOpen && (
 					<button className="btn btn-secondary" style={{ whiteSpace: "nowrap" }} onClick={() => setDisputeOpen(true)}>
 						Open a dispute

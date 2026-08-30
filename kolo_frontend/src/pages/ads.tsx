@@ -1,149 +1,238 @@
-import { useState } from "react";
-import {
-	Button,
-	Card,
-	CardContent,
-	Grid,
-	InputAdornment,
-	MenuItem,
-	Slider,
-	Stack,
-	TextField,
-	Typography,
-} from "@mui/material";
-import { Add, Search } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import AdCard from "../components/ad-card";
-import AsyncSection from "../components/async-section";
-import PageContainer from "../components/page-container";
-import { useAds, useCategories } from "../hooks/use-ads";
-import { useAuth } from "../hooks/use-auth";
+import { useEffect, useMemo, useState } from "react";
+import { listingsApi } from "../api";
+import AsyncPanel from "../components/async-panel";
+import CountUp from "../components/count-up";
+import ListingCard from "../components/listing-card";
+import Page from "../components/page";
+import { useAsync } from "../hooks/use-async";
+import { usd } from "../utils/money";
 
-const MAX_PRICE = 1000;
+type Scope = "all" | "mine";
+type PriceBand = "any" | "under25" | "25to75" | "over75";
+
+const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+
+const priceMatch: Record<PriceBand, (price: number) => boolean> = {
+	any: () => true,
+	under25: (p) => p < 25,
+	"25to75": (p) => p >= 25 && p <= 75,
+	over75: (p) => p > 75,
+};
+
+function StatCell({
+	label,
+	sub,
+	delay,
+	children,
+}: {
+	label: string;
+	sub: string;
+	delay: number;
+	children: React.ReactNode;
+}) {
+	return (
+		<div
+			style={{
+				borderTop: "2px solid var(--color-divider)",
+				paddingTop: 10,
+				animation: `fadeUp .45s ease ${delay}s both`,
+			}}
+		>
+			<div className="text-muted" style={{ ...mono, fontSize: 10, letterSpacing: "0.12em" }}>
+				{label}
+			</div>
+			<div style={{ ...mono, fontSize: 30, fontWeight: 600, marginTop: 6, lineHeight: 1, whiteSpace: "nowrap" }}>
+				{children}
+			</div>
+			<div className="text-muted" style={{ fontSize: 11 }}>
+				{sub}
+			</div>
+		</div>
+	);
+}
 
 export default function Ads() {
-	const navigate = useNavigate();
-	const { isSeller } = useAuth();
-
+	const [searchInput, setSearchInput] = useState("");
 	const [search, setSearch] = useState("");
-	const [categoryId, setCategoryId] = useState("");
-	const [priceRange, setPriceRange] = useState<number[]>([0, MAX_PRICE]);
-	const [maxDeliveryDays, setMaxDeliveryDays] = useState("");
+	const [category, setCategory] = useState("");
+	const [priceBand, setPriceBand] = useState<PriceBand>("any");
+	const [scope, setScope] = useState<Scope>("all");
 
-	const { data: categories } = useCategories();
-	const { data: ads, loading, error } = useAds({
-		search: search || undefined,
-		categoryId: categoryId || undefined,
-		minPrice: priceRange[0],
-		maxPrice: priceRange[1],
-		maxDeliveryDays: maxDeliveryDays ? Number(maxDeliveryDays) : undefined,
-	});
+	useEffect(() => {
+		const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
+		return () => clearTimeout(timer);
+	}, [searchInput]);
+
+	// Unfiltered catalogue — powers the stat cells and the category options.
+	const catalogue = useAsync(() => listingsApi.list({ limit: 100 }), []);
+	const filtered = useAsync(
+		() =>
+			listingsApi.list({
+				search: search || undefined,
+				category: category || undefined,
+				limit: 100,
+			}),
+		[search, category]
+	);
+	const mine = useAsync(() => (scope === "mine" ? listingsApi.mine() : Promise.resolve([])), [scope]);
+
+	const categories = useMemo(() => {
+		const set = new Set<string>();
+		for (const listing of catalogue.data?.items ?? []) {
+			if (listing.category) set.add(listing.category);
+		}
+		return [...set].sort();
+	}, [catalogue.data]);
+
+	const items = useMemo(() => {
+		const source =
+			scope === "all"
+				? (filtered.data?.items ?? [])
+				: (mine.data ?? []).filter(
+						(l) =>
+							(!search || l.title.toLowerCase().includes(search.toLowerCase())) &&
+							(!category || l.category?.toLowerCase() === category.toLowerCase())
+					);
+		return source.filter((l) => priceMatch[priceBand](usd(l.priceUsd)));
+	}, [scope, filtered.data, mine.data, search, category, priceBand]);
+
+	const stats = useMemo(() => {
+		const all = catalogue.data?.items ?? [];
+		const prices = all.map((l) => usd(l.priceUsd)).sort((a, b) => a - b);
+		const median = prices.length ? prices[Math.floor(prices.length / 2)] : 0;
+		return {
+			total: catalogue.data?.total ?? 0,
+			categories: new Set(all.map((l) => l.category ?? "Other")).size,
+			value: prices.reduce((sum, p) => sum + p, 0),
+			median,
+		};
+	}, [catalogue.data]);
+
+	const loading = scope === "all" ? filtered.loading : mine.loading;
+	const error = scope === "all" ? filtered.error : mine.error;
 
 	return (
-		<PageContainer
-			title="Marketplace"
-			subtitle="Browse web services and pay in crypto. Funds stay in escrow until you confirm delivery."
-			action={
-				isSeller && (
-					<Button variant="contained" startIcon={<Add />} onClick={() => navigate("/ads/new")}>
-						Post an ad
-					</Button>
-				)
-			}
-		>
-			<Card variant="outlined" sx={{ mb: 3 }}>
-				<CardContent>
-					<Grid container spacing={2} sx={{ alignItems: "center" }}>
-						<Grid size={{ xs: 12, md: 4 }}>
-							<TextField
-								fullWidth
-								size="small"
-								placeholder="Search services..."
-								value={search}
-								onChange={(e) => setSearch(e.target.value)}
-								slotProps={{
-									input: {
-										startAdornment: (
-											<InputAdornment position="start">
-												<Search fontSize="small" />
-											</InputAdornment>
-										),
-									},
-								}}
-							/>
-						</Grid>
+		<Page idx="01" title="Marketplace" sub="Browse digital services · pay in any crypto · escrow protected">
+			<div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+				<StatCell label="SERVICES LIVE" sub={`across ${stats.categories} categories`} delay={0}>
+					<CountUp to={stats.total} />
+				</StatCell>
+				<StatCell label="CATALOGUE VALUE" sub="sum of live asking prices" delay={0.06}>
+					<CountUp to={stats.value} dec={2} />{" "}
+					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+						USDT
+					</span>
+				</StatCell>
+				<StatCell label="MEDIAN PRICE" sub="per service · any crypto" delay={0.12}>
+					<CountUp to={stats.median} dec={2} />{" "}
+					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+						USDT
+					</span>
+				</StatCell>
+				<StatCell label="PLATFORM FEE" sub="flat · no hidden charges" delay={0.18}>
+					4
+					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+						%
+					</span>
+				</StatCell>
+			</div>
 
-						<Grid size={{ xs: 12, sm: 6, md: 3 }}>
-							<TextField
-								select
-								fullWidth
-								size="small"
-								label="Category"
-								value={categoryId}
-								onChange={(e) => setCategoryId(e.target.value)}
-							>
-								<MenuItem value="">All categories</MenuItem>
-								{(categories ?? []).map((category) => (
-									<MenuItem key={category.id} value={category.id}>
-										{category.name}
-									</MenuItem>
-								))}
-							</TextField>
-						</Grid>
+			<div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+				<input
+					className="input"
+					style={{ flex: 1 }}
+					placeholder="Search VPNs, streaming, IPTV, software…"
+					value={searchInput}
+					onChange={(e) => setSearchInput(e.target.value)}
+				/>
+				<select
+					className="input"
+					style={{ width: 170, flex: "none" }}
+					value={category}
+					onChange={(e) => setCategory(e.target.value)}
+				>
+					<option value="">All categories</option>
+					{categories.map((c) => (
+						<option key={c} value={c}>
+							{c}
+						</option>
+					))}
+				</select>
+				<select
+					className="input"
+					style={{ width: 150, flex: "none" }}
+					value={priceBand}
+					onChange={(e) => setPriceBand(e.target.value as PriceBand)}
+				>
+					<option value="any">Any price</option>
+					<option value="under25">Under 25 USDT</option>
+					<option value="25to75">25 – 75 USDT</option>
+					<option value="over75">Over 75 USDT</option>
+				</select>
+				<div className="seg" style={{ flex: "none" }}>
+					<label className="seg-opt">
+						<input type="radio" name="mktf" checked={scope === "all"} onChange={() => setScope("all")} />
+						All
+					</label>
+					<label className="seg-opt">
+						<input type="radio" name="mktf" checked={scope === "mine"} onChange={() => setScope("mine")} />
+						Mine
+					</label>
+				</div>
+			</div>
 
-						<Grid size={{ xs: 12, sm: 6, md: 2 }}>
-							<TextField
-								select
-								fullWidth
-								size="small"
-								label="Delivery"
-								value={maxDeliveryDays}
-								onChange={(e) => setMaxDeliveryDays(e.target.value)}
-							>
-								<MenuItem value="">Any</MenuItem>
-								<MenuItem value="3">Up to 3 days</MenuItem>
-								<MenuItem value="7">Up to 7 days</MenuItem>
-								<MenuItem value="14">Up to 14 days</MenuItem>
-							</TextField>
-						</Grid>
+			<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+					{items.length} OF {stats.total} SERVICES
+				</span>
+				<span className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.1em" }}>
+					SORTED BY NEWEST
+				</span>
+			</div>
 
-						<Grid size={{ xs: 12, md: 3 }}>
-							<Typography variant="caption" color="text.secondary">
-								Price: {priceRange[0]} – {priceRange[1]} USDT
-							</Typography>
-							<Slider
-								value={priceRange}
-								onChange={(_, value) => setPriceRange(value as number[])}
-								min={0}
-								max={MAX_PRICE}
-								step={20}
-								size="small"
-							/>
-						</Grid>
-					</Grid>
-				</CardContent>
-			</Card>
-
-			<AsyncSection
+			<AsyncPanel
 				loading={loading}
 				error={error}
-				isEmpty={(ads ?? []).length === 0}
-				emptyMessage="No services match those filters."
+				isEmpty={items.length === 0}
+				emptyMessage={scope === "mine" ? "You have no listings yet — post an ad" : "No services match"}
 			>
-				<Stack spacing={2}>
-					<Typography variant="body2" color="text.secondary">
-						{(ads ?? []).length} service{(ads ?? []).length === 1 ? "" : "s"} available
-					</Typography>
+				<div
+					style={{
+						display: "grid",
+						gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+						gap: 2,
+						background: "var(--color-divider)",
+						border: "2px solid var(--color-divider)",
+					}}
+				>
+					{items.map((listing, index) => (
+						<ListingCard key={listing.id} listing={listing} index={index} showStatus={scope === "mine"} />
+					))}
+				</div>
+			</AsyncPanel>
 
-					<Grid container spacing={3}>
-						{(ads ?? []).map((ad) => (
-							<Grid key={ad.id} size={{ xs: 12, sm: 6, md: 4 }}>
-								<AdCard ad={ad} />
-							</Grid>
-						))}
-					</Grid>
-				</Stack>
-			</AsyncSection>
-		</PageContainer>
+			<div className="poster" style={{ padding: "36px 28px", marginTop: 4, animation: "fadeUp .5s ease .25s both" }}>
+				<div className="poster-stripes" />
+				<div style={{ position: "relative" }}>
+					<div
+						className="poster-ink"
+						style={{
+							fontFamily: "var(--font-heading)",
+							fontWeight: 800,
+							fontSize: 46,
+							lineHeight: 0.98,
+							letterSpacing: "-0.02em",
+						}}
+					>
+						PAID. ESCROWED.
+						<br />
+						VESTED. RELEASED.
+					</div>
+					<div className="poster-ink-soft" style={{ ...mono, fontSize: 12, marginTop: 14 }}>
+						Every order on Kolo moves through the same four steps · no exceptions, no trust required.
+					</div>
+				</div>
+			</div>
+		</Page>
 	);
 }

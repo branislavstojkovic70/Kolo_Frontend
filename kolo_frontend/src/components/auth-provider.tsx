@@ -1,43 +1,68 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthContext, type AuthContextValue } from "../hooks/use-auth";
-import * as authService from "../services/auth.service";
-import type { Credentials, RegisterPayload, User } from "../types";
+import { getSessionEmail, setSessionEmail, usersApi, type User } from "../api";
 
+/**
+ * Session = the signed-in e-mail (dev-bypass auth). GET /me JIT-provisions the
+ * account on the backend, so "login" and "register" are the same call — the
+ * register variant additionally saves the chosen display name.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User>();
-	const [loading, setLoading] = useState(true);
+	// Only a stored session needs to resolve before the guards can decide.
+	const [loading, setLoading] = useState(() => !!getSessionEmail());
 
 	useEffect(() => {
-		authService
-			.getSession()
-			.then((session) => setUser(session ?? undefined))
+		if (!getSessionEmail()) return;
+		usersApi
+			.me()
+			.then(setUser)
+			.catch(() => setSessionEmail(null))
 			.finally(() => setLoading(false));
 	}, []);
 
-	const login = useCallback(async (credentials: Credentials) => {
-		setUser(await authService.login(credentials));
+	const login = useCallback(async (email: string) => {
+		setSessionEmail(email.trim().toLowerCase());
+		try {
+			setUser(await usersApi.me());
+		} catch (error) {
+			setSessionEmail(null);
+			throw error;
+		}
 	}, []);
 
-	const register = useCallback(async (payload: RegisterPayload) => {
-		setUser(await authService.register(payload));
+	const register = useCallback(async (email: string, username: string) => {
+		setSessionEmail(email.trim().toLowerCase());
+		try {
+			await usersApi.me();
+			setUser(await usersApi.updateMe({ username }));
+		} catch (error) {
+			setSessionEmail(null);
+			throw error;
+		}
 	}, []);
 
-	const logout = useCallback(async () => {
-		await authService.logout();
+	const logout = useCallback(() => {
+		setSessionEmail(null);
 		setUser(undefined);
+	}, []);
+
+	const refresh = useCallback(async () => {
+		setUser(await usersApi.me());
 	}, []);
 
 	const value = useMemo<AuthContextValue>(
 		() => ({
 			user,
 			loading,
-			isAdmin: user?.role === "admin",
-			isSeller: user?.role === "seller" || user?.role === "admin",
+			isAdmin: user?.role === "ADMIN",
+			isSeller: !!user,
 			login,
 			register,
 			logout,
+			refresh,
 		}),
-		[user, loading, login, register, logout]
+		[user, loading, login, register, logout, refresh]
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

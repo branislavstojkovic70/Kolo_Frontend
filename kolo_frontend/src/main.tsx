@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 import "./index.css";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
-import { CssBaseline, ThemeProvider } from "@mui/material";
-import { createAppTheme, ThemeModeContext, type ThemeMode } from "./theme";
+import { applyThemeMode, loadThemeMode, ThemeModeContext, type ThemeMode } from "./theme";
 import { AuthProvider } from "./components/auth-provider";
 import RequireAuth from "./components/require-auth";
-import Navbar from "./components/navbar";
+import AppShell from "./components/app-shell";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Ads from "./pages/ads";
@@ -23,7 +22,7 @@ import Admin from "./pages/admin";
 import NotFound from "./pages/not-found";
 
 const router = createBrowserRouter([
-	// Auth pages render without the navbar.
+	// Auth pages render without the app shell.
 	{ path: "/login", element: <Login /> },
 	{ path: "/register", element: <Register /> },
 
@@ -31,7 +30,7 @@ const router = createBrowserRouter([
 		element: <RequireAuth />,
 		children: [
 			{
-				element: <Navbar />,
+				element: <AppShell />,
 				children: [
 					{ path: "/", element: <Navigate to="/ads" replace /> },
 					{ path: "/ads", element: <Ads /> },
@@ -55,35 +54,37 @@ const router = createBrowserRouter([
 ]);
 
 function Root() {
-	const [mode, setMode] = useState<ThemeMode>("dark");
-	const theme = useMemo(() => createAppTheme(mode), [mode]);
+	const [mode, setMode] = useState<ThemeMode>(loadThemeMode);
 	const toggleMode = () =>
 		setMode((prev) => (prev === "dark" ? "light" : "dark"));
 
+	useEffect(() => {
+		applyThemeMode(mode);
+	}, [mode]);
+
+	const themeContext = useMemo(() => ({ mode, toggleMode }), [mode]);
+
 	return (
-		<ThemeModeContext.Provider value={{ mode, toggleMode }}>
-			<ThemeProvider theme={theme}>
-				<CssBaseline />
-				<AuthProvider>
-					<RouterProvider router={router} />
-				</AuthProvider>
-				<Toaster
-					position="bottom-center"
-					toastOptions={{
-						success: {
-							style: {
-								background: theme.palette.success.main,
-							},
-						},
-						error: {
-							style: {
-								background: theme.palette.error.main,
-								color: "#F5F5F5",
-							},
-						},
-					}}
-				/>
-			</ThemeProvider>
+		<ThemeModeContext.Provider value={themeContext}>
+			<AuthProvider>
+				<RouterProvider router={router} />
+			</AuthProvider>
+			<Toaster
+				position="bottom-center"
+				toastOptions={{
+					style: {
+						borderRadius: 0,
+						border: "1px solid var(--color-divider)",
+						background: "var(--color-surface)",
+						color: "var(--color-text)",
+						fontFamily: "var(--font-body)",
+						fontSize: "13px",
+						boxShadow: "var(--shadow-md)",
+					},
+					success: { iconTheme: { primary: "var(--ok)", secondary: "var(--color-bg)" } },
+					error: { iconTheme: { primary: "var(--bad)", secondary: "var(--color-bg)" } },
+				}}
+			/>
 		</ThemeModeContext.Provider>
 	);
 }

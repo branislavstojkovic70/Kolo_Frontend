@@ -1,316 +1,431 @@
-import { useState } from "react";
-import {
-	Alert,
-	Avatar,
-	Box,
-	Button,
-	Card,
-	CardContent,
-	Chip,
-	Divider,
-	Grid,
-	Stack,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableRow,
-	Tab,
-	Tabs,
-	TextField,
-	Typography,
-} from "@mui/material";
-import { AccountBalanceWallet, Lock, Savings } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import AsyncSection from "../components/async-section";
-import PageContainer from "../components/page-container";
-import ReputationBadge from "../components/reputation-badge";
-import StatCard from "../components/stat-card";
-import StatusChip from "../components/status-chip";
-import { useSellerAds } from "../hooks/use-ads";
-import { useReputationEvents } from "../hooks/use-admin";
+import { disputesApi, ordersApi, usersApi, walletApi, type WalletBucket } from "../api";
+import AsyncPanel from "../components/async-panel";
+import BlockAvatar from "../components/block-avatar";
+import CountUp from "../components/count-up";
+import { BanknoteIcon, HourglassIcon, LockIcon } from "../components/icons";
+import Page from "../components/page";
+import StatusTag from "../components/status-tag";
+import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
-import { useVestingEntries, useWallet } from "../hooks/use-wallet";
-import * as walletService from "../services/wallet.service";
-import { formatCurrency, formatDate, formatDateTime, humanise } from "../utils/format";
-import { formatVestingPeriod, getVestingTier } from "../utils/vesting";
+import { useNow } from "../hooks/use-now";
+import { withdrawalStatusTag } from "../lib/order-ui";
+import { formatDate } from "../utils/format";
+import { fmtUsd, sumUsd, usd } from "../utils/money";
 
-type TabKey = "wallet" | "ads" | "reputation";
+const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+const monoLabel: React.CSSProperties = { ...mono, fontSize: 10, letterSpacing: "0.12em" };
+const VESTING_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+const NETWORKS = ["TRC20", "BEP20", "ERC20", "TON", "SOL"];
+
+const bucketTag: Record<WalletBucket, { label: string; color: string }> = {
+	available: { label: "Available", color: "var(--ok)" },
+	vesting: { label: "Vesting", color: "var(--warn)" },
+	disputed: { label: "Frozen", color: "var(--bad)" },
+	withdrawing: { label: "Withdrawing", color: "var(--color-accent)" },
+	withdrawn: { label: "Withdrawn", color: "var(--color-neutral-600)" },
+};
+
+function vestingProgress(vestedAt: string | null): number {
+	if (!vestedAt) return 0;
+	const end = new Date(vestedAt).getTime();
+	const start = end - VESTING_DAYS_MS;
+	return Math.min(1, Math.max(0.04, (Date.now() - start) / VESTING_DAYS_MS));
+}
+
+function BalanceCard({
+	label,
+	icon,
+	value,
+	color,
+	caption,
+	delay,
+}: {
+	label: string;
+	icon: React.ReactNode;
+	value: number;
+	color?: string;
+	caption: string;
+	delay: number;
+}) {
+	return (
+		<div className="card elev-sm wcard" style={{ padding: 16, gap: 6, animation: `fadeUp .45s ease ${delay}s both` }}>
+			<div style={{ display: "flex", alignItems: "center" }}>
+				<span className="text-muted" style={monoLabel}>
+					{label}
+				</span>
+				<span className="text-muted" style={{ marginLeft: "auto", display: "flex" }}>
+					{icon}
+				</span>
+			</div>
+			<div style={{ ...mono, fontSize: 34, fontWeight: 600, lineHeight: 1, color }}>
+				<CountUp to={value} dec={2} />{" "}
+				<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
+					USDT
+				</span>
+			</div>
+			<div className="text-muted" style={{ fontSize: 11.5 }}>
+				{caption}
+			</div>
+		</div>
+	);
+}
 
 export default function Profile() {
-	const navigate = useNavigate();
-	const { user } = useAuth();
-
-	const { data: wallet, loading, error, reload } = useWallet(user?.id);
-	const { data: vesting } = useVestingEntries(user?.id);
-	const { data: ads } = useSellerAds(user?.id);
-	const { data: events } = useReputationEvents(user?.id);
-
-	const [tab, setTab] = useState<TabKey>("wallet");
-	const [amount, setAmount] = useState("");
+	const { user, isAdmin, refresh } = useAuth();
+	const [editing, setEditing] = useState(false);
+	const [username, setUsername] = useState("");
+	const [telegram, setTelegram] = useState("");
+	const [address, setAddress] = useState("");
+	const [network, setNetwork] = useState(NETWORKS[0]);
 	const [busy, setBusy] = useState(false);
 
-	const tier = user ? getVestingTier(user.reputationScore) : undefined;
+	const now = useNow();
+	const balanceQ = useAsync(() => walletApi.balance(), []);
+	const rowsQ = useAsync(() => walletApi.orders(), []);
+	const withdrawalsQ = useAsync(() => walletApi.withdrawals(), []);
+	const statsQ = useAsync(async () => {
+		const [purchases, sales, disputes] = await Promise.all([
+			ordersApi.purchases(),
+			ordersApi.sales(),
+			disputesApi.mine(),
+		]);
+		return { purchases, sales, disputes };
+	}, []);
 
-	const handleWithdraw = async () => {
-		if (!user) return;
+	const balance = balanceQ.data;
+	const available = usd(balance?.available ?? 0);
+	const heldTotal = balance ? sumUsd(balance.vesting, balance.disputed) : 0;
+
+	const memberMonths = useMemo(() => {
+		if (!user) return 0;
+		return Math.max(
+			1,
+			Math.round((now - new Date(user.createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000))
+		);
+	}, [user, now]);
+
+	const disputesLost = useMemo(() => {
+		if (!statsQ.data || !user) return 0;
+		return statsQ.data.disputes.filter(
+			(d) =>
+				(d.status === "RESOLVED_BUYER" && d.order.sellerId === user.id) ||
+				(d.status === "RESOLVED_SELLER" && d.order.buyerId === user.id)
+		).length;
+	}, [statsQ.data, user]);
+
+	if (!user) return null;
+
+	const reloadWallet = () => {
+		balanceQ.reload();
+		rowsQ.reload();
+		withdrawalsQ.reload();
+	};
+
+	const saveProfile = async () => {
 		setBusy(true);
 		try {
-			await walletService.withdraw(user.id, Number(amount));
-			toast.success("Withdrawal requested");
-			setAmount("");
-			reload();
-		} catch (err: unknown) {
+			await usersApi.updateMe({
+				...(username.trim() ? { username: username.trim() } : {}),
+				...(telegram.trim() ? { telegramUsername: telegram.trim().replace(/^@/, "") } : {}),
+			});
+			await refresh();
+			toast.success("Profile updated");
+			setEditing(false);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Update failed");
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	const withdraw = async () => {
+		if (address.trim().length < 10) return toast.error("Enter a valid wallet address");
+		setBusy(true);
+		try {
+			const result = await walletApi.withdraw({ address: address.trim(), network });
+			toast.success(`Payout of ${fmtUsd(result.amountUsd)} USDT accepted`);
+			setAddress("");
+			reloadWallet();
+		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Withdrawal failed");
 		} finally {
 			setBusy(false);
 		}
 	};
 
-	if (!user) return null;
-
 	return (
-		<PageContainer title="Profile" subtitle={user.email}>
-			<Grid container spacing={3}>
-				<Grid size={{ xs: 12, md: 4 }}>
-					<Card variant="outlined">
-						<CardContent>
-							<Stack spacing={2} sx={{ alignItems: "center", textAlign: "center" }}>
-								<Avatar sx={{ width: 72, height: 72, fontSize: 28 }}>
-									{user.displayName.charAt(0)}
-								</Avatar>
-								<Box>
-									<Typography variant="h6" sx={{ fontWeight: 600 }}>
-										{user.displayName}
-									</Typography>
-									<Typography variant="caption" color="text.secondary">
-										Member since {formatDate(user.createdAt)}
-									</Typography>
-								</Box>
-								<Stack direction="row" spacing={1}>
-									<Chip size="small" label={humanise(user.role)} color="primary" />
-									<Chip size="small" variant="outlined" label={humanise(user.status)} />
-								</Stack>
-							</Stack>
+		<Page idx="05" title="Wallet" sub="Escrow · vesting · payouts">
+			<div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+				<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={52} fontSize={22} />
+				<div>
+					<div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+						<h4 style={{ margin: 0 }}>{user.username ?? user.email}</h4>
+						<span className="tag" style={{ background: "var(--color-accent)", color: "var(--color-bg)", fontWeight: 600 }}>
+							{isAdmin ? "Admin" : "Seller"}
+						</span>
+						<span className="tag" style={{ whiteSpace: "nowrap", border: "1px solid var(--ok)", color: "var(--ok)", background: "transparent" }}>
+							Active
+						</span>
+					</div>
+					<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: 3 }}>
+						{user.email} · member since {formatDate(user.createdAt)}
+					</div>
+				</div>
+				<div style={{ marginLeft: "auto", textAlign: "left" }}>
+					<div className="text-muted" style={monoLabel}>
+						TELEGRAM · FOR DISPUTE CHATS
+					</div>
+					<div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+						<span style={{ ...mono, fontSize: 12 }}>
+							{user.telegramUsername ? `@${user.telegramUsername}` : "not set"}
+						</span>
+						<button
+							className="btn btn-ghost"
+							style={{ fontSize: 12 }}
+							onClick={() => {
+								setUsername(user.username ?? "");
+								setTelegram(user.telegramUsername ?? "");
+								setEditing((v) => !v);
+							}}
+						>
+							Edit profile
+						</button>
+					</div>
+				</div>
+			</div>
 
-							<Divider sx={{ my: 3 }} />
+			{editing && (
+				<div className="card elev-sm" style={{ padding: 16, flexDirection: "row", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+					<div className="field" style={{ width: 220 }}>
+						<label>Display name</label>
+						<input className="input" value={username} onChange={(e) => setUsername(e.target.value)} />
+					</div>
+					<div className="field" style={{ width: 220 }}>
+						<label>Telegram handle · without @</label>
+						<input className="input" style={mono} value={telegram} onChange={(e) => setTelegram(e.target.value)} />
+					</div>
+					<button className="btn btn-primary" onClick={saveProfile} disabled={busy}>
+						Save
+					</button>
+					<button className="btn btn-secondary" onClick={() => setEditing(false)} disabled={busy}>
+						Cancel
+					</button>
+				</div>
+			)}
 
-							<ReputationBadge score={user.reputationScore} />
+			<div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+				<BalanceCard
+					label="IN ESCROW"
+					icon={<LockIcon size={14} />}
+					value={heldTotal}
+					caption={
+						usd(balance?.disputed ?? 0) > 0
+							? `includes ${fmtUsd(balance?.disputed ?? 0)} frozen by disputes`
+							: "held until vesting completes"
+					}
+					delay={0}
+				/>
+				<BalanceCard
+					label="VESTING"
+					icon={<HourglassIcon size={14} />}
+					value={usd(balance?.vesting ?? 0)}
+					color="var(--warn)"
+					caption={balance?.nextVestingAt ? `Next release ${formatDate(balance.nextVestingAt)}` : "Nothing vesting right now"}
+					delay={0.07}
+				/>
+				<BalanceCard
+					label="AVAILABLE"
+					icon={<BanknoteIcon size={14} />}
+					value={available}
+					color="var(--ok)"
+					caption="Ready to withdraw"
+					delay={0.14}
+				/>
+			</div>
 
-							{user.bio && (
-								<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-									{user.bio}
-								</Typography>
-							)}
+			<div className="card" style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+				<h6 style={{ margin: 0, flex: "none" }}>Withdraw</h6>
+				<input
+					className="input"
+					style={{ width: 280, flex: "none", ...mono }}
+					placeholder="Destination wallet address"
+					value={address}
+					onChange={(e) => setAddress(e.target.value)}
+				/>
+				<select className="input" style={{ width: 110, flex: "none", ...mono }} value={network} onChange={(e) => setNetwork(e.target.value)}>
+					{NETWORKS.map((n) => (
+						<option key={n}>{n}</option>
+					))}
+				</select>
+				<button className="btn btn-primary" style={{ whiteSpace: "nowrap" }} onClick={withdraw} disabled={busy || available < 1}>
+					Withdraw {fmtUsd(available)} USDT
+				</button>
+				<span className="text-muted" style={{ fontSize: 11, marginLeft: "auto" }}>
+					Pays out the whole available bucket · min 1 USDT · orders still vesting stay untouched
+				</span>
+			</div>
 
-							{user.payoutWalletAddress && (
-								<Box sx={{ mt: 2 }}>
-									<Typography variant="caption" color="text.secondary">
-										Payout wallet
-									</Typography>
-									<Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-										{user.payoutWalletAddress}
-									</Typography>
-								</Box>
-							)}
-
-							{!user.emailVerified && (
-								<Alert severity="warning" sx={{ mt: 2 }}>
-									Verify your email to start selling.
-								</Alert>
-							)}
-						</CardContent>
-					</Card>
-				</Grid>
-
-				<Grid size={{ xs: 12, md: 8 }}>
-					<Tabs value={tab} onChange={(_, value: TabKey) => setTab(value)} sx={{ mb: 2 }}>
-						<Tab label="Wallet & vesting" value="wallet" />
-						<Tab label="My ads" value="ads" />
-						<Tab label="Reputation" value="reputation" />
-					</Tabs>
-
-					{tab === "wallet" && (
-						<AsyncSection loading={loading} error={error}>
-							{wallet && (
-								<Stack spacing={3}>
-									<Grid container spacing={2}>
-										<Grid size={{ xs: 12, sm: 4 }}>
-											<StatCard
-												label="In escrow"
-												value={formatCurrency(wallet.escrowBalance)}
-												hint="Held until delivery is confirmed"
-												icon={<Lock fontSize="small" color="disabled" />}
-											/>
-										</Grid>
-										<Grid size={{ xs: 12, sm: 4 }}>
-											<StatCard
-												label="Vesting"
-												value={formatCurrency(wallet.vestingBalance)}
-												hint={tier && `Releases after ${formatVestingPeriod(tier.hours)}`}
-												icon={<Savings fontSize="small" color="disabled" />}
-											/>
-										</Grid>
-										<Grid size={{ xs: 12, sm: 4 }}>
-											<StatCard
-												label="Available"
-												value={formatCurrency(wallet.availableBalance)}
-												hint="Ready to withdraw"
-												icon={<AccountBalanceWallet fontSize="small" color="disabled" />}
-											/>
-										</Grid>
-									</Grid>
-
-									<Card variant="outlined">
-										<CardContent>
-											<Typography variant="h6" gutterBottom>
-												Withdraw
-											</Typography>
-											<Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-												<TextField
-													label="Amount"
-													type="number"
-													size="small"
-													value={amount}
-													onChange={(e) => setAmount(e.target.value)}
-													fullWidth
-												/>
-												<Button
-													variant="contained"
-													disabled={busy || !amount}
-													onClick={handleWithdraw}
-													sx={{ whiteSpace: "nowrap" }}
-												>
-													Withdraw
-												</Button>
-											</Stack>
-										</CardContent>
-									</Card>
-
-									<Card variant="outlined">
-										<CardContent>
-											<Typography variant="h6" gutterBottom>
-												Vesting entries
-											</Typography>
-										</CardContent>
-										<Box sx={{ overflowX: "auto" }}>
-											<Table size="small">
-												<TableHead>
-													<TableRow>
-														<TableCell>Order</TableCell>
-														<TableCell align="right">Amount</TableCell>
-														<TableCell>Releases</TableCell>
-														<TableCell>Status</TableCell>
-													</TableRow>
-												</TableHead>
-												<TableBody>
-													{(vesting ?? []).map((entry) => (
-														<TableRow key={entry.id}>
-															<TableCell>{entry.orderId}</TableCell>
-															<TableCell align="right">{formatCurrency(entry.amount)}</TableCell>
-															<TableCell>{formatDate(entry.releaseAt)}</TableCell>
-															<TableCell>
-																<StatusChip status={entry.status} />
-															</TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</Box>
-									</Card>
-								</Stack>
-							)}
-						</AsyncSection>
-					)}
-
-					{tab === "ads" && (
-						<Card variant="outlined">
-							<Box sx={{ overflowX: "auto" }}>
-								<Table>
-									<TableHead>
-										<TableRow>
-											<TableCell>Title</TableCell>
-											<TableCell align="right">Price</TableCell>
-											<TableCell align="right">Orders</TableCell>
-											<TableCell>Status</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{(ads ?? []).map((ad) => (
-											<TableRow
-												key={ad.id}
-												hover
-												sx={{ cursor: "pointer" }}
-												onClick={() => navigate(`/ads/${ad.id}`)}
+			<div className="card" style={{ padding: "16px 18px", gap: 10 }}>
+				<h6 style={{ margin: 0 }}>Vesting entries</h6>
+				<AsyncPanel
+					loading={rowsQ.loading}
+					error={rowsQ.error}
+					isEmpty={(rowsQ.data ?? []).length === 0}
+					emptyMessage="No escrowed orders yet"
+				>
+					<table className="table">
+						<thead>
+							<tr>
+								<th>Order</th>
+								<th>Amount</th>
+								<th>Releases</th>
+								<th>Progress</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{(rowsQ.data ?? []).map((row) => {
+								const tag = bucketTag[row.bucket];
+								const pct =
+									row.bucket === "vesting" || row.bucket === "disputed"
+										? vestingProgress(row.vestedAt)
+										: 1;
+								return (
+									<tr key={row.orderId}>
+										<td>
+											<div style={{ fontWeight: 600, fontSize: 13 }}>{row.title}</div>
+											<div className="text-muted" style={{ ...mono, fontSize: 11 }}>
+												{row.orderId}
+											</div>
+										</td>
+										<td style={{ ...mono, fontSize: 12.5 }}>{fmtUsd(row.amount)} USDT</td>
+										<td className="text-muted" style={{ ...mono, fontSize: 12.5 }}>
+											{row.vestedAt ? formatDate(row.vestedAt) : "—"}
+										</td>
+										<td>
+											<div
+												style={{
+													width: 120,
+													height: 6,
+													background: "color-mix(in srgb, var(--color-text) 12%, transparent)",
+													position: "relative",
+													overflow: "hidden",
+												}}
 											>
-												<TableCell>{ad.title}</TableCell>
-												<TableCell align="right">{formatCurrency(ad.price)}</TableCell>
-												<TableCell align="right">{ad.ordersCount}</TableCell>
-												<TableCell>
-													<StatusChip status={ad.status} />
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</Box>
-						</Card>
-					)}
+												<div
+													style={{
+														height: 6,
+														width: `${Math.round(pct * 100)}%`,
+														background: tag.color,
+														animation: "growBar .8s ease .2s both",
+														transformOrigin: "left",
+													}}
+												/>
+												<span
+													style={{
+														position: "absolute",
+														inset: 0,
+														background:
+															"linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)",
+														animation: "sheen 2.6s ease-in-out infinite",
+													}}
+												/>
+											</div>
+										</td>
+										<td>
+											<StatusTag label={tag.label} color={tag.color} />
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</AsyncPanel>
+			</div>
 
-					{tab === "reputation" && (
-						<Card variant="outlined">
-							<CardContent>
-								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-									Your score determines how fast funds are released. Higher reputation means a
-									shorter vesting period.
-								</Typography>
-							</CardContent>
-							<Box sx={{ overflowX: "auto" }}>
-								<Table size="small">
-									<TableHead>
-										<TableRow>
-											<TableCell>Event</TableCell>
-											<TableCell align="right">Change</TableCell>
-											<TableCell>Order</TableCell>
-											<TableCell>When</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{(events ?? []).map((event) => (
-											<TableRow key={event.id}>
-												<TableCell>
-													{humanise(event.type)}
-													{event.reason && (
-														<Typography
-															variant="caption"
-															color="text.secondary"
-															sx={{ display: "block" }}
-														>
-															{event.reason}
-														</Typography>
-													)}
-												</TableCell>
-												<TableCell align="right">
-													<Typography
-														variant="body2"
-														sx={{ fontWeight: 600 }}
-														color={event.delta >= 0 ? "success.main" : "error.main"}
-													>
-														{event.delta > 0 ? `+${event.delta}` : event.delta}
-													</Typography>
-												</TableCell>
-												<TableCell>{event.orderId ?? "—"}</TableCell>
-												<TableCell>{formatDateTime(event.createdAt)}</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</Box>
-						</Card>
-					)}
-				</Grid>
-			</Grid>
-		</PageContainer>
+			<div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 22, alignItems: "stretch" }}>
+				<div className="card" style={{ padding: 18, gap: 12 }}>
+					<h6 style={{ margin: 0 }}>Withdrawals</h6>
+					<AsyncPanel
+						loading={withdrawalsQ.loading}
+						error={withdrawalsQ.error}
+						isEmpty={(withdrawalsQ.data ?? []).length === 0}
+						emptyMessage="No payouts yet"
+					>
+						<div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+							{(withdrawalsQ.data ?? []).map((w) => {
+								const tag = withdrawalStatusTag(w.status);
+								return (
+									<div
+										key={w.id}
+										style={{
+											display: "flex",
+											alignItems: "center",
+											gap: 12,
+											padding: "8px 10px",
+											borderLeft: `3px solid ${tag.color}`,
+											background: "var(--color-neutral-100)",
+										}}
+									>
+										<span style={{ ...mono, fontSize: 12.5, fontWeight: 600, width: 110 }}>
+											{fmtUsd(w.amountUsd)} {w.currency}
+										</span>
+										<span className="text-muted" style={{ ...mono, fontSize: 11 }}>
+											{w.network} · {w.address.slice(0, 8)}…{w.address.slice(-4)} · {w.orderCount} orders
+										</span>
+										<span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+											<span className="text-muted" style={{ ...mono, fontSize: 11 }}>
+												{formatDate(w.createdAt)}
+											</span>
+											<StatusTag label={tag.label} color={tag.color} fontSize={10} />
+										</span>
+									</div>
+								);
+							})}
+						</div>
+					</AsyncPanel>
+					<div className="text-muted" style={{ fontSize: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
+						Each payout bundles every order that individually finished vesting. Failed payouts unlink
+						their orders — the money returns to your available bucket.
+					</div>
+				</div>
+
+				<div className="card" style={{ padding: 18, gap: 10 }}>
+					<h6 style={{ margin: 0 }}>Account</h6>
+					{[
+						{ label: "Purchases", value: String(statsQ.data?.purchases.length ?? "—") },
+						{ label: "Sales", value: String(statsQ.data?.sales.length ?? "—") },
+						{
+							label: "Disputes lost",
+							value: String(statsQ.data ? disputesLost : "—"),
+							color: disputesLost > 0 ? "var(--bad)" : "var(--ok)",
+						},
+						{ label: "Withdrawn to date", value: `${fmtUsd(balance?.withdrawn ?? 0)} USDT` },
+						{ label: "Member for", value: `${memberMonths} month${memberMonths === 1 ? "" : "s"}` },
+					].map((row, i, all) => (
+						<div
+							key={row.label}
+							style={{
+								display: "flex",
+								justifyContent: "space-between",
+								fontSize: 13,
+								padding: "6px 0",
+								borderBottom: i === all.length - 1 ? undefined : "1px solid var(--color-divider)",
+							}}
+						>
+							<span className="text-muted">{row.label}</span>
+							<span style={{ ...mono, color: row.color }}>{row.value}</span>
+						</div>
+					))}
+					<div className="text-muted" style={{ fontSize: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
+						Every sale vests 30 days in escrow before payout. Losing a dispute refunds the buyer from
+						escrow immediately — deliver well and the money always releases on schedule.
+					</div>
+				</div>
+			</div>
+		</Page>
 	);
 }

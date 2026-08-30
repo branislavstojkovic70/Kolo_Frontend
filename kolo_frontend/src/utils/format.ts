@@ -42,6 +42,15 @@ export function formatRelative(iso: string): string {
 	return "just now";
 }
 
+/**
+ * Human-scale reference for an entity id: strips the seed-style type prefix
+ * ("ord_vesting_1" → "VESTING_1"), falls back to the last 6 chars of long ids.
+ */
+export function shortRef(id: string): string {
+	const bare = id.replace(/^[a-z]{2,4}_/, "");
+	return (bare.length <= 12 ? bare : bare.slice(-6)).toUpperCase();
+}
+
 /** "in_progress" -> "In progress" */
 export function humanise(value: string): string {
 	const spaced = value.replace(/_/g, " ");

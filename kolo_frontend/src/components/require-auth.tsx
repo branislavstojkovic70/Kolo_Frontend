@@ -1,17 +1,27 @@
-import { Box, CircularProgress } from "@mui/material";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/use-auth";
 
-/** Route guard. `adminOnly` mirrors the backend RolesGuard for admin routes. */
+/** Route guard. `adminOnly` mirrors the backend AdminGuard. */
 export default function RequireAuth({ adminOnly = false }: { adminOnly?: boolean }) {
 	const { user, loading, isAdmin } = useAuth();
 	const location = useLocation();
 
 	if (loading) {
 		return (
-			<Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-				<CircularProgress />
-			</Box>
+			<div
+				className="text-muted"
+				style={{
+					display: "flex",
+					justifyContent: "center",
+					paddingTop: 120,
+					fontFamily: "var(--font-mono)",
+					fontSize: 11,
+					letterSpacing: "0.12em",
+					animation: "pulseDot 1.2s ease-in-out infinite",
+				}}
+			>
+				KOLO / LOADING…
+			</div>
 		);
 	}
 

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { listingsApi, ordersApi } from "../api";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
-import { ArrowLeftIcon, CheckIcon, LockIcon, PauseIcon, PlayIcon, TrashIcon } from "../components/icons";
+import { ArrowLeftIcon, CheckIcon, LockIcon, PauseIcon, PencilIcon, PlayIcon, TrashIcon } from "../components/icons";
 import Page from "../components/page";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
@@ -308,6 +308,14 @@ export default function AdDetails() {
 											</button>
 										)}
 									</div>
+									<button
+										className="btn btn-secondary btn-block"
+										onClick={() => navigate(`/ads/${ad.id}/edit`)}
+										disabled={busy}
+									>
+										<PencilIcon size={14} />
+										Edit listing
+									</button>
 									<button className="btn btn-secondary btn-block" onClick={handleToggleStatus} disabled={busy}>
 										{ad.status === "ACTIVE" ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
 										{ad.status === "ACTIVE" ? "Pause listing" : "Activate listing"}

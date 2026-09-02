@@ -39,6 +39,7 @@ const router = createBrowserRouter([
 					{ path: "/", element: <Navigate to="/ads" replace /> },
 					{ path: "/ads", element: <Ads /> },
 					{ path: "/ads/new", element: <CreateAd /> },
+					{ path: "/ads/:id/edit", element: <CreateAd /> },
 					{ path: "/ads/:id", element: <AdDetails /> },
 					{ path: "/orders", element: <Orders /> },
 					{ path: "/orders/:id", element: <OrderDetails /> },

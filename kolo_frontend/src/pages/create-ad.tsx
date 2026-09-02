@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { listingsApi } from "../api";
 import { ArrowLeftIcon, ShieldCheckIcon } from "../components/icons";
 import Page from "../components/page";
@@ -16,8 +16,14 @@ const rowBetween: React.CSSProperties = {
 	fontSize: 14,
 };
 
+/**
+ * One form, two modes. `/ads/new` creates; `/ads/:id/edit` updates an existing
+ * listing through PATCH /listings/:id, which accepts every field below.
+ */
 export default function CreateAd() {
 	const navigate = useNavigate();
+	const { id } = useParams<{ id: string }>();
+	const isEdit = !!id;
 	const platform = usePlatformConfig();
 	const [title, setTitle] = useState("");
 	const [category, setCategory] = useState("");
@@ -27,6 +33,26 @@ export default function CreateAd() {
 	const [imageUrl, setImageUrl] = useState("");
 	const [imageFailed, setImageFailed] = useState(false);
 	const [busy, setBusy] = useState(false);
+
+	const { data: existing } = useAsync(
+		() => (id ? listingsApi.get(id) : Promise.resolve(undefined)),
+		[id]
+	);
+
+	// Prefill once the listing arrives, adjusting state during render rather than
+	// from an effect — React re-runs the render before committing, so the form is
+	// never painted empty. deliveryInfo is deliberately absent from every listing
+	// response, so it stays blank and is only sent when the seller retypes it.
+	const [prefilledId, setPrefilledId] = useState<string>();
+	if (existing && existing.id !== prefilledId) {
+		setPrefilledId(existing.id);
+		setTitle(existing.title);
+		setCategory(existing.category ?? "");
+		setPrice(existing.priceUsd);
+		setDescription(existing.description);
+		setImageUrl(existing.imageUrl ?? "");
+		setImageFailed(false);
+	}
 
 	const { data: catalogue } = useAsync(() => listingsApi.list({ limit: 100 }), []);
 	const knownCategories = useMemo(() => {
@@ -57,6 +83,16 @@ export default function CreateAd() {
 		};
 
 		try {
+			if (id) {
+				await listingsApi.update(id, {
+					...payload,
+					status: asDraft ? "PAUSED" : "ACTIVE",
+				});
+				toast.success(asDraft ? "Saved and paused" : "Listing updated");
+				navigate(`/ads/${id}`);
+				return;
+			}
+
 			const listing = await listingsApi.create(payload);
 			if (asDraft) {
 				await listingsApi.update(listing.id, { status: "PAUSED" });
@@ -72,7 +108,14 @@ export default function CreateAd() {
 	};
 
 	return (
-		<Page title="Post an ad" sub={`List a service · ${feeLabel(platform)} fee · escrow protected`}>
+		<Page
+			title={isEdit ? "Edit listing" : "Post an ad"}
+			sub={
+				isEdit
+					? `Update your service · ${feeLabel(platform)} fee · escrow protected`
+					: `List a service · ${feeLabel(platform)} fee · escrow protected`
+			}
+		>
 			<div>
 				<button
 					className="btn btn-ghost"
@@ -140,6 +183,7 @@ export default function CreateAd() {
 					<div className="field">
 						<label htmlFor="ad-delivery">
 							Delivery info · revealed to the buyer only after payment confirms
+							{isEdit ? " · leave blank to keep the current text" : ""}
 						</label>
 						<textarea
 							id="ad-delivery"
@@ -234,10 +278,10 @@ export default function CreateAd() {
 
 					<div className="card" style={{ padding: 18, gap: 12 }}>
 						<button className="btn btn-primary btn-block" onClick={() => submit(false)} disabled={busy}>
-							{busy ? "Publishing…" : "Publish ad"}
+							{busy ? "Saving…" : isEdit ? "Save changes" : "Publish ad"}
 						</button>
 						<button className="btn btn-secondary btn-block" onClick={() => submit(true)} disabled={busy}>
-							Save as draft
+							{isEdit ? "Save and pause" : "Save as draft"}
 						</button>
 						<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
 							<ShieldCheckIcon size={13} style={{ flex: "none", marginTop: 1 }} />

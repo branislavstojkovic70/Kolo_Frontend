@@ -1,11 +1,57 @@
 import { useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
+import { SignIn } from "@clerk/clerk-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth-layout";
 import { LockIcon } from "../components/icons";
 import { useAuth } from "../hooks/use-auth";
+import { isClerkEnabled } from "../lib/clerk";
 
+/** Clerk owns the form when it is configured; otherwise the dev e-mail form. */
 export default function Login() {
+	return isClerkEnabled ? <ClerkSignIn /> : <DevSignIn />;
+}
+
+function ClerkSignIn() {
+	const { user, loading } = useAuth();
+	const location = useLocation();
+	const from = (location.state as { from?: string } | null)?.from ?? "/ads";
+
+	if (!loading && user) return <Navigate to={from} replace />;
+
+	return (
+		<AuthLayout>
+			<h1
+				style={{
+					margin: "0 0 8px",
+					fontSize: 44,
+					lineHeight: 0.95,
+					textTransform: "uppercase",
+					letterSpacing: "-0.02em",
+				}}
+			>
+				Sign in
+			</h1>
+			<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
+				New here? <Link to="/register">Create an account</Link> · it takes a minute.
+			</div>
+			{/* routing="path" needs the /login/* splat route in main.tsx */}
+			<SignIn routing="path" path="/login" signUpUrl="/register" fallbackRedirectUrl={from} />
+			<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
+			<div
+				className="text-muted"
+				style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
+			>
+				<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
+				<span>
+					Protected by escrow and admin arbitration. Your funds move only when you confirm.
+				</span>
+			</div>
+		</AuthLayout>
+	);
+}
+
+function DevSignIn() {
 	const { user, loading, login } = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -62,6 +108,7 @@ export default function Login() {
 						required
 					/>
 				</div>
+				{/* Decorative: dev-bypass auth has no password. Clerk's form does. */}
 				<div className="field" style={{ marginBottom: 8 }}>
 					<label htmlFor="login-password">Password</label>
 					<input

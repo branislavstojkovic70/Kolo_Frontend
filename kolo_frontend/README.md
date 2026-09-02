@@ -107,21 +107,38 @@ npm run dev -- --host     # then visit http://<your-machine-ip>:5173
 
 ## Authentication
 
-The backend authenticates with **Clerk** (Google OAuth) in production, but ships a **dev
-bypass**: when `DEV_AUTH_BYPASS=true`, any request may carry an `x-dev-user-email` header and
-the API JIT-provisions that user on first contact.
+The app has two session models. Which one runs is decided by a single env var,
+`VITE_CLERK_PUBLISHABLE_KEY` — see [`src/lib/clerk.ts`](src/lib/clerk.ts).
 
-The frontend uses this bypass as its session model:
+### Clerk (key set)
+
+- `<ClerkProvider>` wraps the app; `/login` and `/register` render Clerk's own
+  [`<SignIn>`](src/pages/login.tsx) / [`<SignUp>`](src/pages/register.tsx), skinned to the Kolo
+  palette. Google OAuth and any other method are enabled in the Clerk dashboard, not in code.
+- Every API request carries `Authorization: Bearer <clerk session token>`; the token is minted
+  per request from Clerk's `getToken()`.
+- The backend's `ClerkAuthGuard` verifies it and JIT-provisions the Kolo row. It **adopts an
+  existing row with the same e-mail**, so a seeded account survives its first real Clerk login.
+- Both routes are mounted as splats (`/login/*`) because Clerk's path routing puts its sub-steps
+  (2FA, SSO callback) underneath them.
+
+Set the matching `CLERK_SECRET_KEY` in the **backend** `.env` — it must be the same Clerk instance.
+
+### Dev bypass (key empty)
+
+Fallback so the seeded demo runs without a Clerk account. Requires `DEV_AUTH_BYPASS=true` on the
+backend.
 
 - Signing in stores the e-mail in `localStorage` (`kolo-session-email`) and calls `GET /api/me`.
 - Every API request sends the stored e-mail as `x-dev-user-email`
   (see [`src/api/client.ts`](src/api/client.ts)).
-- The **password field on the login screen is decorative** — there is no password auth.
+- The **password field on the login screen is decorative** — this path has no password auth.
 - Registering is the same call plus a `PATCH /api/me` to save the chosen display name.
-- Admin rights come from the backend's `ADMIN_EMAILS` env list.
 
-Swapping in real Clerk auth later only touches `src/api/client.ts` (replace the header with a
-Bearer token) and the auth provider.
+Never both at once: the backend guard checks the dev header first, so a stray e-mail header would
+silently outrank a real token. The client sends one or the other, never both.
+
+Admin rights come from the backend's `ADMIN_EMAILS` env list in either mode.
 
 ### Seeded accounts
 
@@ -132,6 +149,9 @@ Bearer token) and the auth provider.
 | `tom.becker@example.com`      | Buyer with open (unpaid) invoices                     |
 | `priya.nair@example.com`      | Empty wallet — good for watching a balance fill up    |
 | *first entry of `ADMIN_EMAILS`* | The admin — sees the Arbitration view               |
+
+These are dev-bypass logins. With Clerk on, sign in with a real account whose e-mail matches one
+of these rows to inherit its data.
 
 ## Demo walkthrough
 
@@ -244,9 +264,12 @@ overflow):
 
 ## Environment variables
 
-| Variable       | Default                     | Purpose                       |
-| -------------- | --------------------------- | ----------------------------- |
-| `VITE_API_URL` | `http://localhost:3000/api` | Base URL of the Kolo backend  |
+| Variable                     | Default                     | Purpose                                                                 |
+| ---------------------------- | --------------------------- | ----------------------------------------------------------------------- |
+| `VITE_API_URL`               | `http://localhost:3000/api` | Base URL of the Kolo backend                                            |
+| `VITE_CLERK_PUBLISHABLE_KEY` | *(empty)*                   | Clerk publishable key (`pk_test_…`/`pk_live_…`). Empty = dev-bypass login |
+
+Copy [`.env.example`](.env.example) to `.env` and fill in what you need; `.env` is gitignored.
 
 ## Scripts
 

@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
+import { ClerkProvider } from "@clerk/clerk-react";
 import "./index.css";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import { buildClerkAppearance, CLERK_PUBLISHABLE_KEY, isClerkEnabled } from "./lib/clerk";
 import { applyThemeMode, loadThemeMode, ThemeModeContext, type ThemeMode } from "./theme";
 import { AuthProvider } from "./components/auth-provider";
 import RequireAuth from "./components/require-auth";
@@ -22,9 +24,10 @@ import Admin from "./pages/admin";
 import NotFound from "./pages/not-found";
 
 const router = createBrowserRouter([
-	// Auth pages render without the app shell.
-	{ path: "/login", element: <Login /> },
-	{ path: "/register", element: <Register /> },
+	// Auth pages render without the app shell. The splat is required by Clerk's
+	// path routing — it mounts sub-steps (2FA, SSO callback) under these paths.
+	{ path: "/login/*", element: <Login /> },
+	{ path: "/register/*", element: <Register /> },
 
 	{
 		element: <RequireAuth />,
@@ -53,6 +56,27 @@ const router = createBrowserRouter([
 	},
 ]);
 
+/**
+ * Clerk wraps the tree only when a publishable key is configured — mounting
+ * ClerkProvider with an empty key throws and blanks the app.
+ */
+function ClerkGate({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
+	// Clerk needs concrete colours, so its skin is rebuilt on every theme flip.
+	const appearance = useMemo(() => buildClerkAppearance(mode), [mode]);
+
+	if (!isClerkEnabled) return <>{children}</>;
+
+	return (
+		<ClerkProvider
+			publishableKey={CLERK_PUBLISHABLE_KEY}
+			afterSignOutUrl="/login"
+			appearance={appearance}
+		>
+			{children}
+		</ClerkProvider>
+	);
+}
+
 function Root() {
 	const [mode, setMode] = useState<ThemeMode>(loadThemeMode);
 	const toggleMode = () =>
@@ -66,9 +90,11 @@ function Root() {
 
 	return (
 		<ThemeModeContext.Provider value={themeContext}>
-			<AuthProvider>
-				<RouterProvider router={router} />
-			</AuthProvider>
+			<ClerkGate mode={mode}>
+				<AuthProvider>
+					<RouterProvider router={router} />
+				</AuthProvider>
+			</ClerkGate>
 			<Toaster
 				position="bottom-center"
 				toastOptions={{

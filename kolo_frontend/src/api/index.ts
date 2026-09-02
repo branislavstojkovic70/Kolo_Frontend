@@ -21,7 +21,7 @@ import type {
 } from "./types";
 
 export * from "./types";
-export { ApiError, getSessionEmail, setSessionEmail } from "./client";
+export { ApiError, getSessionEmail, setSessionEmail, setTokenGetter } from "./client";
 
 // ── users ────────────────────────────────────────────────────────────────
 

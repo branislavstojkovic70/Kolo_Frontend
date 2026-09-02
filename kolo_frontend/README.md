@@ -258,6 +258,10 @@ and [`Pagination`](src/components/pagination.tsx) renders the 10/20/50/100 picke
 The orders list calls `GET /api/orders?role=all|buying|selling` rather than merging `/purchases`
 and `/sales` — two independently paginated lists cannot be stitched into one page.
 
+The marketplace pages the same way, and its search, category, price range and sort all run in the
+database (`minPrice` / `maxPrice` / `sort`). The admin view gives each of its three tabs its own
+status filter and pager. Admin endpoints take no free-text search, so the UI offers none.
+
 ## Design system
 
 Implemented from the Kolo design handoff (`design_handoff_kolo_app`), which is the source of

@@ -57,6 +57,16 @@ export interface Page<T> {
 	pages: number;
 }
 
+export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc";
+
+/** Catalogue headline numbers, counted in the database over ACTIVE listings. */
+export interface ListingStats {
+	total: number;
+	categories: string[];
+	catalogueValueUsd: string;
+	medianPriceUsd: string;
+}
+
 export interface Listing {
 	id: string;
 	sellerId: string;

@@ -10,6 +10,8 @@ import type {
 	DisputeStatus,
 	DisputeWinner,
 	Listing,
+	ListingSort,
+	ListingStats,
 	Order,
 	OrderCreated,
 	OrderStatus,
@@ -72,11 +74,22 @@ export type ListQuery<TStatus extends string> = {
 /** Which side of the trade the orders list shows. */
 export type OrderRole = "all" | "buying" | "selling";
 
+/** search / category / price range / sort / page — the full listings query. */
+export type ListingQuery = {
+	search?: string;
+	category?: string;
+	minPrice?: number;
+	maxPrice?: number;
+	sort?: ListingSort;
+	page?: number;
+	limit?: number;
+};
+
 export const listingsApi = {
-	list: (query?: { search?: string; category?: string; page?: number; limit?: number }) =>
-		api.get<Page<Listing>>("/listings", query),
+	list: (query?: ListingQuery) => api.get<Page<Listing>>("/listings", query),
+	stats: () => api.get<ListingStats>("/listings/stats"),
 	get: (id: string) => api.get<Listing>(`/listings/${id}`),
-	mine: () => api.get<Listing[]>("/listings/mine"),
+	mine: (query?: ListingQuery) => api.get<Page<Listing>>("/listings/mine", query),
 	create: (input: ListingInput) => api.post<Listing>("/listings", input),
 	update: (id: string, input: Partial<ListingInput> & { status?: "ACTIVE" | "PAUSED" }) =>
 		api.patch<Listing>(`/listings/${id}`, input),

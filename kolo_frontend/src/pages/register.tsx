@@ -1,11 +1,55 @@
 import { useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
+import { SignUp } from "@clerk/clerk-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth-layout";
 import { LockIcon } from "../components/icons";
 import { useAuth } from "../hooks/use-auth";
+import { isClerkEnabled } from "../lib/clerk";
 
+/** Clerk owns the form when it is configured; otherwise the dev e-mail form. */
 export default function Register() {
+	return isClerkEnabled ? <ClerkSignUp /> : <DevSignUp />;
+}
+
+function ClerkSignUp() {
+	const { user, loading } = useAuth();
+
+	if (!loading && user) return <Navigate to="/ads" replace />;
+
+	return (
+		<AuthLayout>
+			<h1
+				style={{
+					margin: "0 0 8px",
+					fontSize: 44,
+					lineHeight: 0.95,
+					textTransform: "uppercase",
+					letterSpacing: "-0.02em",
+				}}
+			>
+				Create account
+			</h1>
+			<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
+				Already on Kolo? <Link to="/login">Sign in</Link> instead.
+			</div>
+			{/* The backend creates the Kolo row on the first /me call after sign-up. */}
+			<SignUp routing="path" path="/register" signInUrl="/login" fallbackRedirectUrl="/ads" />
+			<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
+			<div
+				className="text-muted"
+				style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
+			>
+				<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
+				<span>
+					Protected by escrow and admin arbitration. Your funds move only when you confirm.
+				</span>
+			</div>
+		</AuthLayout>
+	);
+}
+
+function DevSignUp() {
 	const { user, loading, register } = useAuth();
 	const navigate = useNavigate();
 	const [displayName, setDisplayName] = useState("");
@@ -72,6 +116,7 @@ export default function Register() {
 						required
 					/>
 				</div>
+				{/* Decorative: dev-bypass auth has no password. Clerk's form does. */}
 				<div className="field" style={{ marginBottom: 20 }}>
 					<label htmlFor="register-password">Password</label>
 					<input

@@ -12,6 +12,19 @@ export type WithdrawalStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
 export type WalletBucket = "available" | "vesting" | "disputed" | "withdrawing" | "withdrawn";
 export type DisputeWinner = "BUYER" | "SELLER";
 
+/**
+ * Platform rules straight from the backend env — the FE must never keep its own
+ * copy of the fee or the vesting length.
+ */
+export interface PlatformConfig {
+	feePercent: number;
+	vestingDays: number;
+	disputeWindowDays: number;
+	minWithdrawalUsd: string;
+	payoutCurrencies: string[];
+	payoutNetworks: string[];
+}
+
 export interface User {
 	id: string;
 	email: string;
@@ -44,12 +57,24 @@ export interface Page<T> {
 	pages: number;
 }
 
+export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc";
+
+/** Catalogue headline numbers, counted in the database over ACTIVE listings. */
+export interface ListingStats {
+	total: number;
+	categories: string[];
+	catalogueValueUsd: string;
+	medianPriceUsd: string;
+}
+
 export interface Listing {
 	id: string;
 	sellerId: string;
 	title: string;
 	description: string;
 	category: string | null;
+	/** External cover-image URL. We store the link only — nothing is uploaded. */
+	imageUrl: string | null;
 	priceUsd: string;
 	status: ListingStatus;
 	createdAt: string;

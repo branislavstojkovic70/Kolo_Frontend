@@ -17,5 +17,5 @@ export function sumUsd(...values: Array<string | number>): number {
 	return values.reduce<number>((total, value) => total + usd(value), 0);
 }
 
-/** Mirrors the backend's PLATFORM_FEE_PERCENT — used only for previews; real orders carry feeUsd. */
-export const FEE_PERCENT = 4;
+// The platform fee lives in GET /api/config — see usePlatformConfig(). Nothing
+// here may restate it.

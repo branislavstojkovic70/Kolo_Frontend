@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { listingsApi } from "../api";
 import { useAsync } from "../hooks/use-async";
 import { useThemeMode } from "../theme";
+import { feeLabel, usePlatformConfig } from "../hooks/use-platform-config";
 import { MoonIcon, SunIcon } from "./icons";
 
 /**
@@ -11,6 +12,7 @@ import { MoonIcon, SunIcon } from "./icons";
 export default function AuthLayout({ children }: { children: ReactNode }) {
 	const { mode, toggleMode } = useThemeMode();
 	const { data: listings } = useAsync(() => listingsApi.list({ limit: 1 }), []);
+	const platform = usePlatformConfig();
 
 	return (
 		<div className="auth-split">
@@ -95,7 +97,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 					}}
 				>
 					{listings && <span>{listings.total} SERVICES LIVE</span>}
-					<span>4% FLAT FEE</span>
+					<span>{feeLabel(platform).toUpperCase()} FLAT FEE</span>
 					<span>100+ CRYPTO ASSETS</span>
 				</div>
 			</div>

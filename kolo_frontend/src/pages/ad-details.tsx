@@ -4,35 +4,46 @@ import { useNavigate, useParams } from "react-router-dom";
 import { listingsApi, ordersApi } from "../api";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
-import { ArrowLeftIcon, CheckIcon, LockIcon, PauseIcon, PlayIcon, TrashIcon } from "../components/icons";
+import { ArrowLeftIcon, CheckIcon, LockIcon, PauseIcon, PencilIcon, PlayIcon, TrashIcon } from "../components/icons";
 import Page from "../components/page";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { formatDate } from "../utils/format";
-import { FEE_PERCENT, fmtUsd, usd } from "../utils/money";
+import { fmtUsd, usd } from "../utils/money";
+import { feeLabel, previewFee, usePlatformConfig } from "../hooks/use-platform-config";
+import type { PlatformConfig } from "../api";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
-const GUARANTEES = [
+// Both lists quote platform rules, so they are built from the config rather
+// than written out — a changed env must never leave stale copy on the page.
+const guarantees = (platform: PlatformConfig | undefined) => [
 	"Funds held in Kolo escrow",
 	"Admin arbitration on disputes",
 	"Delivery unlocks after payment",
 	"Pay in 100+ crypto assets",
-	"4% flat platform fee",
-	"30-day dispute window",
+	`${feeLabel(platform)} flat platform fee`,
+	platform ? `${platform.disputeWindowDays}-day dispute window` : "Dispute window",
 ];
 
-const ESCROW_FLOW = [
+const escrowFlow = (platform: PlatformConfig | undefined) => [
 	"Pay in any crypto · funds lock in Kolo escrow",
 	"Delivery details unlock instantly on the order",
-	"You confirm · or open a dispute within 30 days",
-	"Funds vest 30 days, then release to the seller",
+	platform
+		? `You confirm · or open a dispute within ${platform.disputeWindowDays} days`
+		: "You confirm · or open a dispute",
+	platform
+		? `Funds vest ${platform.vestingDays} days, then release to the seller`
+		: "Funds vest, then release to the seller",
 ];
 
 export default function AdDetails() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const platform = usePlatformConfig();
 	const { user } = useAuth();
+	const [imageFailed, setImageFailed] = useState(false);
+	const [coverDraft, setCoverDraft] = useState<string>();
 	const [busy, setBusy] = useState(false);
 
 	const { data: ad, loading, error, reload } = useAsync(
@@ -51,7 +62,7 @@ export default function AdDetails() {
 
 	const isOwnAd = !!user && user.id === ad?.sellerId;
 	const price = usd(ad?.priceUsd ?? 0);
-	const fee = (price * FEE_PERCENT) / 100;
+	const fee = previewFee(platform, price);
 
 	const handleOrder = async () => {
 		if (!ad) return;
@@ -73,6 +84,23 @@ export default function AdDetails() {
 		try {
 			await listingsApi.update(ad.id, { status: ad.status === "ACTIVE" ? "PAUSED" : "ACTIVE" });
 			toast.success(ad.status === "ACTIVE" ? "Listing paused" : "Listing is live again");
+			reload();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Update failed");
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	/** Cover art is the one listing field editable in place — sellers swap the URL. */
+	const handleSaveCover = async () => {
+		if (!ad || coverDraft === undefined) return;
+		setBusy(true);
+		try {
+			await listingsApi.update(ad.id, { imageUrl: coverDraft.trim() });
+			toast.success(coverDraft.trim() ? "Cover image updated" : "Cover image removed");
+			setCoverDraft(undefined);
+			setImageFailed(false);
 			reload();
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Update failed");
@@ -111,6 +139,21 @@ export default function AdDetails() {
 				{ad && (
 					<div className="layout-detail">
 						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+							{/* Cover art, when the seller supplied a URL that actually loads. */}
+							{ad.imageUrl && !imageFailed && (
+								<img
+									src={ad.imageUrl}
+									alt=""
+									onError={() => setImageFailed(true)}
+									style={{
+										width: "100%",
+										maxHeight: 320,
+										objectFit: "cover",
+										border: "1px solid var(--color-divider)",
+										animation: "fadeUp .45s ease both",
+									}}
+								/>
+							)}
 							<div>
 								<div style={{ ...mono, fontSize: 10.5, letterSpacing: "0.14em", color: "var(--color-accent)" }}>
 									{(ad.category ?? "SERVICE").toUpperCase()} · LISTED {formatDate(ad.createdAt).toUpperCase()}
@@ -146,7 +189,7 @@ export default function AdDetails() {
 							</div>
 
 							<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "8px 24px", maxWidth: 640 }}>
-								{GUARANTEES.map((item) => (
+								{guarantees(platform).map((item) => (
 									<div key={item} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
 										<CheckIcon size={14} strokeWidth={2.5} style={{ color: "var(--color-accent)", flex: "none" }} />
 										{item}
@@ -201,7 +244,7 @@ export default function AdDetails() {
 									<span style={mono}>After payment confirms</span>
 								</div>
 								<div style={{ display: "flex", justifyContent: "space-between" }}>
-									<span className="text-muted">Kolo fee ({FEE_PERCENT}%)</span>
+									<span className="text-muted">Kolo fee ({feeLabel(platform)})</span>
 									<span style={mono}>{fmtUsd(fee)} USDT</span>
 								</div>
 								<div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -217,7 +260,7 @@ export default function AdDetails() {
 							<div>
 								<h6 style={{ marginBottom: 10 }}>Escrow flow</h6>
 								<div style={{ display: "flex", flexDirection: "column" }}>
-									{ESCROW_FLOW.map((step, i) => (
+									{escrowFlow(platform).map((step, i) => (
 										<div key={step} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
 											<span
 												style={{
@@ -225,12 +268,12 @@ export default function AdDetails() {
 													height: 8,
 													flex: "none",
 													marginTop: 4,
-													...(i === ESCROW_FLOW.length - 1
+													...(i === escrowFlow(platform).length - 1
 														? { border: "1.5px solid var(--color-accent)" }
 														: { background: "var(--color-accent)" }),
 												}}
 											/>
-											<span style={{ fontSize: 13, paddingBottom: i === ESCROW_FLOW.length - 1 ? 0 : 10 }}>
+											<span style={{ fontSize: 13, paddingBottom: i === escrowFlow(platform).length - 1 ? 0 : 10 }}>
 												{step}
 											</span>
 										</div>
@@ -242,6 +285,37 @@ export default function AdDetails() {
 									<div className="text-muted" style={{ fontSize: 13 }}>
 										This is your listing — buyers see it {ad.status === "ACTIVE" ? "right now" : "only once you re-activate it"}.
 									</div>
+									<div className="field">
+										<label htmlFor="ad-cover">Cover image URL</label>
+										<input
+											id="ad-cover"
+											className="input"
+											style={{ ...mono, fontSize: 12 }}
+											type="url"
+											value={coverDraft ?? ad.imageUrl ?? ""}
+											onChange={(e) => setCoverDraft(e.target.value)}
+											placeholder="https://example.com/cover.jpg"
+										/>
+										{coverDraft !== undefined && coverDraft !== (ad.imageUrl ?? "") && (
+											<button
+												className="btn btn-secondary btn-block"
+												style={{ marginTop: 8 }}
+												onClick={handleSaveCover}
+												disabled={busy}
+											>
+												<CheckIcon size={14} />
+												Save cover image
+											</button>
+										)}
+									</div>
+									<button
+										className="btn btn-secondary btn-block"
+										onClick={() => navigate(`/ads/${ad.id}/edit`)}
+										disabled={busy}
+									>
+										<PencilIcon size={14} />
+										Edit listing
+									</button>
 									<button className="btn btn-secondary btn-block" onClick={handleToggleStatus} disabled={busy}>
 										{ad.status === "ACTIVE" ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
 										{ad.status === "ACTIVE" ? "Pause listing" : "Activate listing"}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { disputesApi, ordersApi, usersApi, walletApi, type WalletBucket } from "../api";
+import { disputesApi, MAX_PAGE_SIZE, ordersApi, usersApi, walletApi, type WalletBucket } from "../api";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
 import CountUp from "../components/count-up";
@@ -13,12 +13,12 @@ import { useNow } from "../hooks/use-now";
 import { withdrawalStatusTag } from "../lib/order-ui";
 import { formatDate } from "../utils/format";
 import { fmtUsd, sumUsd, usd } from "../utils/money";
+import { usePlatformConfig } from "../hooks/use-platform-config";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 const monoLabel: React.CSSProperties = { ...mono, fontSize: 10.5, letterSpacing: "0.12em" };
 const VESTING_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-const NETWORKS = ["TRC20", "BEP20", "ERC20", "TON", "SOL"];
 
 const bucketTag: Record<WalletBucket, { label: string; color: string }> = {
 	available: { label: "Available", color: "var(--ok)" },
@@ -74,12 +74,15 @@ function BalanceCard({
 }
 
 export default function Profile() {
+	const platform = usePlatformConfig();
 	const { user, isAdmin, refresh } = useAuth();
 	const [editing, setEditing] = useState(false);
 	const [username, setUsername] = useState("");
 	const [telegram, setTelegram] = useState("");
 	const [address, setAddress] = useState("");
-	const [network, setNetwork] = useState(NETWORKS[0]);
+	// Networks and currencies come from GET /api/config, not from a list here.
+	const [network, setNetwork] = useState("");
+	const [currency, setCurrency] = useState("");
 	const [busy, setBusy] = useState(false);
 
 	const now = useNow();
@@ -88,11 +91,11 @@ export default function Profile() {
 	const withdrawalsQ = useAsync(() => walletApi.withdrawals(), []);
 	const statsQ = useAsync(async () => {
 		const [purchases, sales, disputes] = await Promise.all([
-			ordersApi.purchases(),
-			ordersApi.sales(),
-			disputesApi.mine(),
+			ordersApi.purchases({ limit: MAX_PAGE_SIZE }),
+			ordersApi.sales({ limit: MAX_PAGE_SIZE }),
+			disputesApi.mine({ limit: MAX_PAGE_SIZE }),
 		]);
-		return { purchases, sales, disputes };
+		return { purchases: purchases.items, sales: sales.items, disputes: disputes.items };
 	}, []);
 
 	const balance = balanceQ.data;
@@ -143,9 +146,16 @@ export default function Profile() {
 
 	const withdraw = async () => {
 		if (address.trim().length < 10) return toast.error("Enter a valid wallet address");
+		if (platform && available < usd(platform.minWithdrawalUsd)) {
+			return toast.error(`Minimum withdrawal is ${fmtUsd(platform.minWithdrawalUsd)} USDT`);
+		}
 		setBusy(true);
 		try {
-			const result = await walletApi.withdraw({ address: address.trim(), network });
+			const result = await walletApi.withdraw({
+				address: address.trim(),
+				network: network || (platform?.payoutNetworks[0] ?? ""),
+				currency: currency || platform?.payoutCurrencies[0],
+			});
 			toast.success(`Payout of ${fmtUsd(result.amountUsd)} USDT accepted`);
 			setAddress("");
 			reloadWallet();
@@ -255,13 +265,30 @@ export default function Profile() {
 					value={address}
 					onChange={(e) => setAddress(e.target.value)}
 				/>
-				<select className="input" style={{ width: 110, flex: "none", ...mono }} value={network} onChange={(e) => setNetwork(e.target.value)}>
-					{NETWORKS.map((n) => (
+				<select
+					className="input"
+					style={{ width: 110, flex: "none", ...mono }}
+					value={network || (platform?.payoutNetworks[0] ?? "")}
+					onChange={(e) => setNetwork(e.target.value)}
+					aria-label="Payout network"
+				>
+					{(platform?.payoutNetworks ?? []).map((n) => (
 						<option key={n}>{n}</option>
 					))}
 				</select>
-				<button className="btn btn-primary" style={{ whiteSpace: "nowrap" }} onClick={withdraw} disabled={busy || available < 1}>
-					Withdraw {fmtUsd(available)} USDT
+				<select
+					className="input"
+					style={{ width: 100, flex: "none", ...mono }}
+					value={currency || (platform?.payoutCurrencies[0] ?? "")}
+					onChange={(e) => setCurrency(e.target.value)}
+					aria-label="Payout currency"
+				>
+					{(platform?.payoutCurrencies ?? []).map((c) => (
+						<option key={c}>{c}</option>
+					))}
+				</select>
+				<button className="btn btn-primary" style={{ whiteSpace: "nowrap" }} onClick={withdraw} disabled={busy || available < usd(platform?.minWithdrawalUsd ?? 0)}>
+					Withdraw {fmtUsd(available)} {currency || platform?.payoutCurrencies[0] || "USDT"}
 				</button>
 				<span className="text-muted" style={{ fontSize: 12, marginLeft: "auto" }}>
 					Pays out the whole available bucket · min 1 USDT · orders still vesting stay untouched
@@ -424,7 +451,7 @@ export default function Profile() {
 						</div>
 					))}
 					<div className="text-muted" style={{ fontSize: 13, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
-						Every sale vests 30 days in escrow before payout. Losing a dispute refunds the buyer from
+						Every sale vests {platform?.vestingDays ?? "—"} days in escrow before payout. Losing a dispute refunds the buyer from
 						escrow immediately — deliver well and the money always releases on schedule.
 					</div>
 				</div>

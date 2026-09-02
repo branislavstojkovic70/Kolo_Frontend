@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/use-auth";
 import { formatDate } from "../utils/format";
 import { fmtUsd, sumUsd, usd } from "../utils/money";
 import BlockAvatar from "./block-avatar";
+import { usePlatformConfig } from "../hooks/use-platform-config";
 import {
 	BellIcon,
 	FileTextIcon,
@@ -40,6 +41,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ unreadCount, open = false, onNavigate }: SidebarProps) {
+	const platform = usePlatformConfig();
 	const { user, isAdmin, logout } = useAuth();
 	const navigate = useNavigate();
 	const active = sectionOf(useLocation().pathname);
@@ -193,7 +195,9 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 				<div className="text-muted" style={{ fontSize: 12 }}>
 					{balance?.nextVestingAt
 						? `Next release ${formatDate(balance.nextVestingAt)}`
-						: "Funds vest 30 days per order"}
+						: platform
+							? `Funds vest ${platform.vestingDays} days per order`
+							: "Funds vest per order"}
 				</div>
 			</div>
 

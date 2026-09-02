@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { listingsApi } from "../api";
 import { ArrowLeftIcon, ShieldCheckIcon } from "../components/icons";
 import Page from "../components/page";
 import { useAsync } from "../hooks/use-async";
-import { FEE_PERCENT, fmtUsd } from "../utils/money";
+import { fmtUsd } from "../utils/money";
+import { feeLabel, previewFee, usePlatformConfig } from "../hooks/use-platform-config";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
@@ -15,14 +16,43 @@ const rowBetween: React.CSSProperties = {
 	fontSize: 14,
 };
 
+/**
+ * One form, two modes. `/ads/new` creates; `/ads/:id/edit` updates an existing
+ * listing through PATCH /listings/:id, which accepts every field below.
+ */
 export default function CreateAd() {
 	const navigate = useNavigate();
+	const { id } = useParams<{ id: string }>();
+	const isEdit = !!id;
+	const platform = usePlatformConfig();
 	const [title, setTitle] = useState("");
 	const [category, setCategory] = useState("");
 	const [price, setPrice] = useState("");
 	const [description, setDescription] = useState("");
 	const [deliveryInfo, setDeliveryInfo] = useState("");
+	const [imageUrl, setImageUrl] = useState("");
+	const [imageFailed, setImageFailed] = useState(false);
 	const [busy, setBusy] = useState(false);
+
+	const { data: existing } = useAsync(
+		() => (id ? listingsApi.get(id) : Promise.resolve(undefined)),
+		[id]
+	);
+
+	// Prefill once the listing arrives, adjusting state during render rather than
+	// from an effect — React re-runs the render before committing, so the form is
+	// never painted empty. deliveryInfo is deliberately absent from every listing
+	// response, so it stays blank and is only sent when the seller retypes it.
+	const [prefilledId, setPrefilledId] = useState<string>();
+	if (existing && existing.id !== prefilledId) {
+		setPrefilledId(existing.id);
+		setTitle(existing.title);
+		setCategory(existing.category ?? "");
+		setPrice(existing.priceUsd);
+		setDescription(existing.description);
+		setImageUrl(existing.imageUrl ?? "");
+		setImageFailed(false);
+	}
 
 	const { data: catalogue } = useAsync(() => listingsApi.list({ limit: 100 }), []);
 	const knownCategories = useMemo(() => {
@@ -34,7 +64,7 @@ export default function CreateAd() {
 	}, [catalogue]);
 
 	const priceNum = parseFloat(price) || 0;
-	const fee = (priceNum * FEE_PERCENT) / 100;
+	const fee = previewFee(platform, priceNum);
 
 	const submit = async (asDraft: boolean) => {
 		if (title.trim().length < 3) return toast.error("Title needs at least 3 characters");
@@ -42,14 +72,28 @@ export default function CreateAd() {
 		if (!(priceNum > 0)) return toast.error("Set a price in USDT");
 
 		setBusy(true);
+		const payload = {
+			title: title.trim(),
+			description: description.trim(),
+			category: category.trim() || undefined,
+			imageUrl: imageUrl.trim() || undefined,
+			priceUsd: Math.round(priceNum * 100) / 100,
+			// Omitted when blank, and an omitted field leaves the stored value alone.
+			deliveryInfo: deliveryInfo.trim() || undefined,
+		};
+
 		try {
-			const listing = await listingsApi.create({
-				title: title.trim(),
-				description: description.trim(),
-				category: category.trim() || undefined,
-				priceUsd: Math.round(priceNum * 100) / 100,
-				deliveryInfo: deliveryInfo.trim() || undefined,
-			});
+			if (id) {
+				await listingsApi.update(id, {
+					...payload,
+					status: asDraft ? "PAUSED" : "ACTIVE",
+				});
+				toast.success(asDraft ? "Saved and paused" : "Listing updated");
+				navigate(`/ads/${id}`);
+				return;
+			}
+
+			const listing = await listingsApi.create(payload);
 			if (asDraft) {
 				await listingsApi.update(listing.id, { status: "PAUSED" });
 				toast.success("Saved as draft — activate it when you're ready");
@@ -64,7 +108,14 @@ export default function CreateAd() {
 	};
 
 	return (
-		<Page title="Post an ad" sub={`List a service · ${FEE_PERCENT}% fee · escrow protected`}>
+		<Page
+			title={isEdit ? "Edit listing" : "Post an ad"}
+			sub={
+				isEdit
+					? `Update your service · ${feeLabel(platform)} fee · escrow protected`
+					: `List a service · ${feeLabel(platform)} fee · escrow protected`
+			}
+		>
 			<div>
 				<button
 					className="btn btn-ghost"
@@ -132,6 +183,7 @@ export default function CreateAd() {
 					<div className="field">
 						<label htmlFor="ad-delivery">
 							Delivery info · revealed to the buyer only after payment confirms
+							{isEdit ? " · leave blank to keep the current text" : ""}
 						</label>
 						<textarea
 							id="ad-delivery"
@@ -143,20 +195,45 @@ export default function CreateAd() {
 						/>
 					</div>
 					<div className="field">
-						<label>Cover image · shown on your marketplace card</label>
+						<label htmlFor="ad-image">Cover image URL · shown on your marketplace card</label>
+						<input
+							id="ad-image"
+							className="input"
+							style={mono}
+							type="url"
+							value={imageUrl}
+							onChange={(e) => {
+								setImageUrl(e.target.value);
+								setImageFailed(false);
+							}}
+							placeholder="https://example.com/cover.jpg"
+						/>
 						<div
 							className="grid-plate"
 							style={{
 								height: 170,
+								marginTop: 8,
 								position: "relative",
 								border: "1px solid var(--color-divider)",
 								display: "grid",
 								placeItems: "center",
+								overflow: "hidden",
 							}}
 						>
-							<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
-								SELLER ARTWORK · UPLOADS COMING SOON
-							</span>
+							{/* Live preview doubles as the URL check — a link that cannot
+							    load here will not load on the marketplace either. */}
+							{imageUrl.trim() && !imageFailed ? (
+								<img
+									src={imageUrl.trim()}
+									alt=""
+									onError={() => setImageFailed(true)}
+									style={{ width: "100%", height: "100%", objectFit: "cover" }}
+								/>
+							) : (
+								<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
+									{imageFailed ? "THAT URL DID NOT LOAD" : "PASTE AN IMAGE URL TO PREVIEW"}
+								</span>
+							)}
 						</div>
 					</div>
 				</div>
@@ -186,7 +263,7 @@ export default function CreateAd() {
 							<span style={mono}>{fmtUsd(priceNum)} USDT</span>
 						</div>
 						<div style={rowBetween}>
-							<span className="text-muted">Kolo fee ({FEE_PERCENT}%)</span>
+							<span className="text-muted">Kolo fee ({feeLabel(platform)})</span>
 							<span style={mono}>{fmtUsd(fee)} USDT</span>
 						</div>
 						<div style={rowBetween}>
@@ -195,22 +272,22 @@ export default function CreateAd() {
 						</div>
 						<div style={rowBetween}>
 							<span className="text-muted">Vesting per order</span>
-							<span style={mono}>30 days</span>
+							<span style={mono}>{platform ? `${platform.vestingDays} days` : "—"}</span>
 						</div>
 					</div>
 
 					<div className="card" style={{ padding: 18, gap: 12 }}>
 						<button className="btn btn-primary btn-block" onClick={() => submit(false)} disabled={busy}>
-							{busy ? "Publishing…" : "Publish ad"}
+							{busy ? "Saving…" : isEdit ? "Save changes" : "Publish ad"}
 						</button>
 						<button className="btn btn-secondary btn-block" onClick={() => submit(true)} disabled={busy}>
-							Save as draft
+							{isEdit ? "Save and pause" : "Save as draft"}
 						</button>
 						<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
 							<ShieldCheckIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 							<span>
 								Drafts stay paused and invisible to buyers until you activate them. Earnings from every
-								sale vest 30 days in escrow before payout.
+								sale vest {platform?.vestingDays ?? "—"} days in escrow before payout.
 							</span>
 						</div>
 					</div>

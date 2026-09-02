@@ -1,4 +1,4 @@
-import { disputesApi, ordersApi, walletApi } from "../api";
+import { disputesApi, MAX_PAGE_SIZE, ordersApi, walletApi } from "../api";
 import { shortRef } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 
@@ -6,6 +6,9 @@ import { fmtUsd } from "../utils/money";
  * The backend has no notifications table — the inbox, the unread badge and the
  * live ticker are all derived from the caller's real orders, disputes and
  * withdrawals. Read state is tracked client-side as a last-seen timestamp.
+ *
+ * The source lists are paginated, so the feed covers the most recent
+ * MAX_PAGE_SIZE of each — plenty for an inbox, and it never walks every page.
  */
 export interface AppEvent {
 	id: string;
@@ -22,12 +25,15 @@ export interface AppEvent {
 const SEEN_KEY = "kolo-notifications-seen";
 
 export async function fetchEvents(): Promise<AppEvent[]> {
-	const [purchases, sales, disputes, withdrawals] = await Promise.all([
-		ordersApi.purchases(),
-		ordersApi.sales(),
-		disputesApi.mine(),
+	const [purchasePage, salePage, disputePage, withdrawals] = await Promise.all([
+		ordersApi.purchases({ limit: MAX_PAGE_SIZE }),
+		ordersApi.sales({ limit: MAX_PAGE_SIZE }),
+		disputesApi.mine({ limit: MAX_PAGE_SIZE }),
 		walletApi.withdrawals(),
 	]);
+	const purchases = purchasePage.items;
+	const sales = salePage.items;
+	const disputes = disputePage.items;
 
 	const events: AppEvent[] = [];
 	const now = Date.now();
@@ -156,9 +162,9 @@ export function countUnread(events: AppEvent[]): number {
 
 /** Fallback strip while events load (or for a brand-new account). */
 export const TICKER_FALLBACK =
-	"ESCROW PROTECTED · EVERY ORDER MOVES PAID → ESCROWED → VESTED → RELEASED ··· " +
-	"4% FLAT FEE · NO HIDDEN CHARGES ··· 100+ CRYPTO ASSETS VIA OXAPAY ··· " +
-	"ADMIN-ARBITRATED DISPUTES · EVIDENCE + CHAT ··· ";
+	"ESCROW PROTECTED · EVERY ORDER MOVES PAID → ESCROWED → VESTED → RELEASED ··· " +
+	"4% FLAT FEE · NO HIDDEN CHARGES ··· 100+ CRYPTO ASSETS VIA OXAPAY ··· " +
+	"ADMIN-ARBITRATED DISPUTES · EVIDENCE + CHAT ··· ";
 
 export function buildTickerText(events: AppEvent[]): string {
 	if (events.length === 0) return TICKER_FALLBACK;

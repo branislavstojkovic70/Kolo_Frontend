@@ -43,6 +43,28 @@ export interface ListingInput {
 	deliveryInfo?: string;
 }
 
+/**
+ * Largest page the backend accepts (PaginationDto caps `limit` at 100). Views
+ * that aggregate over everything the user has — the inbox feed, the profile
+ * counters — ask for this one page instead of walking every page.
+ */
+export const MAX_PAGE_SIZE = 100;
+
+/**
+ * Page + search + status filter, shared by the orders and disputes lists.
+ * A type alias, not an interface — only aliases get the implicit index
+ * signature the query serialiser needs.
+ */
+export type ListQuery<TStatus extends string> = {
+	search?: string;
+	status?: TStatus;
+	page?: number;
+	limit?: number;
+};
+
+/** Which side of the trade the orders list shows. */
+export type OrderRole = "all" | "buying" | "selling";
+
 export const listingsApi = {
 	list: (query?: { search?: string; category?: string; page?: number; limit?: number }) =>
 		api.get<Page<Listing>>("/listings", query),
@@ -58,8 +80,11 @@ export const listingsApi = {
 
 export const ordersApi = {
 	create: (listingId: string) => api.post<OrderCreated>("/orders", { listingId }),
-	purchases: () => api.get<Order[]>("/orders/purchases"),
-	sales: () => api.get<Order[]>("/orders/sales"),
+	/** Both sides in one paginated list — `role` picks buying / selling / all. */
+	list: (query?: ListQuery<OrderStatus> & { role?: OrderRole }) =>
+		api.get<Page<Order>>("/orders", query),
+	purchases: (query?: ListQuery<OrderStatus>) => api.get<Page<Order>>("/orders/purchases", query),
+	sales: (query?: ListQuery<OrderStatus>) => api.get<Page<Order>>("/orders/sales", query),
 	get: (id: string) => api.get<Order>(`/orders/${id}`),
 };
 
@@ -78,7 +103,7 @@ export const walletApi = {
 export const disputesApi = {
 	open: (orderId: string, reason: string) =>
 		api.post<DisputeCreated>(`/orders/${orderId}/dispute`, { reason }),
-	mine: () => api.get<Dispute[]>("/disputes/mine"),
+	mine: (query?: ListQuery<DisputeStatus>) => api.get<Page<Dispute>>("/disputes/mine", query),
 	get: (id: string) => api.get<Dispute>(`/disputes/${id}`),
 };
 

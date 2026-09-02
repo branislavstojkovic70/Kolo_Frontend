@@ -41,10 +41,10 @@ PAID. → ESCROWED. → VESTED. → RELEASED.
 | `/ads`               | **Marketplace** — stat cells with count-up, search + category/price filters, All\|Mine scope, mondrian card grid |
 | `/ads/:id`           | **Service detail** — description, platform guarantees, seller's other listings, sticky order card with fee math; owners get pause/activate/delete |
 | `/ads/new`           | **Post an ad** — controlled form with live listing preview and payout-per-sale math; publish or save as paused draft |
-| `/orders`            | **Orders** — All\|Buying\|Selling tabs, 5-segment escrow-flow bars, status chips                              |
+| `/orders`            | **Orders** — All\|Buying\|Selling tabs, title search, status filter, paging (10/20/50/100), 5-segment escrow-flow bars |
 | `/orders/:id`        | **Order detail** — money-flow strip, OxaPay payment card (QR + checkout link + countdown, self-refreshing), delivery info for the paid buyer, dispute action |
-| `/disputes(/:id)`    | **Disputes** — master-detail list, message plates, ADMIN DECISION plate, "Join dispute chat on Telegram" button; inline resolve controls for admins |
-| `/notifications`     | **Inbox** — real event feed with unread bars synced to the sidebar badge                                       |
+| `/disputes(/:id)`    | **Disputes** — master-detail list with search / status filter / paging, message plates, ADMIN DECISION plate, "Join dispute chat on Telegram" button; inline resolve controls for admins |
+| `/notifications`     | **Inbox** — real event feed with unread bars synced to the sidebar badge, searchable and filterable by type    |
 | `/profile`           | **Wallet & profile** — balance buckets, withdraw bar, vesting entries table, payout history, account stats, profile editing |
 | `/admin`             | **Arbitration** (admins only) — platform stats, dispute resolve queue, all orders and payouts                  |
 
@@ -230,6 +230,20 @@ src/
 - **`deliveryInfo` is sacred.** The seller's secret (credentials, keys, instructions) appears in
   exactly one place: the order view, for the buyer, once the order is `PAID`/`DISPUTED`/
   `REFUNDED` — mirroring the backend's rule.
+
+### Lists: search, filter, pagination
+
+Orders and disputes page **server-side** — `page`, `limit`, `search` and `status` go to the API and
+come back as `{ items, total, page, limit, pages }`. The inbox pages **client-side**, because its
+events have no table: they are derived from orders, disputes and withdrawals
+([`src/lib/events.ts`](src/lib/events.ts)), so there is nothing to paginate on the server.
+
+The controls themselves are shared: [`useListControls`](src/hooks/use-list-controls.ts) holds the
+debounced search term, the status filter and the page state (any filter change snaps back to page 1),
+and [`Pagination`](src/components/pagination.tsx) renders the 10/20/50/100 picker and the pager.
+
+The orders list calls `GET /api/orders?role=all|buying|selling` rather than merging `/purchases`
+and `/sales` — two independently paginated lists cannot be stitched into one page.
 
 ## Design system
 

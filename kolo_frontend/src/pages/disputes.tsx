@@ -1,18 +1,26 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import { adminApi, disputesApi, type Dispute } from "../api";
+import { adminApi, disputesApi, type Dispute, type DisputeStatus } from "../api";
 import AsyncPanel from "../components/async-panel";
 import { PaperclipIcon, SendIcon } from "../components/icons";
 import Page from "../components/page";
+import Pagination from "../components/pagination";
 import StatusTag from "../components/status-tag";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
+import { useListControls } from "../hooks/use-list-controls";
 import { disputeStatusTag } from "../lib/order-ui";
 import { formatDate, formatRelative, shortRef } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+
+const STATUS_OPTIONS: { value: DisputeStatus; label: string }[] = [
+	{ value: "OPEN", label: "Open" },
+	{ value: "RESOLVED_BUYER", label: "Resolved · buyer" },
+	{ value: "RESOLVED_SELLER", label: "Resolved · seller" },
+];
 
 const roleColor = {
 	BUYER: "var(--color-neutral-600)",
@@ -65,14 +73,27 @@ export default function Disputes() {
 	const [note, setNote] = useState("");
 	const [busy, setBusy] = useState(false);
 
-	const list = useAsync(() => disputesApi.mine(), []);
-	const selectedId = id ?? list.data?.[0]?.id;
+	const controls = useListControls<DisputeStatus>(10);
+	const { search, status, page, limit } = controls;
+
+	const list = useAsync(
+		() =>
+			disputesApi.mine({
+				search: search || undefined,
+				status: status || undefined,
+				page,
+				limit,
+			}),
+		[search, status, page, limit]
+	);
+	const entries = useMemo(() => list.data?.items ?? [], [list.data]);
+	// Falling back to the first row keeps the detail pane filled as filters change.
+	const selectedId = id ?? entries[0]?.id;
 	const detail = useAsync<Dispute | undefined>(
 		() => (selectedId ? disputesApi.get(selectedId) : Promise.resolve(undefined)),
 		[selectedId]
 	);
 
-	const openCount = useMemo(() => (list.data ?? []).filter((d) => d.status === "OPEN").length, [list.data]);
 	const dispute = detail.data;
 
 	const resolve = async (winner: "BUYER" | "SELLER") => {
@@ -93,18 +114,44 @@ export default function Disputes() {
 
 	return (
 		<Page title="Disputes" sub="Admin-arbitrated · evidence + Telegram chat">
+			<div className="filter-bar">
+				<input
+					className="input"
+					style={{ flex: 1 }}
+					placeholder="Search disputes by order title…"
+					value={controls.searchInput}
+					onChange={(e) => controls.setSearchInput(e.target.value)}
+				/>
+				<select
+					className="input"
+					style={{ width: 190, flex: "none" }}
+					value={status}
+					onChange={(e) => controls.setStatus(e.target.value as DisputeStatus | "")}
+					aria-label="Filter by status"
+				>
+					<option value="">Any status</option>
+					{STATUS_OPTIONS.map((option) => (
+						<option key={option.value} value={option.value}>
+							{option.label}
+						</option>
+					))}
+				</select>
+			</div>
+
 			<AsyncPanel
 				loading={list.loading}
 				error={list.error}
-				isEmpty={(list.data ?? []).length === 0}
-				emptyMessage="No disputes — that's a good thing"
+				isEmpty={entries.length === 0}
+				emptyMessage={
+					search || status ? "No disputes match these filters" : "No disputes — that's a good thing"
+				}
 			>
 				<div className="layout-master">
 					<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 						<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-							{list.data?.length ?? 0} DISPUTES · {openCount} OPEN
+							{list.data?.total ?? 0} DISPUTES
 						</div>
-						{(list.data ?? []).map((entry, index) => {
+						{entries.map((entry, index) => {
 							const chip = disputeStatusTag(entry.status);
 							const selected = entry.id === selectedId;
 							return (
@@ -150,6 +197,15 @@ export default function Disputes() {
 								</div>
 							);
 						})}
+						<Pagination
+							page={page}
+							pages={list.data?.pages ?? 1}
+							limit={limit}
+							total={list.data?.total ?? 0}
+							onPage={controls.setPage}
+							onLimit={controls.setLimit}
+							noun="disputes"
+						/>
 						<div className="card" style={{ padding: 14, gap: 6 }}>
 							<h6 style={{ margin: 0 }}>How arbitration works</h6>
 							<div className="text-muted" style={{ fontSize: 13, lineHeight: 1.5 }}>

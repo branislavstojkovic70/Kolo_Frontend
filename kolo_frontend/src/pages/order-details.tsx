@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import { disputesApi, ordersApi, type Dispute, type Order } from "../api";
+import { disputesApi, MAX_PAGE_SIZE, ordersApi, type Dispute, type Order } from "../api";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
 import { ArrowLeftIcon, CopyIcon, ExternalLinkIcon, LockIcon } from "../components/icons";
@@ -126,9 +126,12 @@ export default function OrderDetails() {
 		() => (id ? ordersApi.get(id) : Promise.reject(new Error("Missing order id"))),
 		[id]
 	);
-	const { data: myDisputes, reload: reloadDisputes } = useAsync(() => disputesApi.mine(), []);
+	const { data: myDisputes, reload: reloadDisputes } = useAsync(
+		() => disputesApi.mine({ limit: MAX_PAGE_SIZE }),
+		[]
+	);
 	const dispute: Dispute | undefined = useMemo(
-		() => (myDisputes ?? []).find((d) => d.orderId === id),
+		() => (myDisputes?.items ?? []).find((d) => d.orderId === id),
 		[myDisputes, id]
 	);
 

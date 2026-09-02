@@ -13,6 +13,7 @@ import { useNow } from "../hooks/use-now";
 import { withdrawalStatusTag } from "../lib/order-ui";
 import { formatDate } from "../utils/format";
 import { fmtUsd, sumUsd, usd } from "../utils/money";
+import { usePlatformConfig } from "../hooks/use-platform-config";
 
 const NETWORKS = ["TRC20", "BEP20", "ERC20", "TON", "SOL"];
 
@@ -75,6 +76,7 @@ function BalanceCard({
 }
 
 export default function Profile() {
+	const platform = usePlatformConfig();
 	const { user, isAdmin, refresh } = useAuth();
 	const [editing, setEditing] = useState(false);
 	const [username, setUsername] = useState("");
@@ -425,7 +427,7 @@ export default function Profile() {
 						</div>
 					))}
 					<div className="text-muted" style={{ fontSize: 13, borderTop: "2px solid var(--color-divider)", paddingTop: 10 }}>
-						Every sale vests 30 days in escrow before payout. Losing a dispute refunds the buyer from
+						Every sale vests {platform?.vestingDays ?? "—"} days in escrow before payout. Losing a dispute refunds the buyer from
 						escrow immediately — deliver well and the money always releases on schedule.
 					</div>
 				</div>

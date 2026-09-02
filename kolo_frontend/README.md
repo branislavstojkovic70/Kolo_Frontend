@@ -231,6 +231,19 @@ src/
   exactly one place: the order view, for the buyer, once the order is `PAID`/`DISPUTED`/
   `REFUNDED` — mirroring the backend's rule.
 
+### Nothing is hardcoded that the backend owns
+
+Fee percentage, vesting days, dispute window, minimum payout and the payout currency/network lists
+all come from `GET /api/config`, loaded once by
+[`PlatformConfigProvider`](src/components/platform-config-provider.tsx) and read through
+[`usePlatformConfig`](src/hooks/use-platform-config.ts). There is no `FEE_PERCENT` constant in this
+repo, and no screen writes "30 days" as literal text — change `PLATFORM_FEE_PERCENT` or
+`VESTING_DAYS` in the backend env and every screen follows.
+
+Marketplace headline numbers (catalogue total, value, median price, category list) come from
+`GET /api/listings/stats`, counted in SQL — the UI never averages a page of results and calls it a
+catalogue median.
+
 ### Lists: search, filter, pagination
 
 Orders and disputes page **server-side** — `page`, `limit`, `search` and `status` go to the API and

@@ -14,6 +14,7 @@ import type {
 	OrderCreated,
 	OrderStatus,
 	Page,
+	PlatformConfig,
 	User,
 	WalletOrderRow,
 	Withdrawal,
@@ -22,6 +23,12 @@ import type {
 
 export * from "./types";
 export { ApiError, getSessionEmail, setSessionEmail, setTokenGetter } from "./client";
+
+// ── platform config ──────────────────────────────────────────────────────
+
+export const configApi = {
+	get: () => api.get<PlatformConfig>("/config"),
+};
 
 // ── users ────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import { disputesApi, MAX_PAGE_SIZE, ordersApi, type Dispute, type Order } from "../api";
+import { disputesApi, MAX_PAGE_SIZE, ordersApi, type Dispute, type Order, type PlatformConfig } from "../api";
+import { usePlatformConfig } from "../hooks/use-platform-config";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
 import { ArrowLeftIcon, CopyIcon, ExternalLinkIcon, LockIcon } from "../components/icons";
@@ -36,7 +37,13 @@ const stepColor: Record<StepState, string> = {
 	future: muted15,
 };
 
-function buildFlow(order: Order, countdown: string): FlowStep[] {
+function buildFlow(
+	order: Order,
+	countdown: string,
+	platform: PlatformConfig | undefined
+): FlowStep[] {
+	// Rule text comes from the backend config; per-order dates come from the order.
+	const vestingLabel = platform ? `${platform.vestingDays} days` : "vesting period";
 	const vested = !!order.vestedAt && new Date(order.vestedAt).getTime() <= Date.now();
 	switch (order.status) {
 		case "PENDING_PAYMENT":
@@ -44,7 +51,7 @@ function buildFlow(order: Order, countdown: string): FlowStep[] {
 				{ t: "Payment", d: `awaiting · ${countdown}`, state: "current" },
 				{ t: "Escrow", d: "locks on confirmation", state: "future" },
 				{ t: "Delivery", d: "unlocks after escrow", state: "future" },
-				{ t: "Vesting", d: "30 days from payment", state: "future" },
+				{ t: "Vesting", d: `${vestingLabel} from payment`, state: "future" },
 				{ t: "Released", d: "withdrawable by seller", state: "future" },
 			];
 		case "EXPIRED":
@@ -78,7 +85,7 @@ function buildFlow(order: Order, countdown: string): FlowStep[] {
 				{ t: "Delivery", d: "details unlocked for buyer", state: "done" },
 				vested
 					? { t: "Vesting", d: `completed ${order.vestedAt ? formatDate(order.vestedAt) : ""}`, state: "done" }
-					: { t: "Vesting", d: order.vestedAt ? `until ${formatDate(order.vestedAt)}` : "30 days", state: "current" },
+					: { t: "Vesting", d: order.vestedAt ? `until ${formatDate(order.vestedAt)}` : vestingLabel, state: "current" },
 				order.withdrawalId
 					? { t: "Released", d: "paid out to seller", state: "done" }
 					: vested
@@ -115,6 +122,7 @@ function Row({ label, value, color }: { label: string; value: string; color?: st
 }
 
 export default function OrderDetails() {
+	const platform = usePlatformConfig();
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const { user } = useAuth();
@@ -162,7 +170,7 @@ export default function OrderDetails() {
 
 	const isBuyer = user?.id === order.buyerId;
 	const chip = orderStatusTag(order.status);
-	const flow = buildFlow(order, countdown);
+	const flow = buildFlow(order, countdown, platform);
 	const canDispute =
 		isBuyer &&
 		order.status === "PAID" &&
@@ -371,7 +379,8 @@ export default function OrderDetails() {
 							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
 								<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 								<span>
-									Only you can see this. If something is wrong, open a dispute within 30 days of payment —
+									Only you can see this. If something is wrong, open a dispute within{" "}
+									{platform?.disputeWindowDays ?? "—"} days of payment —
 									the escrow stays frozen until an admin decides.
 								</span>
 							</div>
@@ -414,7 +423,13 @@ export default function OrderDetails() {
 						<Row label="Seller receives" value={`${fmtUsd(order.sellerAmountUsd)} USDT`} />
 						<Row
 							label="Vesting"
-							value={order.vestedAt ? `until ${formatDate(order.vestedAt)}` : "30 days after payment"}
+							value={
+								order.vestedAt
+									? `until ${formatDate(order.vestedAt)}`
+									: platform
+										? `${platform.vestingDays} days after payment`
+										: "after payment"
+							}
 						/>
 					</div>
 					<div className="card" style={{ padding: 16, gap: 10 }}>
@@ -492,7 +507,7 @@ export default function OrderDetails() {
 					{pending
 						? "Disputes become available once payment is confirmed."
 						: canDispute
-							? "Something wrong? You can open a dispute within 30 days of payment."
+							? `Something wrong? You can open a dispute within ${platform?.disputeWindowDays ?? "—"} days of payment.`
 							: dispute
 								? "This order has a dispute on file."
 								: "Escrow releases automatically once vesting completes."}

@@ -9,29 +9,38 @@ import Page from "../components/page";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { formatDate } from "../utils/format";
-import { FEE_PERCENT, fmtUsd, usd } from "../utils/money";
+import { fmtUsd, usd } from "../utils/money";
+import { feeLabel, previewFee, usePlatformConfig } from "../hooks/use-platform-config";
+import type { PlatformConfig } from "../api";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
-const GUARANTEES = [
+// Both lists quote platform rules, so they are built from the config rather
+// than written out — a changed env must never leave stale copy on the page.
+const guarantees = (platform: PlatformConfig | undefined) => [
 	"Funds held in Kolo escrow",
 	"Admin arbitration on disputes",
 	"Delivery unlocks after payment",
 	"Pay in 100+ crypto assets",
-	"4% flat platform fee",
-	"30-day dispute window",
+	`${feeLabel(platform)} flat platform fee`,
+	platform ? `${platform.disputeWindowDays}-day dispute window` : "Dispute window",
 ];
 
-const ESCROW_FLOW = [
+const escrowFlow = (platform: PlatformConfig | undefined) => [
 	"Pay in any crypto · funds lock in Kolo escrow",
 	"Delivery details unlock instantly on the order",
-	"You confirm · or open a dispute within 30 days",
-	"Funds vest 30 days, then release to the seller",
+	platform
+		? `You confirm · or open a dispute within ${platform.disputeWindowDays} days`
+		: "You confirm · or open a dispute",
+	platform
+		? `Funds vest ${platform.vestingDays} days, then release to the seller`
+		: "Funds vest, then release to the seller",
 ];
 
 export default function AdDetails() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const platform = usePlatformConfig();
 	const { user } = useAuth();
 	const [imageFailed, setImageFailed] = useState(false);
 	const [coverDraft, setCoverDraft] = useState<string>();
@@ -53,7 +62,7 @@ export default function AdDetails() {
 
 	const isOwnAd = !!user && user.id === ad?.sellerId;
 	const price = usd(ad?.priceUsd ?? 0);
-	const fee = (price * FEE_PERCENT) / 100;
+	const fee = previewFee(platform, price);
 
 	const handleOrder = async () => {
 		if (!ad) return;
@@ -180,7 +189,7 @@ export default function AdDetails() {
 							</div>
 
 							<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "8px 24px", maxWidth: 640 }}>
-								{GUARANTEES.map((item) => (
+								{guarantees(platform).map((item) => (
 									<div key={item} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
 										<CheckIcon size={14} strokeWidth={2.5} style={{ color: "var(--color-accent)", flex: "none" }} />
 										{item}
@@ -235,7 +244,7 @@ export default function AdDetails() {
 									<span style={mono}>After payment confirms</span>
 								</div>
 								<div style={{ display: "flex", justifyContent: "space-between" }}>
-									<span className="text-muted">Kolo fee ({FEE_PERCENT}%)</span>
+									<span className="text-muted">Kolo fee ({feeLabel(platform)})</span>
 									<span style={mono}>{fmtUsd(fee)} USDT</span>
 								</div>
 								<div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -251,7 +260,7 @@ export default function AdDetails() {
 							<div>
 								<h6 style={{ marginBottom: 10 }}>Escrow flow</h6>
 								<div style={{ display: "flex", flexDirection: "column" }}>
-									{ESCROW_FLOW.map((step, i) => (
+									{escrowFlow(platform).map((step, i) => (
 										<div key={step} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
 											<span
 												style={{
@@ -259,12 +268,12 @@ export default function AdDetails() {
 													height: 8,
 													flex: "none",
 													marginTop: 4,
-													...(i === ESCROW_FLOW.length - 1
+													...(i === escrowFlow(platform).length - 1
 														? { border: "1.5px solid var(--color-accent)" }
 														: { background: "var(--color-accent)" }),
 												}}
 											/>
-											<span style={{ fontSize: 13, paddingBottom: i === ESCROW_FLOW.length - 1 ? 0 : 10 }}>
+											<span style={{ fontSize: 13, paddingBottom: i === escrowFlow(platform).length - 1 ? 0 : 10 }}>
 												{step}
 											</span>
 										</div>

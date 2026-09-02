@@ -10,6 +10,7 @@ import { useAsync } from "../hooks/use-async";
 import { disputeStatusTag, orderStatusTag, withdrawalStatusTag } from "../lib/order-ui";
 import { formatDate } from "../utils/format";
 import { fmtUsd, usd } from "../utils/money";
+import { feeLabel, usePlatformConfig } from "../hooks/use-platform-config";
 
 type Tab = "disputes" | "orders" | "payouts";
 
@@ -120,6 +121,7 @@ function DisputeQueueItem({ dispute, onResolved }: { dispute: AdminDispute; onRe
 }
 
 export default function Admin() {
+	const platform = usePlatformConfig();
 	const navigate = useNavigate();
 	const [tab, setTab] = useState<Tab>("disputes");
 
@@ -144,7 +146,7 @@ export default function Admin() {
 			<div className="stat-grid">
 				<StatCell label="GROSS VOLUME" sub={`${stats?.orders.total ?? 0} orders · ${stats?.users ?? 0} users`} value={usd(stats?.money.grossVolumeUsd ?? 0)} suffix="USDT" delay={0} />
 				<StatCell label="IN ESCROW" sub="seller money on the platform" value={usd(stats?.money.inEscrowUsd ?? 0)} suffix="USDT" delay={0.06} />
-				<StatCell label="FEES EARNED" sub="4% of confirmed payments" value={usd(stats?.money.platformFeesUsd ?? 0)} suffix="USDT" delay={0.12} />
+				<StatCell label="FEES EARNED" sub={`${feeLabel(platform)} of confirmed payments`} value={usd(stats?.money.platformFeesUsd ?? 0)} suffix="USDT" delay={0.12} />
 				<StatCell label="OPEN DISPUTES" sub={`${stats?.disputes.total ?? 0} lifetime`} value={stats?.disputes.open ?? 0} delay={0.18} />
 			</div>
 

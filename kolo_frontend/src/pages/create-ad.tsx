@@ -5,7 +5,8 @@ import { listingsApi } from "../api";
 import { ArrowLeftIcon, ShieldCheckIcon } from "../components/icons";
 import Page from "../components/page";
 import { useAsync } from "../hooks/use-async";
-import { FEE_PERCENT, fmtUsd } from "../utils/money";
+import { fmtUsd } from "../utils/money";
+import { feeLabel, previewFee, usePlatformConfig } from "../hooks/use-platform-config";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
@@ -17,6 +18,7 @@ const rowBetween: React.CSSProperties = {
 
 export default function CreateAd() {
 	const navigate = useNavigate();
+	const platform = usePlatformConfig();
 	const [title, setTitle] = useState("");
 	const [category, setCategory] = useState("");
 	const [price, setPrice] = useState("");
@@ -36,7 +38,7 @@ export default function CreateAd() {
 	}, [catalogue]);
 
 	const priceNum = parseFloat(price) || 0;
-	const fee = (priceNum * FEE_PERCENT) / 100;
+	const fee = previewFee(platform, priceNum);
 
 	const submit = async (asDraft: boolean) => {
 		if (title.trim().length < 3) return toast.error("Title needs at least 3 characters");
@@ -70,7 +72,7 @@ export default function CreateAd() {
 	};
 
 	return (
-		<Page title="Post an ad" sub={`List a service · ${FEE_PERCENT}% fee · escrow protected`}>
+		<Page title="Post an ad" sub={`List a service · ${feeLabel(platform)} fee · escrow protected`}>
 			<div>
 				<button
 					className="btn btn-ghost"
@@ -217,7 +219,7 @@ export default function CreateAd() {
 							<span style={mono}>{fmtUsd(priceNum)} USDT</span>
 						</div>
 						<div style={rowBetween}>
-							<span className="text-muted">Kolo fee ({FEE_PERCENT}%)</span>
+							<span className="text-muted">Kolo fee ({feeLabel(platform)})</span>
 							<span style={mono}>{fmtUsd(fee)} USDT</span>
 						</div>
 						<div style={rowBetween}>
@@ -226,7 +228,7 @@ export default function CreateAd() {
 						</div>
 						<div style={rowBetween}>
 							<span className="text-muted">Vesting per order</span>
-							<span style={mono}>30 days</span>
+							<span style={mono}>{platform ? `${platform.vestingDays} days` : "—"}</span>
 						</div>
 					</div>
 
@@ -241,7 +243,7 @@ export default function CreateAd() {
 							<ShieldCheckIcon size={13} style={{ flex: "none", marginTop: 1 }} />
 							<span>
 								Drafts stay paused and invisible to buyers until you activate them. Earnings from every
-								sale vest 30 days in escrow before payout.
+								sale vest {platform?.vestingDays ?? "—"} days in escrow before payout.
 							</span>
 						</div>
 					</div>

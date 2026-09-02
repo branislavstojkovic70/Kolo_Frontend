@@ -1,4 +1,4 @@
-import { disputesApi, MAX_PAGE_SIZE, ordersApi, walletApi } from "../api";
+import { disputesApi, MAX_PAGE_SIZE, ordersApi, walletApi, type PlatformConfig } from "../api";
 import { shortRef } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 
@@ -161,13 +161,20 @@ export function countUnread(events: AppEvent[]): number {
 }
 
 /** Fallback strip while events load (or for a brand-new account). */
-export const TICKER_FALLBACK =
-	"ESCROW PROTECTED · EVERY ORDER MOVES PAID → ESCROWED → VESTED → RELEASED ··· " +
-	"4% FLAT FEE · NO HIDDEN CHARGES ··· 100+ CRYPTO ASSETS VIA OXAPAY ··· " +
-	"ADMIN-ARBITRATED DISPUTES · EVIDENCE + CHAT ··· ";
+export function tickerFallback(platform: PlatformConfig | undefined): string {
+	return (
+		"ESCROW PROTECTED · EVERY ORDER MOVES PAID → ESCROWED → VESTED → RELEASED ··· " +
+		(platform ? `${platform.feePercent}% FLAT FEE · NO HIDDEN CHARGES ··· ` : "") +
+		"100+ CRYPTO ASSETS VIA OXAPAY ··· " +
+		"ADMIN-ARBITRATED DISPUTES · EVIDENCE + CHAT ··· "
+	);
+}
 
-export function buildTickerText(events: AppEvent[]): string {
-	if (events.length === 0) return TICKER_FALLBACK;
+export function buildTickerText(
+	events: AppEvent[],
+	platform: PlatformConfig | undefined
+): string {
+	if (events.length === 0) return tickerFallback(platform);
 	return events
 		.slice(0, 8)
 		.map((event) => event.ticker)

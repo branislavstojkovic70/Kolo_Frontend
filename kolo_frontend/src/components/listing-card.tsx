@@ -4,6 +4,7 @@ import type { Listing } from "../api/types";
 import { formatDate } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 import BlockAvatar from "./block-avatar";
+import { feeLabel, usePlatformConfig } from "../hooks/use-platform-config";
 
 interface ListingCardProps {
 	listing: Listing;
@@ -18,6 +19,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 	const navigate = useNavigate();
 	// Sellers paste any URL they like, so a dead link must not leave a hole.
 	const [imageFailed, setImageFailed] = useState(false);
+	const platform = usePlatformConfig();
 	const category = listing.category?.toUpperCase() ?? "SERVICE";
 	const showImage = !!listing.imageUrl && !imageFailed;
 
@@ -151,7 +153,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 					{listing.description}
 				</div>
 				<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: "auto" }}>
-					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · 4% flat fee
+					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · {feeLabel(platform)} flat fee
 				</div>
 			</div>
 			<div

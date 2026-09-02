@@ -7,6 +7,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
 import { buildClerkAppearance, CLERK_PUBLISHABLE_KEY, isClerkEnabled } from "./lib/clerk";
 import { applyThemeMode, loadThemeMode, ThemeModeContext, type ThemeMode } from "./theme";
 import { AuthProvider } from "./components/auth-provider";
+import PlatformConfigProvider from "./components/platform-config-provider";
 import RequireAuth from "./components/require-auth";
 import AppShell from "./components/app-shell";
 import Login from "./pages/login";
@@ -90,11 +91,13 @@ function Root() {
 
 	return (
 		<ThemeModeContext.Provider value={themeContext}>
-			<ClerkGate mode={mode}>
-				<AuthProvider>
-					<RouterProvider router={router} />
-				</AuthProvider>
-			</ClerkGate>
+			<PlatformConfigProvider>
+				<ClerkGate mode={mode}>
+					<AuthProvider>
+						<RouterProvider router={router} />
+					</AuthProvider>
+				</ClerkGate>
+			</PlatformConfigProvider>
 			<Toaster
 				position="bottom-center"
 				toastOptions={{

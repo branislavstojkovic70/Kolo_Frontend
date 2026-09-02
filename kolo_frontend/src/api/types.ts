@@ -12,6 +12,19 @@ export type WithdrawalStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
 export type WalletBucket = "available" | "vesting" | "disputed" | "withdrawing" | "withdrawn";
 export type DisputeWinner = "BUYER" | "SELLER";
 
+/**
+ * Platform rules straight from the backend env — the FE must never keep its own
+ * copy of the fee or the vesting length.
+ */
+export interface PlatformConfig {
+	feePercent: number;
+	vestingDays: number;
+	disputeWindowDays: number;
+	minWithdrawalUsd: string;
+	payoutCurrencies: string[];
+	payoutNetworks: string[];
+}
+
 export interface User {
 	id: string;
 	email: string;

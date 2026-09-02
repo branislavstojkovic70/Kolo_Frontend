@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Listing } from "../api/types";
 import { formatDate } from "../utils/format";
 import { fmtUsd } from "../utils/money";
 import BlockAvatar from "./block-avatar";
+import { feeLabel, usePlatformConfig } from "../hooks/use-platform-config";
 
 interface ListingCardProps {
 	listing: Listing;
@@ -15,7 +17,11 @@ const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
 export default function ListingCard({ listing, index, showStatus = false }: ListingCardProps) {
 	const navigate = useNavigate();
+	// Sellers paste any URL they like, so a dead link must not leave a hole.
+	const [imageFailed, setImageFailed] = useState(false);
+	const platform = usePlatformConfig();
 	const category = listing.category?.toUpperCase() ?? "SERVICE";
+	const showImage = !!listing.imageUrl && !imageFailed;
 
 	return (
 		<div
@@ -32,26 +38,36 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 				className="grid-plate"
 				style={{ height: 132, position: "relative", borderBottom: "1px solid var(--color-divider)" }}
 			>
-				{/* Seller artwork slot — no upload support on the backend yet, so a
-				    watermark plate stands in (object-fit: cover once images exist). */}
-				<span
-					aria-hidden="true"
-					style={{
-						position: "absolute",
-						inset: 0,
-						display: "grid",
-						placeItems: "center",
-						fontFamily: "var(--font-heading)",
-						fontWeight: 800,
-						fontSize: 54,
-						letterSpacing: "-0.02em",
-						color: "color-mix(in srgb, var(--color-text) 10%, transparent)",
-						textTransform: "uppercase",
-						userSelect: "none",
-					}}
-				>
-					{category.slice(0, 1)}
-				</span>
+				{/* Seller cover art. Falls back to the initial watermark when the
+				    listing has no image or the URL fails to load. */}
+				{showImage ? (
+					<img
+						src={listing.imageUrl ?? undefined}
+						alt=""
+						loading="lazy"
+						onError={() => setImageFailed(true)}
+						style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+					/>
+				) : (
+					<span
+						aria-hidden="true"
+						style={{
+							position: "absolute",
+							inset: 0,
+							display: "grid",
+							placeItems: "center",
+							fontFamily: "var(--font-heading)",
+							fontWeight: 800,
+							fontSize: 54,
+							letterSpacing: "-0.02em",
+							color: "color-mix(in srgb, var(--color-text) 10%, transparent)",
+							textTransform: "uppercase",
+							userSelect: "none",
+						}}
+					>
+						{category.slice(0, 1)}
+					</span>
+				)}
 				<span
 					style={{
 						pointerEvents: "none",
@@ -137,7 +153,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 					{listing.description}
 				</div>
 				<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: "auto" }}>
-					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · 4% flat fee
+					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · {feeLabel(platform)} flat fee
 				</div>
 			</div>
 			<div

@@ -1,23 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
-import { listingsApi } from "../api";
+import { useState } from "react";
+import { listingsApi, type ListingSort } from "../api";
 import AsyncPanel from "../components/async-panel";
 import CountUp from "../components/count-up";
 import ListingCard from "../components/listing-card";
 import Page from "../components/page";
+import Pagination from "../components/pagination";
 import { useAsync } from "../hooks/use-async";
+import { useListControls } from "../hooks/use-list-controls";
 import { usd } from "../utils/money";
+import { usePlatformConfig } from "../hooks/use-platform-config";
 
 type Scope = "all" | "mine";
 type PriceBand = "any" | "under25" | "25to75" | "over75";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
-const priceMatch: Record<PriceBand, (price: number) => boolean> = {
-	any: () => true,
-	under25: (p) => p < 25,
-	"25to75": (p) => p >= 25 && p <= 75,
-	over75: (p) => p > 75,
+/** Bands map to the API's minPrice / maxPrice — the filtering happens in SQL. */
+const PRICE_BANDS: Record<PriceBand, { minPrice?: number; maxPrice?: number }> = {
+	any: {},
+	under25: { maxPrice: 24.99 },
+	"25to75": { minPrice: 25, maxPrice: 75 },
+	over75: { minPrice: 75.01 },
 };
+
+const SORT_OPTIONS: { value: ListingSort; label: string }[] = [
+	{ value: "newest", label: "Newest first" },
+	{ value: "oldest", label: "Oldest first" },
+	{ value: "price_asc", label: "Price · low to high" },
+	{ value: "price_desc", label: "Price · high to low" },
+];
 
 function StatCell({
 	label,
@@ -52,85 +63,72 @@ function StatCell({
 }
 
 export default function Ads() {
-	const [searchInput, setSearchInput] = useState("");
-	const [search, setSearch] = useState("");
-	const [category, setCategory] = useState("");
-	const [priceBand, setPriceBand] = useState<PriceBand>("any");
-	const [scope, setScope] = useState<Scope>("all");
+	const platform = usePlatformConfig();
+	const controls = useListControls(20);
+	const { search, page, limit } = controls;
+	const [category, setCategoryValue] = useState("");
+	const [priceBand, setPriceBandValue] = useState<PriceBand>("any");
+	const [sort, setSortValue] = useState<ListingSort>("newest");
+	const [scope, setScopeValue] = useState<Scope>("all");
 
-	useEffect(() => {
-		const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
-		return () => clearTimeout(timer);
-	}, [searchInput]);
+	// Catalogue headline numbers and the category list are counted in the
+	// database — never averaged from whatever page happens to be on screen.
+	const { data: stats } = useAsync(() => listingsApi.stats(), []);
 
-	// Unfiltered catalogue — powers the stat cells and the category options.
-	const catalogue = useAsync(() => listingsApi.list({ limit: 100 }), []);
-	const filtered = useAsync(
-		() =>
-			listingsApi.list({
-				search: search || undefined,
-				category: category || undefined,
-				limit: 100,
-			}),
-		[search, category]
+	const query = {
+		search: search || undefined,
+		category: category || undefined,
+		...PRICE_BANDS[priceBand],
+		sort,
+		page,
+		limit,
+	};
+
+	const listing = useAsync(
+		() => (scope === "all" ? listingsApi.list(query) : listingsApi.mine(query)),
+		[scope, search, category, priceBand, sort, page, limit]
 	);
-	const mine = useAsync(() => (scope === "mine" ? listingsApi.mine() : Promise.resolve([])), [scope]);
 
-	const categories = useMemo(() => {
-		const set = new Set<string>();
-		for (const listing of catalogue.data?.items ?? []) {
-			if (listing.category) set.add(listing.category);
-		}
-		return [...set].sort();
-	}, [catalogue.data]);
+	const items = listing.data?.items ?? [];
 
-	const items = useMemo(() => {
-		const source =
-			scope === "all"
-				? (filtered.data?.items ?? [])
-				: (mine.data ?? []).filter(
-						(l) =>
-							(!search || l.title.toLowerCase().includes(search.toLowerCase())) &&
-							(!category || l.category?.toLowerCase() === category.toLowerCase())
-					);
-		return source.filter((l) => priceMatch[priceBand](usd(l.priceUsd)));
-	}, [scope, filtered.data, mine.data, search, category, priceBand]);
-
-	const stats = useMemo(() => {
-		const all = catalogue.data?.items ?? [];
-		const prices = all.map((l) => usd(l.priceUsd)).sort((a, b) => a - b);
-		const median = prices.length ? prices[Math.floor(prices.length / 2)] : 0;
-		return {
-			total: catalogue.data?.total ?? 0,
-			categories: new Set(all.map((l) => l.category ?? "Other")).size,
-			value: prices.reduce((sum, p) => sum + p, 0),
-			median,
-		};
-	}, [catalogue.data]);
-
-	const loading = scope === "all" ? filtered.loading : mine.loading;
-	const error = scope === "all" ? filtered.error : mine.error;
+	// Every filter change restarts at page 1.
+	const setCategory = (value: string) => {
+		setCategoryValue(value);
+		controls.setPage(1);
+	};
+	const setPriceBand = (value: PriceBand) => {
+		setPriceBandValue(value);
+		controls.setPage(1);
+	};
+	const setSort = (value: ListingSort) => {
+		setSortValue(value);
+		controls.setPage(1);
+	};
+	const setScope = (value: Scope) => {
+		setScopeValue(value);
+		controls.setPage(1);
+	};
 
 	return (
 		<Page title="Marketplace" sub="Browse digital services · pay in any crypto · escrow protected">
 			<div className="stat-grid">
-				<StatCell label="SERVICES LIVE" sub={`across ${stats.categories} categories`} delay={0}>
-					<CountUp to={stats.total} />
+				<StatCell label="SERVICES LIVE" sub={`across ${stats?.categories.length ?? 0} categories`} delay={0}>
+					<CountUp to={stats?.total ?? 0} />
 				</StatCell>
 				<StatCell label="CATALOGUE VALUE" sub="sum of live asking prices" delay={0.06}>
-					<CountUp to={stats.value} dec={2} />{" "}
+					<CountUp to={usd(stats?.catalogueValueUsd ?? 0)} dec={2} />{" "}
 					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						USDT
 					</span>
 				</StatCell>
 				<StatCell label="MEDIAN PRICE" sub="per service · any crypto" delay={0.12}>
-					<CountUp to={stats.median} dec={2} />{" "}
+					<CountUp to={usd(stats?.medianPriceUsd ?? 0)} dec={2} />{" "}
 					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						USDT
 					</span>
 				</StatCell>
 				<StatCell label="PLATFORM FEE" sub="flat · no hidden charges" delay={0.18}>
-					4
+					{platform?.feePercent ?? "—"}
 					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
 						%
 					</span>
@@ -142,8 +140,8 @@ export default function Ads() {
 					className="input"
 					style={{ flex: 1 }}
 					placeholder="Search VPNs, streaming, IPTV, software…"
-					value={searchInput}
-					onChange={(e) => setSearchInput(e.target.value)}
+					value={controls.searchInput}
+					onChange={(e) => controls.setSearchInput(e.target.value)}
 				/>
 				<select
 					className="input"
@@ -152,7 +150,7 @@ export default function Ads() {
 					onChange={(e) => setCategory(e.target.value)}
 				>
 					<option value="">All categories</option>
-					{categories.map((c) => (
+					{(stats?.categories ?? []).map((c) => (
 						<option key={c} value={c}>
 							{c}
 						</option>
@@ -183,25 +181,45 @@ export default function Ads() {
 
 			<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
 				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-					{items.length} OF {stats.total} SERVICES
+					{listing.data?.total ?? 0} OF {stats?.total ?? 0} SERVICES
 				</span>
-				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-					SORTED BY NEWEST
-				</span>
+				<select
+					className="input"
+					style={{ width: 190, flex: "none", padding: "5px 8px", fontSize: 13 }}
+					value={sort}
+					onChange={(e) => setSort(e.target.value as ListingSort)}
+					aria-label="Sort listings"
+				>
+					{SORT_OPTIONS.map((option) => (
+						<option key={option.value} value={option.value}>
+							{option.label}
+						</option>
+					))}
+				</select>
 			</div>
 
 			<AsyncPanel
-				loading={loading}
-				error={error}
+				loading={listing.loading}
+				error={listing.error}
 				isEmpty={items.length === 0}
 				emptyMessage={scope === "mine" ? "You have no listings yet — post an ad" : "No services match"}
 			>
 				<div className="card-grid">
-					{items.map((listing, index) => (
-						<ListingCard key={listing.id} listing={listing} index={index} showStatus={scope === "mine"} />
+					{items.map((item, index) => (
+						<ListingCard key={item.id} listing={item} index={index} showStatus={scope === "mine"} />
 					))}
 				</div>
 			</AsyncPanel>
+
+			<Pagination
+				page={page}
+				pages={listing.data?.pages ?? 1}
+				limit={limit}
+				total={listing.data?.total ?? 0}
+				onPage={controls.setPage}
+				onLimit={controls.setLimit}
+				noun="services"
+			/>
 
 			<div className="poster" style={{ padding: "36px 28px", marginTop: 4, animation: "fadeUp .5s ease .25s both" }}>
 				<div className="poster-stripes" />

@@ -1,15 +1,33 @@
 /**
  * HTTP transport for the Kolo backend (NestJS, global prefix /api).
  *
- * Auth: the backend runs with DEV_AUTH_BYPASS — every request carries the
- * signed-in e-mail in `x-dev-user-email` and the API JIT-provisions the user.
- * Swapping in Clerk later only means replacing the header logic here.
+ * Auth has two modes, decided by VITE_CLERK_PUBLISHABLE_KEY:
+ *  - Clerk on  — AuthProvider registers a token getter here and every request
+ *    carries `Authorization: Bearer <clerk session token>`.
+ *  - Clerk off — the backend's DEV_AUTH_BYPASS is used instead: the signed-in
+ *    e-mail travels in `x-dev-user-email` and the API JIT-provisions the user.
+ *
+ * Never both at once: the backend's guard checks the dev header first, so a
+ * stray e-mail header would silently outrank a real Clerk token.
  */
 
 const API_URL: string =
 	(import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:3000/api";
 
 const SESSION_KEY = "kolo-session-email";
+
+/** Mints a fresh Clerk session token; null while signed out. */
+type TokenGetter = () => Promise<string | null>;
+
+let tokenGetter: TokenGetter | null = null;
+
+/**
+ * Installed by the Clerk-backed AuthProvider. Its presence is what flips this
+ * module from the dev e-mail header to bearer tokens.
+ */
+export function setTokenGetter(getter: TokenGetter | null): void {
+	tokenGetter = getter;
+}
 
 export function getSessionEmail(): string | null {
 	return localStorage.getItem(SESSION_KEY);
@@ -44,8 +62,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 	}
 
 	const headers: Record<string, string> = {};
-	const email = getSessionEmail();
-	if (email) headers["x-dev-user-email"] = email;
+	if (tokenGetter) {
+		const token = await tokenGetter();
+		if (token) headers["Authorization"] = `Bearer ${token}`;
+	} else {
+		const email = getSessionEmail();
+		if (email) headers["x-dev-user-email"] = email;
+	}
 	if (options.body !== undefined) headers["Content-Type"] = "application/json";
 
 	let response: Response;

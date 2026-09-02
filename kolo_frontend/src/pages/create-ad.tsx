@@ -22,6 +22,8 @@ export default function CreateAd() {
 	const [price, setPrice] = useState("");
 	const [description, setDescription] = useState("");
 	const [deliveryInfo, setDeliveryInfo] = useState("");
+	const [imageUrl, setImageUrl] = useState("");
+	const [imageFailed, setImageFailed] = useState(false);
 	const [busy, setBusy] = useState(false);
 
 	const { data: catalogue } = useAsync(() => listingsApi.list({ limit: 100 }), []);
@@ -42,14 +44,18 @@ export default function CreateAd() {
 		if (!(priceNum > 0)) return toast.error("Set a price in USDT");
 
 		setBusy(true);
+		const payload = {
+			title: title.trim(),
+			description: description.trim(),
+			category: category.trim() || undefined,
+			imageUrl: imageUrl.trim() || undefined,
+			priceUsd: Math.round(priceNum * 100) / 100,
+			// Omitted when blank, and an omitted field leaves the stored value alone.
+			deliveryInfo: deliveryInfo.trim() || undefined,
+		};
+
 		try {
-			const listing = await listingsApi.create({
-				title: title.trim(),
-				description: description.trim(),
-				category: category.trim() || undefined,
-				priceUsd: Math.round(priceNum * 100) / 100,
-				deliveryInfo: deliveryInfo.trim() || undefined,
-			});
+			const listing = await listingsApi.create(payload);
 			if (asDraft) {
 				await listingsApi.update(listing.id, { status: "PAUSED" });
 				toast.success("Saved as draft — activate it when you're ready");
@@ -143,20 +149,45 @@ export default function CreateAd() {
 						/>
 					</div>
 					<div className="field">
-						<label>Cover image · shown on your marketplace card</label>
+						<label htmlFor="ad-image">Cover image URL · shown on your marketplace card</label>
+						<input
+							id="ad-image"
+							className="input"
+							style={mono}
+							type="url"
+							value={imageUrl}
+							onChange={(e) => {
+								setImageUrl(e.target.value);
+								setImageFailed(false);
+							}}
+							placeholder="https://example.com/cover.jpg"
+						/>
 						<div
 							className="grid-plate"
 							style={{
 								height: 170,
+								marginTop: 8,
 								position: "relative",
 								border: "1px solid var(--color-divider)",
 								display: "grid",
 								placeItems: "center",
+								overflow: "hidden",
 							}}
 						>
-							<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
-								SELLER ARTWORK · UPLOADS COMING SOON
-							</span>
+							{/* Live preview doubles as the URL check — a link that cannot
+							    load here will not load on the marketplace either. */}
+							{imageUrl.trim() && !imageFailed ? (
+								<img
+									src={imageUrl.trim()}
+									alt=""
+									onError={() => setImageFailed(true)}
+									style={{ width: "100%", height: "100%", objectFit: "cover" }}
+								/>
+							) : (
+								<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
+									{imageFailed ? "THAT URL DID NOT LOAD" : "PASTE AN IMAGE URL TO PREVIEW"}
+								</span>
+							)}
 						</div>
 					</div>
 				</div>

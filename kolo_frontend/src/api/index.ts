@@ -37,6 +37,8 @@ export interface ListingInput {
 	title: string;
 	description: string;
 	category?: string;
+	/** Cover image URL, http(s). The backend validates it and stores the link. */
+	imageUrl?: string;
 	priceUsd: number;
 	deliveryInfo?: string;
 }

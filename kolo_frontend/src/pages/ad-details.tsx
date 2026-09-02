@@ -33,6 +33,8 @@ export default function AdDetails() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const { user } = useAuth();
+	const [imageFailed, setImageFailed] = useState(false);
+	const [coverDraft, setCoverDraft] = useState<string>();
 	const [busy, setBusy] = useState(false);
 
 	const { data: ad, loading, error, reload } = useAsync(
@@ -81,6 +83,23 @@ export default function AdDetails() {
 		}
 	};
 
+	/** Cover art is the one listing field editable in place — sellers swap the URL. */
+	const handleSaveCover = async () => {
+		if (!ad || coverDraft === undefined) return;
+		setBusy(true);
+		try {
+			await listingsApi.update(ad.id, { imageUrl: coverDraft.trim() });
+			toast.success(coverDraft.trim() ? "Cover image updated" : "Cover image removed");
+			setCoverDraft(undefined);
+			setImageFailed(false);
+			reload();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Update failed");
+		} finally {
+			setBusy(false);
+		}
+	};
+
 	const handleDelete = async () => {
 		if (!ad || !window.confirm("Delete this listing? Buyers will no longer see it.")) return;
 		setBusy(true);
@@ -111,6 +130,21 @@ export default function AdDetails() {
 				{ad && (
 					<div className="layout-detail">
 						<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+							{/* Cover art, when the seller supplied a URL that actually loads. */}
+							{ad.imageUrl && !imageFailed && (
+								<img
+									src={ad.imageUrl}
+									alt=""
+									onError={() => setImageFailed(true)}
+									style={{
+										width: "100%",
+										maxHeight: 320,
+										objectFit: "cover",
+										border: "1px solid var(--color-divider)",
+										animation: "fadeUp .45s ease both",
+									}}
+								/>
+							)}
 							<div>
 								<div style={{ ...mono, fontSize: 10.5, letterSpacing: "0.14em", color: "var(--color-accent)" }}>
 									{(ad.category ?? "SERVICE").toUpperCase()} · LISTED {formatDate(ad.createdAt).toUpperCase()}
@@ -241,6 +275,29 @@ export default function AdDetails() {
 								<>
 									<div className="text-muted" style={{ fontSize: 13 }}>
 										This is your listing — buyers see it {ad.status === "ACTIVE" ? "right now" : "only once you re-activate it"}.
+									</div>
+									<div className="field">
+										<label htmlFor="ad-cover">Cover image URL</label>
+										<input
+											id="ad-cover"
+											className="input"
+											style={{ ...mono, fontSize: 12 }}
+											type="url"
+											value={coverDraft ?? ad.imageUrl ?? ""}
+											onChange={(e) => setCoverDraft(e.target.value)}
+											placeholder="https://example.com/cover.jpg"
+										/>
+										{coverDraft !== undefined && coverDraft !== (ad.imageUrl ?? "") && (
+											<button
+												className="btn btn-secondary btn-block"
+												style={{ marginTop: 8 }}
+												onClick={handleSaveCover}
+												disabled={busy}
+											>
+												<CheckIcon size={14} />
+												Save cover image
+											</button>
+										)}
 									</div>
 									<button className="btn btn-secondary btn-block" onClick={handleToggleStatus} disabled={busy}>
 										{ad.status === "ACTIVE" ? <PauseIcon size={14} /> : <PlayIcon size={14} />}

@@ -50,6 +50,8 @@ export interface Listing {
 	title: string;
 	description: string;
 	category: string | null;
+	/** External cover-image URL. We store the link only — nothing is uploaded. */
+	imageUrl: string | null;
 	priceUsd: string;
 	status: ListingStatus;
 	createdAt: string;

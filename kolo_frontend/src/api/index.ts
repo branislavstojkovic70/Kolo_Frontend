@@ -49,6 +49,8 @@ export interface ListingInput {
 	/** Cover image URL, http(s). The backend validates it and stores the link. */
 	imageUrl?: string;
 	priceUsd: number;
+	/** How many times it can be sold before it leaves the marketplace. Defaults to 1. */
+	quantity?: number;
 	deliveryInfo?: string;
 }
 

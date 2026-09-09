@@ -130,8 +130,7 @@ export const disputesApi = {
 // ── admin ────────────────────────────────────────────────────────────────
 
 export const adminApi = {
-	disputes: (query?: { status?: DisputeStatus; page?: number; limit?: number }) =>
-		api.get<Page<AdminDispute>>("/admin/disputes", query),
+	disputes: (query?: ListQuery<DisputeStatus>) => api.get<Page<AdminDispute>>("/admin/disputes", query),
 	resolveDispute: (id: string, winner: DisputeWinner, note?: string) =>
 		api.post<{ dispute: AdminDispute; order: AdminOrder }>(`/admin/disputes/${id}/resolve`, {
 			winner,

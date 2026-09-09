@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import { disputesApi, MAX_PAGE_SIZE, ordersApi, usersApi, walletApi, type WalletBucket } from "../api";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
@@ -86,6 +87,7 @@ export default function Profile() {
 	const [busy, setBusy] = useState(false);
 
 	const now = useNow();
+	const navigate = useNavigate();
 	const balanceQ = useAsync(() => walletApi.balance(), []);
 	const rowsQ = useAsync(() => walletApi.orders(), []);
 	const withdrawalsQ = useAsync(() => walletApi.withdrawals(), []);
@@ -322,7 +324,11 @@ export default function Profile() {
 										? vestingProgress(row.vestedAt)
 										: 1;
 								return (
-									<tr key={row.orderId}>
+									<tr
+										key={row.orderId}
+										className="row-click"
+										onClick={() => navigate(`/orders/${row.orderId}`)}
+									>
 										<td>
 											<div style={{ fontWeight: 600, fontSize: 14 }}>{row.title}</div>
 											<div className="text-muted" style={{ ...mono, fontSize: 12 }}>

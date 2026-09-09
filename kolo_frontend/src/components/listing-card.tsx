@@ -21,6 +21,7 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 	const [imageFailed, setImageFailed] = useState(false);
 	const platform = usePlatformConfig();
 	const category = listing.category?.toUpperCase() ?? "SERVICE";
+	const remaining = Math.max(listing.quantity - listing.soldCount, 0);
 	const showImage = !!listing.imageUrl && !imageFailed;
 
 	return (
@@ -91,14 +92,19 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 							position: "absolute",
 							top: 8,
 							right: 10,
-							background: listing.status === "ACTIVE" ? "var(--ok)" : "var(--warn)",
+							background:
+								listing.status === "ACTIVE"
+									? "var(--ok)"
+									: listing.status === "SOLD_OUT"
+										? "var(--bad)"
+										: "var(--warn)",
 							color: "var(--color-bg)",
 							fontWeight: 600,
 							...mono,
 							fontSize: 10.5,
 						}}
 					>
-						{listing.status === "ACTIVE" ? "Live" : "Paused"}
+						{listing.status === "ACTIVE" ? "Live" : listing.status === "SOLD_OUT" ? "Sold out" : "Paused"}
 					</span>
 				)}
 			</div>
@@ -154,6 +160,11 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 				</div>
 				<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: "auto" }}>
 					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · {feeLabel(platform)} flat fee
+					{remaining === 0 ? (
+						<span style={{ color: "var(--bad)" }}> · sold out</span>
+					) : listing.quantity > 1 ? (
+						<span style={{ color: remaining <= 2 ? "var(--warn)" : undefined }}> · {remaining} left</span>
+					) : null}
 				</div>
 			</div>
 			<div

@@ -49,6 +49,8 @@ export interface ListingInput {
 	/** Cover image URL, http(s). The backend validates it and stores the link. */
 	imageUrl?: string;
 	priceUsd: number;
+	/** How many times it can be sold before it leaves the marketplace. Defaults to 1. */
+	quantity?: number;
 	deliveryInfo?: string;
 }
 
@@ -130,8 +132,7 @@ export const disputesApi = {
 // ── admin ────────────────────────────────────────────────────────────────
 
 export const adminApi = {
-	disputes: (query?: { status?: DisputeStatus; page?: number; limit?: number }) =>
-		api.get<Page<AdminDispute>>("/admin/disputes", query),
+	disputes: (query?: ListQuery<DisputeStatus>) => api.get<Page<AdminDispute>>("/admin/disputes", query),
 	resolveDispute: (id: string, winner: DisputeWinner, note?: string) =>
 		api.post<{ dispute: AdminDispute; order: AdminOrder }>(`/admin/disputes/${id}/resolve`, {
 			winner,

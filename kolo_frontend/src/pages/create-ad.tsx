@@ -28,6 +28,7 @@ export default function CreateAd() {
 	const [title, setTitle] = useState("");
 	const [category, setCategory] = useState("");
 	const [price, setPrice] = useState("");
+	const [quantity, setQuantity] = useState("1");
 	const [description, setDescription] = useState("");
 	const [deliveryInfo, setDeliveryInfo] = useState("");
 	const [imageUrl, setImageUrl] = useState("");
@@ -49,6 +50,7 @@ export default function CreateAd() {
 		setTitle(existing.title);
 		setCategory(existing.category ?? "");
 		setPrice(existing.priceUsd);
+		setQuantity(String(existing.quantity));
 		setDescription(existing.description);
 		setImageUrl(existing.imageUrl ?? "");
 		setImageFailed(false);
@@ -64,12 +66,18 @@ export default function CreateAd() {
 	}, [catalogue]);
 
 	const priceNum = parseFloat(price) || 0;
+	const quantityNum = parseInt(quantity, 10) || 0;
+	const soldCount = existing?.soldCount ?? 0;
 	const fee = previewFee(platform, priceNum);
 
 	const submit = async (asDraft: boolean) => {
 		if (title.trim().length < 3) return toast.error("Title needs at least 3 characters");
 		if (description.trim().length < 10) return toast.error("Description needs at least 10 characters");
 		if (!(priceNum > 0)) return toast.error("Set a price in USDT");
+		if (!(quantityNum >= 1)) return toast.error("A listing has to be sellable at least once");
+		if (quantityNum < soldCount) {
+			return toast.error(`You have already sold ${soldCount} — the quantity cannot go below that`);
+		}
 
 		setBusy(true);
 		const payload = {
@@ -78,6 +86,7 @@ export default function CreateAd() {
 			category: category.trim() || undefined,
 			imageUrl: imageUrl.trim() || undefined,
 			priceUsd: Math.round(priceNum * 100) / 100,
+			quantity: quantityNum,
 			// Omitted when blank, and an omitted field leaves the stored value alone.
 			deliveryInfo: deliveryInfo.trim() || undefined,
 		};
@@ -168,6 +177,23 @@ export default function CreateAd() {
 								placeholder="0.00"
 								inputMode="decimal"
 							/>
+						</div>
+						<div className="field">
+							<label htmlFor="ad-quantity">How many can be sold</label>
+							<input
+								id="ad-quantity"
+								className="input"
+								style={mono}
+								value={quantity}
+								onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ""))}
+								placeholder="1"
+								inputMode="numeric"
+							/>
+							<span className="text-muted" style={{ fontSize: 12 }}>
+								{soldCount > 0
+									? `${soldCount} sold so far · ${Math.max(quantityNum - soldCount, 0)} left after this change`
+									: "Leaves the marketplace once this many orders exist"}
+							</span>
 						</div>
 					</div>
 					<div className="field">

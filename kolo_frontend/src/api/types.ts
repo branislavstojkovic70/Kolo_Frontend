@@ -5,7 +5,7 @@
  */
 
 export type Role = "USER" | "ADMIN";
-export type ListingStatus = "ACTIVE" | "PAUSED" | "DELETED";
+export type ListingStatus = "ACTIVE" | "PAUSED" | "SOLD_OUT" | "DELETED";
 export type OrderStatus = "PENDING_PAYMENT" | "PAID" | "DISPUTED" | "REFUNDED" | "EXPIRED";
 export type DisputeStatus = "OPEN" | "RESOLVED_BUYER" | "RESOLVED_SELLER";
 export type WithdrawalStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
@@ -76,6 +76,9 @@ export interface Listing {
 	/** External cover-image URL. We store the link only — nothing is uploaded. */
 	imageUrl: string | null;
 	priceUsd: string;
+	/** How many units the seller offers, and how many are already claimed. */
+	quantity: number;
+	soldCount: number;
 	status: ListingStatus;
 	createdAt: string;
 	updatedAt: string;

@@ -61,6 +61,7 @@ export default function AdDetails() {
 	);
 
 	const isOwnAd = !!user && user.id === ad?.sellerId;
+	const remaining = ad ? Math.max(ad.quantity - ad.soldCount, 0) : 0;
 	const price = usd(ad?.priceUsd ?? 0);
 	const fee = previewFee(platform, price);
 
@@ -167,7 +168,7 @@ export default function AdDetails() {
 											className="tag tag-status"
 											style={{ background: "var(--warn)", fontSize: 10.5 }}
 										>
-											{ad.status === "PAUSED" ? "Paused" : ad.status}
+											{ad.status === "PAUSED" ? "Paused" : ad.status === "SOLD_OUT" ? "Sold out" : ad.status}
 										</span>
 									)}
 									<span className="text-muted" style={{ fontSize: 13 }}>
@@ -244,6 +245,17 @@ export default function AdDetails() {
 									<span style={mono}>After payment confirms</span>
 								</div>
 								<div style={{ display: "flex", justifyContent: "space-between" }}>
+									<span className="text-muted">Availability</span>
+									<span
+										style={{
+											...mono,
+											color: remaining === 0 ? "var(--bad)" : remaining <= 2 ? "var(--warn)" : undefined,
+										}}
+									>
+										{remaining === 0 ? "Sold out" : `${remaining} of ${ad.quantity} left`}
+									</span>
+								</div>
+								<div style={{ display: "flex", justifyContent: "space-between" }}>
 									<span className="text-muted">Kolo fee ({feeLabel(platform)})</span>
 									<span style={mono}>{fmtUsd(fee)} USDT</span>
 								</div>
@@ -283,7 +295,12 @@ export default function AdDetails() {
 							{isOwnAd ? (
 								<>
 									<div className="text-muted" style={{ fontSize: 13 }}>
-										This is your listing — buyers see it {ad.status === "ACTIVE" ? "right now" : "only once you re-activate it"}.
+										This is your listing — buyers see it{" "}
+										{ad.status === "ACTIVE"
+											? "right now."
+											: ad.status === "SOLD_OUT"
+												? "but cannot order it: every unit is sold. Raise the quantity to put it back on the marketplace."
+												: "only once you re-activate it."}
 									</div>
 									<div className="field">
 										<label htmlFor="ad-cover">Cover image URL</label>
@@ -316,9 +333,18 @@ export default function AdDetails() {
 										<PencilIcon size={14} />
 										Edit listing
 									</button>
-									<button className="btn btn-secondary btn-block" onClick={handleToggleStatus} disabled={busy}>
+									{/* Sold out is decided by stock, not by the seller — only Edit can lift it. */}
+									<button
+										className="btn btn-secondary btn-block"
+										onClick={handleToggleStatus}
+										disabled={busy || ad.status === "SOLD_OUT"}
+									>
 										{ad.status === "ACTIVE" ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
-										{ad.status === "ACTIVE" ? "Pause listing" : "Activate listing"}
+										{ad.status === "ACTIVE"
+											? "Pause listing"
+											: ad.status === "SOLD_OUT"
+												? "Sold out — edit to restock"
+												: "Activate listing"}
 									</button>
 									<button
 										className="btn btn-secondary btn-block"
@@ -332,7 +358,13 @@ export default function AdDetails() {
 								</>
 							) : (
 								<button className="btn btn-primary btn-block" onClick={handleOrder} disabled={busy || ad.status !== "ACTIVE"}>
-									{busy ? "Creating order…" : `Order · ${fmtUsd(ad.priceUsd)} USDT · any crypto`}
+									{busy
+										? "Creating order…"
+										: ad.status === "SOLD_OUT"
+											? "Sold out"
+											: ad.status !== "ACTIVE"
+												? "Not available"
+												: `Order · ${fmtUsd(ad.priceUsd)} USDT · any crypto`}
 								</button>
 							)}
 							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>

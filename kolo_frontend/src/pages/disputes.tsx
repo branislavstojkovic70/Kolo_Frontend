@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import { adminApi, disputesApi, type Dispute, type DisputeStatus } from "../api";
+import { adminApi, disputesApi, type Dispute, type DisputeStatus, type Page as Paged } from "../api";
 import AsyncPanel from "../components/async-panel";
 import { PaperclipIcon, SendIcon } from "../components/icons";
 import Page from "../components/page";
@@ -76,15 +76,19 @@ export default function Disputes() {
 	const controls = useListControls<DisputeStatus>(10);
 	const { search, status, page, limit } = controls;
 
-	const list = useAsync(
-		() =>
-			disputesApi.mine({
+	// An admin arbitrates disputes he is never a party to, so /disputes/mine would
+	// always come back empty for him — the whole list lives behind /admin/disputes.
+	const list = useAsync<Paged<Dispute>>(
+		() => {
+			const query = {
 				search: search || undefined,
 				status: status || undefined,
 				page,
 				limit,
-			}),
-		[search, status, page, limit]
+			};
+			return isAdmin ? adminApi.disputes(query) : disputesApi.mine(query);
+		},
+		[isAdmin, search, status, page, limit]
 	);
 	const entries = useMemo(() => list.data?.items ?? [], [list.data]);
 	// Falling back to the first row keeps the detail pane filled as filters change.

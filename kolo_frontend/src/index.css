@@ -64,37 +64,44 @@
 [data-theme="light"] {
 	color-scheme: light;
 
-	--color-bg: #eef1f5;
+	/* Paper and ink, not the old blue-grey wash. Two things made that version
+	   grim: a dull #eef1f5 ground the white cards could not lift off, and
+	   hairlines at 30% of a mid-navy — in a design that borders everything with
+	   1px, that reads as a cage. Dividers are structure here, so they stay quiet. */
+	--color-bg: #f7f7f5;
 	--color-surface: #ffffff;
-	--color-text: #17263a;
-	--color-divider: color-mix(in srgb, #17263a 30%, transparent);
-	--ok: #1e9e63;
-	--warn: #a86e07;
-	--bad: #d33d2e;
+	--color-text: #14161a;
+	/* Deeper than the dark theme's #f97316, which is barely legible as text on
+	   white and worse under the white label of a primary button. */
+	--color-accent: #d35a0c;
+	--color-divider: color-mix(in srgb, #14161a 13%, transparent);
+	--ok: #12734a;
+	--warn: #96610a;
+	--bad: #bf3b2b;
 
-	--color-neutral-100: #f6f8fa;
-	--color-neutral-200: #e9edf2;
-	--color-neutral-300: #d5dce4;
-	--color-neutral-400: #b6c1ce;
-	--color-neutral-500: #93a1b2;
-	--color-neutral-600: #748496;
-	--color-neutral-700: #586a7e;
-	--color-neutral-800: #3d4f63;
-	--color-neutral-900: #233448;
+	--color-neutral-100: #fafaf9;
+	--color-neutral-200: #f1f1ee;
+	--color-neutral-300: #e4e4e0;
+	--color-neutral-400: #cfcfc9;
+	--color-neutral-500: #a3a29b;
+	--color-neutral-600: #77776f;
+	--color-neutral-700: #575751;
+	--color-neutral-800: #3b3b36;
+	--color-neutral-900: #22221f;
 
-	--color-accent-100: #fef1e6;
-	--color-accent-200: #fddfc6;
-	--color-accent-300: #fcc394;
-	--color-accent-400: #fa9c52;
-	--color-accent-500: #f97316;
-	--color-accent-600: #d55f07;
-	--color-accent-700: #a84a05;
-	--color-accent-800: #7c3707;
-	--color-accent-900: #4e2405;
+	--color-accent-100: #fdf1e8;
+	--color-accent-200: #fadfca;
+	--color-accent-300: #f5c29b;
+	--color-accent-400: #ec9455;
+	--color-accent-500: #d35a0c;
+	--color-accent-600: #b64b09;
+	--color-accent-700: #933c07;
+	--color-accent-800: #6d2c06;
+	--color-accent-900: #481d04;
 
-	--shadow-sm: 0 1px 2px color-mix(in srgb, #233448 14%, transparent);
-	--shadow-md: 0 3px 10px color-mix(in srgb, #233448 16%, transparent);
-	--shadow-lg: 0 12px 32px color-mix(in srgb, #233448 22%, transparent);
+	--shadow-sm: 0 1px 2px color-mix(in srgb, #22221f 11%, transparent);
+	--shadow-md: 0 4px 14px color-mix(in srgb, #22221f 12%, transparent);
+	--shadow-lg: 0 14px 38px color-mix(in srgb, #22221f 15%, transparent);
 }
 
 /* ── base ─────────────────────────────────────────────────────────────── */
@@ -188,7 +195,7 @@ figure { margin: 0; }
 	width: 10px;
 	height: 10px;
 }
-::-webkit-scrollbar-thumb { background: color-mix(in srgb, #9db2cc 22%, transparent); }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-text) 22%, transparent); }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ── rules ────────────────────────────────────────────────────────────── */

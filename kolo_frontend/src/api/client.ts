@@ -79,7 +79,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 			body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
 		});
 	} catch {
-		throw new ApiError("Cannot reach the Kolo API — is the backend running?", 0);
+		throw new ApiError("Cannot reach the Kolo API. Is the backend running?", 0);
 	}
 
 	const text = await response.text();

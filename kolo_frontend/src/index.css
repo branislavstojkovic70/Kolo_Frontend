@@ -1,52 +1,51 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Kolo design system — brutalist/editorial, flat, hard-edged.
-   Tokens adopted from the design handoff (kolo-theme.css + styles.css).
-   Dark is the default theme; [data-theme="light"] is an override scope.
+   Kolo design system — mainstream consumer commerce.
+   One accent, soft corners, modest type weights, calm neutral surfaces.
+
+   TWO palettes, one sheet. **Dark is the default** (`:root`); light is an
+   override under `[data-theme="light"]`. The two blocks define exactly the
+   same set of role tokens — nothing below them contains a colour literal, so
+   adding or retuning a theme is a block of values and nothing else.
+
+   Roles, not shades: a token is named for the job it does (`--surface-card`,
+   `--accent-ink`, `--on-accent`), because the same job needs a lighter value
+   on dark and a darker one on light. Never reach for a shade directly.
    ═══════════════════════════════════════════════════════════════════════ */
 
-:root,
-[data-theme="dark"] {
-	color-scheme: dark;
+/* ── theme-invariant: the brand, the shape, the type ───────────────────── */
 
-	--color-bg: #0a0f1a;
-	--color-surface: #111a2b;
-	--color-text: #e9eef7;
-	--color-accent: #f97316;
-	--color-divider: color-mix(in srgb, #9db2cc 24%, transparent);
-	--ok: #3ecf8e;
-	--warn: #f5b62e;
-	--bad: #ff5c5c;
+:root {
+	/* THE one accent: primary / buy CTAs, saved states, active nav. It is the
+	   only colour in the app and it does not change with the theme. */
+	--accent: #ff385c;
+	--accent-active: #e00b41; /* hover / pressed fill */
+	--on-accent: #ffffff; /* label on an accent fill — always white */
 
-	/* neutral ramp flipped for the dark ground: 100 = darkest fill, 900 = lightest text */
-	--color-neutral-100: #131c2b;
-	--color-neutral-200: #192436;
-	--color-neutral-300: #233145;
-	--color-neutral-400: #31435c;
-	--color-neutral-500: #546880;
-	--color-neutral-600: #7c8fa5;
-	--color-neutral-700: #a4b3c6;
-	--color-neutral-800: #c9d4e2;
-	--color-neutral-900: #e7edf5;
+	/* A QR code is read by a camera that expects dark-on-light. The plate stays
+	   light in BOTH themes on purpose, so it carries its own ink and hairline
+	   rather than the themed ones; see components/qr-plate.tsx. */
+	--qr-plate: #ffffff;
+	--qr-plate-border: #dddddd;
+	--qr-ink: #222222;
+	--qr-plate-muted: #6a6a6a;
 
-	--color-accent-100: #2a1505;
-	--color-accent-200: #3d1e06;
-	--color-accent-300: #5a2b08;
-	--color-accent-400: #8b420b;
-	--color-accent-500: #f97316;
-	--color-accent-600: #fb8b3f;
-	--color-accent-700: #fda368;
-	--color-accent-800: #fec49a;
-	--color-accent-900: #ffe2cc;
+	/* ── shape ──────────────────────────────────────────────────────────── */
 
-	/* dark ground: hairline edge + ambient darkness */
-	--shadow-sm: 0 0 0 1px color-mix(in srgb, #9db2cc 9%, transparent), 0 1px 2px rgba(0, 0, 0, 0.5);
-	--shadow-md: 0 0 0 1px color-mix(in srgb, #9db2cc 11%, transparent), 0 6px 16px rgba(0, 0, 0, 0.5);
-	--shadow-lg: 0 0 0 1px color-mix(in srgb, #9db2cc 13%, transparent), 0 18px 48px rgba(0, 0, 0, 0.6);
+	--r-btn: 8px; /* buttons, inputs */
+	--r-card: 14px; /* cards, image clipping */
+	--r-pill: 9999px; /* search bar, chips, badges */
+	--r-wallet: 24px; /* wallet cards */
 
-	--font-heading: "Archivo", system-ui, sans-serif;
-	--font-heading-weight: 800;
-	--font-body: "Archivo", system-ui, sans-serif;
-	--font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+	/* ── type ───────────────────────────────────────────────────────────── */
+
+	--font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--font-heading: var(--font-body);
+	--font-heading-weight: 600;
+	/* Deliberate alias: nothing in a shopping UI is set in monospace. Numbers,
+	   prices and ids all read in Inter. */
+	--font-mono: var(--font-body);
+
+	/* ── spacing ────────────────────────────────────────────────────────── */
 
 	--space-1: 4px;
 	--space-2: 8px;
@@ -55,53 +54,164 @@
 	--space-6: 24px;
 	--space-8: 32px;
 
-	/* Zero border radius everywhere — no rounded corners. */
-	--radius-sm: 0px;
-	--radius-md: 0px;
-	--radius-lg: 0px;
+	/* How far the toast stack sits off the bottom edge. It is a variable and not
+	   a constant because the listing detail's mobile buy bar owns that strip —
+	   see the `body:has(.buy-bar)` rule in the responsive section. Read by the
+	   Toaster's containerStyle in main.tsx. */
+	--toast-bottom: 16px;
 }
+
+/* ── palette: DARK (the default) ───────────────────────────────────────────
+   Neutral greys, never pure black, and a surface ladder that climbs *away*
+   from the canvas exactly like the light one climbs away from white:
+   canvas 161616 → card 1f1f1f → soft 252525 → strong 2b2b2b.
+   On dark, a drop shadow barely reads — surface contrast plus a 1px hairline
+   is what carries elevation, so --shadow-flat collapses to `none` and only
+   genuinely floating things (dropdowns, the sticky buy card, the mobile buy
+   bar, toasts) still take --shadow-card. */
+
+:root,
+[data-theme="dark"] {
+	/* Native form controls, scrollbars and date pickers follow this. */
+	color-scheme: dark;
+
+	--accent-ink: #ff8da1; /* accent as TEXT — #e00b41 is unreadable on dark */
+	--accent-tint: #3a1620; /* soft accent fill behind --accent-ink */
+	--accent-disabled: #5c2430; /* a pale pink would glow here */
+	--accent-disabled-ink: rgba(255, 255, 255, 0.56);
+
+	--ink: #f5f5f5; /* headlines + body text. Never #fff */
+	--body-soft: #d4d4d4; /* long-form secondary text */
+	--muted: #a3a3a3; /* meta lines, categories, timestamps — 7.2:1 on canvas */
+	--muted-soft: #6f6f6f; /* disabled text, placeholders */
+	--ink-contrast: #161616; /* label on an --ink fill (active chip) */
+
+	--hairline: #333333; /* default 1px borders */
+	--hairline-soft: #2a2a2a; /* lighter dividers */
+	--border-strong: #5a5a5a; /* outlined secondary button */
+
+	--canvas: #161616; /* page + chrome ground. Never #000 */
+	--surface-card: #1f1f1f; /* cards, inputs, chips — the elevated surface */
+	--surface-soft: #252525; /* hover fills, disabled fields, filter bands */
+	--surface-strong: #2b2b2b; /* circular icon-button fills */
+	--surface-strong-hover: #343434; /* on dark, hover goes UP the ladder */
+	--surface-raised: #2b2b2b; /* selected pill sitting on a soft track */
+
+	--error: #ff6b5e; /* the light #c13515 disappears on dark surfaces */
+	--success: #5cb882; /* muted, not neon */
+	--caution: #e0a84a;
+
+	/* Money screens. The ground drops BELOW the canvas and the cards sit at the
+	   normal elevated surface, so contrast still does the work of a shadow. */
+	--wallet-ground: #121212;
+	--wallet-card: #1f1f1f;
+
+	/* Highlight fill for "we found your deal" / "you saved" moments. A wash of
+	   the accent, never a second colour — and a fill, never text. */
+	--deal-fill: rgba(255, 56, 92, 0.1);
+	--deal-border: rgba(255, 56, 92, 0.35);
+
+	--scrim: rgba(0, 0, 0, 0.6); /* mobile nav backdrop */
+	--chip-tint: 18%; /* status-colour fill strength */
+
+	--shadow-card:
+		rgba(0, 0, 0, 0.5) 0 2px 8px, rgba(0, 0, 0, 0.32) 0 8px 20px;
+	--shadow-flat: none;
+}
+
+/* ── palette: LIGHT (opt-in) ─────────────────────────────────────────────── */
 
 [data-theme="light"] {
 	color-scheme: light;
 
-	/* Paper and ink, not the old blue-grey wash. Two things made that version
-	   grim: a dull #eef1f5 ground the white cards could not lift off, and
-	   hairlines at 30% of a mid-navy — in a design that borders everything with
-	   1px, that reads as a cage. Dividers are structure here, so they stay quiet. */
-	--color-bg: #f7f7f5;
-	--color-surface: #ffffff;
-	--color-text: #14161a;
-	/* Deeper than the dark theme's #f97316, which is barely legible as text on
-	   white and worse under the white label of a primary button. */
-	--color-accent: #d35a0c;
-	--color-divider: color-mix(in srgb, #14161a 13%, transparent);
-	--ok: #12734a;
-	--warn: #96610a;
-	--bad: #bf3b2b;
+	--accent-ink: #e00b41;
+	--accent-tint: #fff0f3;
+	--accent-disabled: #ffd1da;
+	/* The pale pink fill needs dark ink, not white. */
+	--accent-disabled-ink: #3f3f3f;
 
-	--color-neutral-100: #fafaf9;
-	--color-neutral-200: #f1f1ee;
-	--color-neutral-300: #e4e4e0;
-	--color-neutral-400: #cfcfc9;
-	--color-neutral-500: #a3a29b;
-	--color-neutral-600: #77776f;
-	--color-neutral-700: #575751;
-	--color-neutral-800: #3b3b36;
-	--color-neutral-900: #22221f;
+	--ink: #222222; /* Never #000 */
+	--body-soft: #3f3f3f;
+	--muted: #6a6a6a;
+	--muted-soft: #929292;
+	--ink-contrast: #ffffff;
 
-	--color-accent-100: #fdf1e8;
-	--color-accent-200: #fadfca;
-	--color-accent-300: #f5c29b;
-	--color-accent-400: #ec9455;
-	--color-accent-500: #d35a0c;
-	--color-accent-600: #b64b09;
-	--color-accent-700: #933c07;
-	--color-accent-800: #6d2c06;
-	--color-accent-900: #481d04;
+	--hairline: #dddddd;
+	--hairline-soft: #ebebeb;
+	--border-strong: #222222;
 
-	--shadow-sm: 0 1px 2px color-mix(in srgb, #22221f 11%, transparent);
-	--shadow-md: 0 4px 14px color-mix(in srgb, #22221f 12%, transparent);
-	--shadow-lg: 0 14px 38px color-mix(in srgb, #22221f 15%, transparent);
+	--canvas: #ffffff;
+	--surface-card: #ffffff; /* flat by design: hairlines separate cards here */
+	--surface-soft: #f7f7f7;
+	--surface-strong: #f2f2f2;
+	--surface-strong-hover: #ebebeb;
+	--surface-raised: #ffffff;
+
+	--error: #c13515;
+	--success: #0f7b3f;
+	--caution: #8a5a00;
+
+	/* Same rule, mirrored: the ground steps away from white, cards stay white. */
+	--wallet-ground: #f7f7f7;
+	--wallet-card: #ffffff;
+
+	--deal-fill: rgba(255, 56, 92, 0.07);
+	--deal-border: rgba(255, 56, 92, 0.25);
+
+	--scrim: rgba(0, 0, 0, 0.35);
+	--chip-tint: 12%;
+
+	/* The ONLY shadow in the light app. Most surfaces are flat. */
+	--shadow-card:
+		rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px,
+		rgba(0, 0, 0, 0.1) 0 4px 8px;
+	/* On light, same-coloured surfaces need the shadow to separate at all. */
+	--shadow-flat: var(--shadow-card);
+}
+
+/* ── compatibility aliases ────────────────────────────────────────────────
+   The screens were authored against the previous token names and a few still
+   reference them from inline styles. Every one resolves to a *role* above, so
+   an untouched corner of a page can never fall back to a hard-coded light
+   value — or to the old dark/neon ground. */
+
+:root {
+	--color-bg: var(--canvas);
+	--color-surface: var(--surface-card);
+	--color-text: var(--ink);
+	--color-accent: var(--accent);
+	--color-divider: var(--hairline);
+	--ok: var(--success);
+	--warn: var(--caution);
+	--bad: var(--error);
+
+	--color-neutral-100: var(--surface-soft);
+	--color-neutral-200: var(--surface-strong);
+	--color-neutral-300: var(--hairline-soft);
+	--color-neutral-400: var(--hairline);
+	--color-neutral-500: var(--muted-soft);
+	--color-neutral-600: var(--muted);
+	--color-neutral-700: var(--muted);
+	--color-neutral-800: var(--body-soft);
+	--color-neutral-900: var(--ink);
+
+	--color-accent-100: var(--accent-tint);
+	--color-accent-200: var(--accent-disabled);
+	--color-accent-300: var(--accent-ink);
+	--color-accent-400: var(--accent-ink);
+	--color-accent-500: var(--accent);
+	--color-accent-600: var(--accent-active);
+	--color-accent-700: var(--accent-active);
+	--color-accent-800: var(--accent-active);
+	--color-accent-900: var(--accent-active);
+
+	--shadow-sm: none;
+	--shadow-md: var(--shadow-card);
+	--shadow-lg: var(--shadow-card);
+
+	--radius-sm: var(--r-btn);
+	--radius-md: var(--r-btn);
+	--radius-lg: var(--r-card);
 }
 
 /* ── base ─────────────────────────────────────────────────────────────── */
@@ -129,22 +239,17 @@ body,
 body {
 	font-family: var(--font-body);
 	font-size: 16px;
-	line-height: 1.55;
+	line-height: 1.5;
 	font-weight: 400;
-	color: var(--color-text);
-	/* Graph-paper app ground: 1px lines every 28px at 3% text opacity. */
-	background:
-		repeating-linear-gradient(
-			0deg,
-			color-mix(in srgb, var(--color-text) 3%, transparent) 0 1px,
-			transparent 1px 28px
-		),
-		repeating-linear-gradient(
-			90deg,
-			color-mix(in srgb, var(--color-text) 3%, transparent) 0 1px,
-			transparent 1px 28px
-		),
-		var(--color-bg);
+	color: var(--ink);
+	background: var(--canvas);
+	/* Inherited by the whole tree on purpose. The app is full of strings nobody
+	   chose the length of — e-mail addresses, payout addresses, order ids,
+	   seller-typed titles — and at 360px any one of them would otherwise push a
+	   card wider than the viewport. `anywhere` (not `break-word`) because it
+	   also lets a flex/grid item shrink below the longest word, which is what
+	   actually stops the horizontal scrollbar. */
+	overflow-wrap: anywhere;
 }
 
 h1,
@@ -154,57 +259,110 @@ h4,
 h5,
 h6 {
 	font-family: var(--font-heading);
-	font-weight: var(--font-heading-weight);
-	line-height: 1.12;
-	letter-spacing: -0.015em;
+	line-height: 1.25;
+	letter-spacing: normal;
+	text-transform: none;
 	margin: 0 0 var(--space-2);
 }
-h1 { font-size: 42px; }
-h2 { font-size: 32px; }
-h3 { font-size: 25px; }
-h4 { font-size: 20px; }
-h5 { font-size: 17px; }
+/* Page titles are the only body-copy size that needs to react to the viewport:
+   28px over a 360px screen eats two lines of a four-word heading. */
+h1 {
+	font-size: clamp(22px, 5vw, 28px);
+	font-weight: 700;
+}
+h2 {
+	font-size: 22px;
+	font-weight: 600;
+}
+h3 {
+	font-size: 21px;
+	font-weight: 600;
+}
+h4 {
+	font-size: 20px;
+	font-weight: 600;
+}
+h5 {
+	font-size: 17px;
+	font-weight: 600;
+}
 h6 {
-	font-size: 14px;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
+	font-size: 16px;
+	font-weight: 600;
 }
-p { margin: 0 0 var(--space-3); }
+p {
+	margin: 0 0 var(--space-3);
+	color: var(--body-soft);
+}
 a {
-	color: var(--color-accent);
-	text-underline-offset: 3px;
+	color: var(--ink);
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
-a:hover { color: var(--color-accent-600); }
+a:hover {
+	color: var(--ink);
+}
 img {
 	display: block;
 	max-width: 100%;
+	/* With max-width alone a shrunk image keeps its intrinsic height and
+	   squashes. Anything that genuinely wants a fixed height (avatars, the
+	   card cover's object-fit crop) sets it inline and still wins. */
+	height: auto;
 }
-figure { margin: 0; }
+figure {
+	margin: 0;
+}
 
-.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
-.mono { font-family: var(--font-mono); }
+.text-muted {
+	color: var(--muted);
+}
+/* Kept as a class name only — the font is Inter everywhere. */
+.mono {
+	font-family: var(--font-body);
+}
+.meta {
+	font-size: 14px;
+	color: var(--muted);
+}
+.caption {
+	font-size: 13px;
+	color: var(--muted);
+}
 
-:focus { outline: none; }
+:focus {
+	outline: none;
+}
 :focus-visible {
-	outline: 2px solid var(--color-accent);
+	outline: 2px solid var(--ink);
 	outline-offset: 2px;
 }
-::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+::selection {
+	background: var(--accent-disabled);
+}
 
 ::-webkit-scrollbar {
 	width: 10px;
 	height: 10px;
 }
-::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-text) 22%, transparent); }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+	background: var(--hairline);
+	border-radius: var(--r-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+	background: var(--muted-soft);
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
 
 /* ── rules ────────────────────────────────────────────────────────────── */
 
 .hr {
-	height: 2px;
+	height: 1px;
 	border: 0;
 	margin: var(--space-4) 0;
-	background: var(--color-divider);
+	background: var(--hairline-soft);
 }
 
 /* ── buttons ──────────────────────────────────────────────────────────── */
@@ -213,104 +371,177 @@ figure { margin: 0; }
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 6px;
+	gap: 8px;
 	cursor: pointer;
 	text-decoration: none;
-	font-family: var(--font-heading);
-	font-weight: var(--font-heading-weight);
-	font-size: 15px;
+	font-family: var(--font-body);
+	font-weight: 500;
+	font-size: 16px;
 	line-height: 1.2;
-	color: var(--color-text);
+	min-height: 48px;
+	color: var(--ink);
 	background: transparent;
 	border: 1px solid transparent;
-	padding: var(--space-2) calc(var(--space-3) * 1.2);
-	border-radius: var(--radius-md);
+	padding: 0 18px;
+	border-radius: var(--r-btn);
 }
-.btn svg { display: block; }
+.btn svg {
+	display: block;
+}
+/* The body sets `overflow-wrap: anywhere` for seller-typed strings; a button
+   label is ours and must never break mid-word ("Previo-us"). Wrapping between
+   words stays allowed — the mobile buy bar relies on it. */
+.btn {
+	overflow-wrap: normal;
+}
 .btn:disabled {
-	opacity: 0.45;
 	cursor: not-allowed;
 }
 .btn-primary {
-	background: var(--color-accent);
-	color: var(--color-bg);
+	background: var(--accent);
+	color: var(--on-accent);
 }
 .btn-primary:hover {
-	background: var(--color-accent-600);
-	transform: translateY(-1px);
-	box-shadow: var(--shadow-sm);
+	background: var(--accent-active);
 }
 .btn-primary:active {
-	background: var(--color-accent-700);
-	transform: translateY(0);
-	box-shadow: none;
+	background: var(--accent-active);
 }
-.btn-secondary { border-color: var(--color-divider); }
-.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+/* The disabled accent fill is quiet in both themes, and its label follows:
+   dark ink on the pale pink, dimmed white on the deep rose. A "Sold out"
+   button still has to be readable. */
+.btn-primary:disabled {
+	background: var(--accent-disabled);
+	color: var(--accent-disabled-ink);
+}
+.btn-secondary {
+	border-color: var(--border-strong);
+	background: var(--surface-card);
+}
+.btn-secondary:hover {
+	background: var(--surface-soft);
+}
+.btn-secondary:disabled {
+	border-color: var(--hairline);
+	color: var(--muted-soft);
+	background: var(--surface-card);
+}
 .btn-ghost {
-	color: var(--color-accent);
-	padding-inline: var(--space-1);
+	min-height: 40px;
+	padding: 0 10px;
+	font-weight: 600;
+	color: var(--ink);
+	text-decoration: none;
 }
-.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
-.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.btn-ghost:hover {
+	background: var(--surface-soft);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.btn-ghost:disabled {
+	color: var(--muted-soft);
+}
+/* Circular icon button on a quiet grey fill. */
 .btn-icon {
-	width: 36px;
-	height: 36px;
+	width: 40px;
+	height: 40px;
+	min-height: 40px;
 	padding: 0;
+	border-radius: var(--r-pill);
+	background: var(--surface-strong);
+	border-color: transparent;
+	text-decoration: none;
+}
+.btn-icon:hover {
+	background: var(--surface-strong-hover);
 }
 .btn-block {
 	width: 100%;
 	margin-top: var(--space-2);
-	justify-content: flex-start;
-	text-align: left;
+	justify-content: center;
+	text-align: center;
+}
+/* Small, quiet button for table rows and inline controls. */
+.btn-sm {
+	min-height: 36px;
+	font-size: 14px;
+	padding: 0 12px;
 }
 
 /* ── forms ────────────────────────────────────────────────────────────── */
 
 .field > label {
 	display: block;
-	font-size: 13px;
-	margin-bottom: 5px;
-	color: color-mix(in srgb, var(--color-text) 70%, transparent);
+	font-size: 14px;
+	font-weight: 500;
+	margin-bottom: 6px;
+	color: var(--ink);
 }
 .input {
 	width: 100%;
-	min-height: 36px;
-	padding: 6px 10px;
+	min-height: 48px;
+	padding: 12px 14px;
 	font: inherit;
-	font-size: 15px;
-	color: var(--color-text);
-	caret-color: var(--color-accent);
-	background: var(--color-surface);
-	border: 1px solid var(--color-divider);
-	border-radius: var(--radius-md);
+	font-size: 16px;
+	color: var(--ink);
+	caret-color: var(--ink);
+	background: var(--surface-card);
+	border: 1px solid var(--hairline);
+	border-radius: var(--r-btn);
 }
-.input::placeholder { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
-.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input::placeholder {
+	color: var(--muted-soft);
+}
+.input:hover {
+	border-color: var(--muted-soft);
+}
 .input:focus-visible {
-	border-color: var(--color-accent);
-	outline-offset: 0;
+	border-color: var(--ink);
+	outline: 1px solid var(--ink);
+	outline-offset: -2px;
+}
+.input:disabled {
+	background: var(--surface-soft);
+	color: var(--muted-soft);
 }
 textarea.input {
-	min-height: 90px;
+	min-height: 120px;
+	line-height: 1.5;
 	resize: vertical;
 }
-select.input { appearance: none; }
+select.input {
+	appearance: none;
+	padding-right: 36px;
+	background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+		linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+	background-position:
+		calc(100% - 18px) 21px,
+		calc(100% - 13px) 21px;
+	background-size:
+		5px 5px,
+		5px 5px;
+	background-repeat: no-repeat;
+}
 
+/* Segmented control — pill track, ink-filled selection. */
 .seg {
 	display: inline-flex;
-	overflow: hidden;
-	border: 1px solid var(--color-divider);
-	border-radius: var(--radius-md);
+	padding: 3px;
+	gap: 3px;
+	background: var(--surface-soft);
+	border: 1px solid var(--hairline-soft);
+	border-radius: var(--r-pill);
 }
 .seg-opt {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 7px 12px;
+	padding: 8px 16px;
 	font-size: 14px;
+	font-weight: 500;
+	color: var(--muted);
 	cursor: pointer;
+	border-radius: var(--r-pill);
 }
 .seg-opt input {
 	position: absolute;
@@ -319,15 +550,102 @@ select.input { appearance: none; }
 	height: 0;
 	pointer-events: none;
 }
-.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+/* The selected segment climbs one step off the track: white above grey on
+   light, #2b2b2b above #252525 on dark. The shadow only exists on light,
+   where both surfaces are white and nothing else would separate them. */
 .seg-opt:has(input:checked) {
-	background: var(--color-accent);
-	color: var(--color-bg);
+	background: var(--surface-raised);
+	color: var(--ink);
+	font-weight: 600;
+	box-shadow: var(--shadow-flat);
 }
-.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.seg-opt:not(:has(input:checked)):hover {
+	color: var(--ink);
+}
 .seg-opt:has(input:focus-visible) {
-	outline: 2px solid var(--color-accent);
+	outline: 2px solid var(--ink);
 	outline-offset: -2px;
+}
+
+/* Pill filter chip strip. */
+.chip-row {
+	display: flex;
+	gap: 8px;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	padding-bottom: 2px;
+	scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar {
+	display: none;
+}
+.chip {
+	flex: none;
+	cursor: pointer;
+	white-space: nowrap;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--ink);
+	padding: 9px 16px;
+	background: var(--surface-card);
+	border: 1px solid var(--hairline);
+	border-radius: var(--r-pill);
+}
+.chip:hover {
+	background: var(--surface-soft);
+}
+/* Inverts against the page: near-black chip on light, near-white on dark. */
+.chip.active {
+	background: var(--ink);
+	border-color: var(--ink);
+	color: var(--ink-contrast);
+}
+
+/* Pill search bar with a circular accent button. */
+.searchbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1;
+	min-width: 240px;
+	padding: 6px 6px 6px 20px;
+	background: var(--surface-card);
+	border: 1px solid var(--hairline);
+	border-radius: var(--r-pill);
+	box-shadow: var(--shadow-flat);
+}
+.searchbar:focus-within {
+	border-color: var(--muted-soft);
+}
+.searchbar input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	outline: none;
+	background: transparent;
+	font: inherit;
+	font-size: 16px;
+	color: var(--ink);
+	padding: 10px 0;
+}
+.searchbar input::placeholder {
+	color: var(--muted);
+}
+.searchbar button {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	border: 0;
+	cursor: pointer;
+	border-radius: var(--r-pill);
+	background: var(--accent);
+	color: var(--on-accent);
+}
+.searchbar button:hover {
+	background: var(--accent-active);
 }
 
 /* ── cards ────────────────────────────────────────────────────────────── */
@@ -336,68 +654,103 @@ select.input { appearance: none; }
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
-	padding: var(--space-3);
-	border-radius: var(--radius-md);
-	background: var(--color-surface);
+	padding: var(--space-4);
+	border: 1px solid var(--hairline);
+	border-radius: var(--r-card);
+	background: var(--surface-card);
 }
 .card-kicker {
-	font-size: 10.5px;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: var(--color-accent);
+	font-size: 14px;
+	color: var(--muted);
 }
 .card-title {
-	font-family: var(--font-heading);
-	font-weight: var(--font-heading-weight);
-	font-size: 18px;
-	line-height: 1.2;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.3;
 }
 .card-body {
 	margin: 0;
 	font-size: 14px;
-	opacity: 0.8;
+	color: var(--muted);
 	flex: 1;
 }
 .card-meta {
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	font-size: 12px;
-	color: color-mix(in srgb, var(--color-text) 50%, transparent);
+	font-size: 14px;
+	color: var(--muted);
 }
-.elev-sm { box-shadow: var(--shadow-sm); }
-.elev-md { box-shadow: var(--shadow-md); }
-.elev-lg { box-shadow: var(--shadow-lg); }
+/* Elevation is the exception, not the rule: flat by default. */
+.elev-sm {
+	box-shadow: none;
+}
+.elev-md,
+.elev-lg {
+	box-shadow: var(--shadow-card);
+}
+
+/* Section head above a group of cards or rows. */
+.section-head {
+	font-size: 20px;
+	font-weight: 600;
+	margin: 0;
+}
 
 /* ── tags ─────────────────────────────────────────────────────────────── */
 
 .tag {
 	display: inline-flex;
 	align-items: center;
-	font-size: 12px;
-	letter-spacing: 0.02em;
-	padding: 3px 10px;
-	border-radius: 0;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 4px 10px;
+	border-radius: var(--r-pill);
+	background: var(--surface-soft);
+	color: var(--body-soft);
 }
 .tag-accent {
-	background: var(--color-accent-100);
-	color: var(--color-accent-800);
+	background: var(--accent-tint);
+	color: var(--accent-ink);
 }
 .tag-neutral {
-	background: var(--color-neutral-100);
-	color: var(--color-neutral-800);
+	background: var(--surface-soft);
+	color: var(--body-soft);
 }
 .tag-outline {
-	border: 1px solid var(--color-accent);
-	color: var(--color-accent);
+	border: 1px solid var(--hairline);
+	background: transparent;
+	color: var(--body-soft);
 }
-/* Solid inverted status chip: background = status color, ink = page bg. */
+/* Status chip: soft tint of the status colour, status colour as ink. The
+   colour arrives as --chip from StatusTag; it is mixed into the surface the
+   chip actually sits on, and a little harder on dark (--chip-tint) where a
+   12% wash would vanish. */
 .tag-status {
 	white-space: nowrap;
-	color: var(--color-bg);
-	font-weight: 600;
-	font-family: var(--font-mono);
+	background: color-mix(
+		in srgb,
+		var(--chip, var(--muted)) var(--chip-tint),
+		var(--surface-card)
+	);
+	color: var(--chip, var(--muted));
+}
+/* "Save 32%" */
+.save-badge {
+	display: inline-flex;
+	align-items: center;
 	font-size: 11px;
+	font-weight: 600;
+	padding: 4px 10px;
+	border-radius: var(--r-pill);
+	background: var(--accent-tint);
+	color: var(--accent-ink);
+	white-space: nowrap;
+}
+.price-was {
+	color: var(--muted);
+	text-decoration: line-through;
+	font-weight: 400;
 }
 
 /* ── tables ───────────────────────────────────────────────────────────── */
@@ -409,105 +762,381 @@ select.input { appearance: none; }
 }
 .table th {
 	text-align: left;
-	font-size: 12px;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: color-mix(in srgb, var(--color-text) 60%, transparent);
-	padding: var(--space-2);
-	border-bottom: 2px solid var(--color-divider);
+	font-size: 13px;
+	font-weight: 500;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--muted);
+	padding: 10px var(--space-2);
+	border-bottom: 1px solid var(--hairline);
 }
 .table td {
-	padding: var(--space-2);
-	border-bottom: 1px solid var(--color-divider);
+	padding: 14px var(--space-2);
+	border-bottom: 1px solid var(--hairline-soft);
 }
-.table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+.table tbody tr:hover {
+	background: var(--surface-soft);
+}
 
-/* ── poster panel (always orange, near-black ink, drifting stripes) ───── */
+/* ── quiet reassurance band (was the orange poster) ───────────────────── */
 
 .poster {
 	position: relative;
 	overflow: hidden;
-	background: var(--color-accent);
+	border-radius: var(--r-card);
+	background: var(--surface-soft);
 }
 .poster-stripes {
-	position: absolute;
-	inset: -120%;
-	background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.09) 0 2px, transparent 2px 26px);
-	animation: drift 22s linear infinite;
+	display: none;
 }
-.poster-ink { color: #0a0f1a; }
-.poster-ink-soft { color: rgba(10, 15, 26, 0.78); }
+.poster-ink {
+	color: var(--ink);
+}
+.poster-ink-soft {
+	color: var(--muted);
+}
 
 /* ── app shell ────────────────────────────────────────────────────────── */
 
 .snav {
+	position: relative;
 	display: flex;
 	align-items: center;
-	gap: 11px;
+	gap: 12px;
 	width: 100%;
 	border: 0;
 	cursor: pointer;
-	padding: 12px 12px;
+	padding: 12px 14px;
 	font: inherit;
 	font-size: 16px;
 	font-weight: 600;
 	text-align: left;
+	border-radius: var(--r-btn);
 	background: transparent;
-	color: var(--color-text);
+	color: var(--ink);
+	/* Nav rows are links now — same skin, no underline. */
+	text-decoration: none;
 }
-.snav:hover { transform: translateX(4px); }
+.snav svg {
+	color: var(--muted);
+	flex: none;
+}
+.snav:hover {
+	background: var(--surface-soft);
+}
 .snav.active {
-	background: var(--color-accent);
-	color: var(--color-bg);
+	background: var(--surface-soft);
+}
+.snav.active svg {
+	color: var(--accent);
 }
 
+/* The wordmark in the topbar. It only exists while the sidebar is a drawer —
+   the sidebar carries the brand on desktop, and a drawer you have to open is
+   no place for the one thing that says which app this is. Sized and coloured
+   here, switched on in the responsive section. */
+.topbar-brand {
+	align-items: center;
+	flex: none;
+	border: 0;
+	padding: 0 2px;
+	cursor: pointer;
+	background: transparent;
+	font: inherit;
+	font-size: 22px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	line-height: 1;
+	color: var(--accent);
+	text-decoration: none;
+}
+.topbar-brand:hover {
+	color: var(--accent);
+}
+
+/* Quiet activity strip under the topbar — muted text, no ticker chrome. */
 .ticker-track {
 	display: flex;
 	width: max-content;
-	animation: marquee 38s linear infinite;
+	animation: marquee 90s linear infinite;
 }
-.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker:hover .ticker-track {
+	animation-play-state: paused;
+}
 
-/* Marketplace card — inset orange ring on hover (mondrian grid, no shadows). */
+/* Marketplace card: flat, hairline, floats on hover. */
 .mcard {
 	cursor: pointer;
-	transition: box-shadow 0.15s ease;
-}
-.mcard:hover { box-shadow: inset 0 0 0 2px var(--color-accent); }
-
-/* Wallet balance card — lift + shadow on hover. */
-.wcard {
+	border: 1px solid var(--hairline-soft);
 	transition:
-		transform 0.2s ease,
-		box-shadow 0.2s ease;
+		box-shadow 0.18s ease,
+		border-color 0.18s ease,
+		transform 0.18s ease;
+}
+/* The lift is a shadow on light and a brightened hairline on dark, where a
+   black shadow over #161616 reads as nothing. */
+.mcard:hover {
+	box-shadow: var(--shadow-card);
+	border-color: var(--hairline);
+	transform: translateY(-2px);
+}
+.mcard-media {
+	position: relative;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+	border-radius: var(--r-card) var(--r-card) 0 0;
+	background: var(--surface-soft);
+}
+.mcard-media img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* Brand cover art. The catalogue ships each subscription's real logo as a
+   small square mark, which would be a blurry mess stretched across a 4:3
+   photo frame. So the frame is filled with the brand's OWN colours — the
+   same mark blown up and blurred into a backdrop (`--brand-art`) — and the
+   crisp logo sits on top at its natural size. Every product gets cover art
+   that is unmistakably its brand, with no stock photography anywhere.
+   A seller's own uploaded photo keeps the plain `cover` crop above. */
+.brand-frame {
+	position: relative;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	background: var(--surface-soft);
+}
+.brand-frame::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: var(--brand-art);
+	background-size: cover;
+	background-position: center;
+	/* Scaled past the edges so the blur never shows a soft border. */
+	transform: scale(1.6);
+	filter: blur(26px) saturate(1.5);
+	opacity: 0.55;
+}
+.brand-frame img {
+	position: relative;
+	width: clamp(56px, 30%, 92px);
+	height: auto;
+	aspect-ratio: 1;
+	object-fit: contain;
+	border-radius: var(--r-btn);
+	/* Lifts the mark off its own backdrop, one consistent light source. */
+	box-shadow: var(--shadow-card);
+}
+/* The card keeps the media frame's top-only radius. */
+.mcard-media.brand-frame {
+	border-radius: var(--r-card) var(--r-card) 0 0;
+}
+/* The listing detail's hero is a free-standing plate, so it rounds fully and
+   shows the mark a size up. */
+.brand-frame.brand-hero {
+	aspect-ratio: 16 / 9;
+	max-height: clamp(200px, 42vw, 360px);
+	border-radius: var(--r-card);
+}
+.brand-frame.brand-hero img {
+	width: clamp(80px, 22%, 128px);
+}
+
+/* Wallet card — the money surface. 24px radius, no shadow: the contrast with
+   the neutral page ground behind it IS the elevation, in both themes. Light
+   steps the ground down to grey and keeps the cards white; dark steps the
+   ground below the canvas and lifts the cards to the normal card surface. */
+.wallet-scope {
+	background: var(--wallet-ground);
+	border-radius: var(--r-wallet);
+	padding: clamp(12px, 3vw, 24px);
+}
+.wcard {
+	border: 0;
+	border-radius: var(--r-wallet);
+	background: var(--wallet-card);
+	box-shadow: none;
+	padding: clamp(16px, 4vw, 24px);
 }
 .wcard:hover {
-	transform: translateY(-3px);
-	box-shadow: var(--shadow-md);
+	box-shadow: none;
+}
+.wallet-figure {
+	font-size: clamp(30px, 8vw, 40px);
+	font-weight: 700;
+	line-height: 1.05;
+	letter-spacing: -0.01em;
+}
+
+/* THE one loud type moment: the buyer's total savings. It scales with the
+   viewport rather than stepping at one breakpoint — "$1,284.50" at 64px is
+   wider than a phone. */
+.savings-hero {
+	font-size: clamp(34px, 11vw, 64px);
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -0.02em;
+}
+/* Highlight plate: matched Deal Alerts and the buyer's savings hero. A wash of
+   the accent plus an accent hairline — the brand doing the highlighting, not a
+   second colour. The fill is translucent so it works on the canvas and on a
+   card alike; the border, not a surface step, is what makes it read. Text
+   stays --ink / --body-soft: the tint never becomes a text colour.
+   Used with `.card` (Deal Alerts) and on its own (the savings hero), so it
+   carries its own border and radius. */
+.deal-card {
+	background: var(--deal-fill);
+	border: 1px solid var(--deal-border);
+	border-radius: var(--r-card);
+}
+
+/* Sticky buy card on the listing detail. */
+.buy-card {
+	position: sticky;
+	top: 8px;
+	padding: var(--space-6);
+	gap: var(--space-3);
+	border: 1px solid var(--hairline);
+	border-radius: var(--r-card);
+	background: var(--surface-card);
+	box-shadow: var(--shadow-card);
+}
+/* Three hairline-divided trust rows. */
+.trust-stack {
+	display: flex;
+	flex-direction: column;
+	border-top: 1px solid var(--hairline-soft);
+}
+.trust-row {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 12px 0;
+	font-size: 14px;
+	color: var(--body-soft);
+	border-bottom: 1px solid var(--hairline-soft);
+}
+.trust-row:last-child {
+	border-bottom: 0;
+	padding-bottom: 0;
+}
+.trust-row svg {
+	flex: none;
+	margin-top: 2px;
+	color: var(--muted);
+}
+.trust-row b {
+	font-weight: 600;
+	color: var(--ink);
+}
+
+/* Mobile buy bar — the sticky card collapses into this below the detail
+   layout's breakpoint. Switched on in the responsive section below, together
+   with the rest of that breakpoint's work. */
+.buy-bar {
+	display: none;
+}
+
+/* "We're holding this for you" band. */
+.hold-banner {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+	padding: 14px 18px;
+	border-radius: var(--r-card);
+	background: var(--surface-soft);
+	font-size: 15px;
+	color: var(--body-soft);
+}
+.hold-clock {
+	font-size: 17px;
+	font-weight: 600;
+	color: var(--ink);
 }
 
 /* Clickable table rows / list plates. */
-.row-click { cursor: pointer; }
-
-/* Fine-grid plate (QR frame, artwork placeholders). */
-.grid-plate {
-	background:
-		repeating-linear-gradient(
-			90deg,
-			color-mix(in srgb, var(--color-text) 9%, transparent) 0 1px,
-			transparent 1px 7px
-		),
-		repeating-linear-gradient(
-			0deg,
-			color-mix(in srgb, var(--color-text) 9%, transparent) 0 1px,
-			transparent 1px 7px
-		),
-		var(--color-neutral-100);
+.row-click {
+	cursor: pointer;
 }
 
-/* ── responsive layout utilities ──────────────────────────────────────── */
+/* A link wearing its surroundings' clothes: card links, headline cells, nav
+   plates. The global `a` underline/colour is for links inside prose. */
+.link-plain {
+	color: inherit;
+	text-decoration: none;
+}
+.link-plain:hover {
+	color: inherit;
+}
 
-/* App frame uses the dynamic viewport so mobile URL bars don't clip the UI. */
+/* Keyboard users' first tab stop: parked above the viewport until focused. */
+.skip-link {
+	position: fixed;
+	top: 12px;
+	left: 12px;
+	z-index: 100;
+	padding: 10px 16px;
+	font-weight: 600;
+	color: var(--ink);
+	background: var(--surface-card);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--r-btn);
+	text-decoration: none;
+	transform: translateY(-200%);
+}
+.skip-link:focus-visible {
+	transform: none;
+}
+
+/* Screen-reader-only text (unread counts, row context). */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Flat placeholder plate (image fallbacks, QR frame). */
+.grid-plate {
+	background: var(--surface-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT
+
+   Three widths and no others:
+
+     mobile    < 744px
+     tablet    744px – 1127px
+     desktop   ≥ 1128px
+
+   written as `max-width: 743.98px` / `max-width: 1127.98px` so two queries can
+   never both match a fractional viewport. Everything below is desktop-down:
+   the base rules are the widest layout, each query takes something away.
+
+   The two surfaces worth knowing about before reading:
+
+   · **Navigation.** Desktop keeps the 264px sidebar in the flex flow. Below
+     1128px it leaves the flow entirely and becomes a left drawer over a scrim,
+     opened from the topbar's hamburger — the same drawer on tablet and phone,
+     because the markup is already a single `<aside>` and an icon rail would
+     mean a second rendering of every nav item for no gain.
+
+   · **The buy bar.** The listing detail's sticky buy card cannot survive a
+     single-column page, so below 1128px its CTA moves into a fixed bottom bar
+     (`.buy-bar`) and the card's own button (`.buy-cta-desktop`) is hidden. The
+     page gets `.has-buy-bar` bottom padding so the bar never covers content,
+     and the toast stack is pushed above it via `--toast-bottom`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .app-frame {
 	display: flex;
 	height: 100vh;
@@ -522,46 +1151,40 @@ select.input { appearance: none; }
 	overflow: hidden;
 }
 .page-frame {
-	padding: 24px;
+	padding: 28px 32px 56px;
 	display: flex;
 	flex-direction: column;
-	gap: 22px;
-}
-@media (max-width: 700px) {
-	.page-frame {
-		padding: 16px 14px 28px;
-		gap: 18px;
-	}
-}
-/* 16px inputs stop iOS Safari from zooming the page on focus. */
-@media (max-width: 980px) {
-	.input { font-size: 16px; }
-}
-@media (max-width: 520px) {
-	.hide-xs { display: none; }
+	gap: 24px;
+	/* Wide-monitor cap: centered, so a 27" screen gets more content instead
+	   of a dead right half. */
+	max-width: 1760px;
+	margin-inline: auto;
+	width: 100%;
+	min-width: 0;
 }
 
 .stat-grid {
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 20px;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 16px;
 }
 .balance-grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 20px;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 16px;
 }
+/* Marketplace grid: as many ≥240px columns as fit — 3-up on a narrow
+   desktop, 4-up on a laptop, 6-up on a 27" monitor. The tablet (2-up) and
+   mobile (1-up) overrides below still win at their breakpoints. */
 .card-grid {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 2px;
-	background: var(--color-divider);
-	border: 2px solid var(--color-divider);
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 16px;
 }
 .layout-detail {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 360px;
-	gap: 24px;
+	grid-template-columns: minmax(0, 1fr) 352px;
+	gap: 40px;
 	align-items: start;
 }
 .layout-form {
@@ -573,13 +1196,13 @@ select.input { appearance: none; }
 .layout-two {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	gap: 22px;
+	gap: 20px;
 	align-items: stretch;
 }
 .layout-master {
 	display: grid;
 	grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-	gap: 22px;
+	gap: 20px;
 	align-items: start;
 }
 .filter-bar {
@@ -588,94 +1211,373 @@ select.input { appearance: none; }
 	align-items: center;
 	flex-wrap: wrap;
 }
-.filter-bar > input { min-width: 200px; }
-.table-wrap { overflow-x: auto; }
-.table-wrap .table { min-width: 640px; }
+.filter-bar > input {
+	min-width: 200px;
+}
+/* A dense table scrolls inside its own box. It must never be the reason the
+   page itself scrolls sideways. */
+.table-wrap {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	max-width: 100%;
+}
+.table-wrap .table {
+	min-width: 640px;
+}
+/* The order's 5-step protection strip. A grid, not a wrapping flex row: five
+   equal tracks that narrow together, so the fifth step can never drop onto
+   its own full-width line. Each step carries its colour in `--step`. */
 .flow-row {
-	display: flex;
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
 	gap: 14px;
-	flex-wrap: wrap;
 }
-.flow-row > div { min-width: 150px; }
+.flow-step {
+	border-top: 3px solid var(--step, var(--hairline));
+	border-radius: 2px;
+	padding-top: 10px;
+}
 
-@media (max-width: 1280px) {
-	.card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Visibility helpers, all driven by the two breakpoints: `hide-md` drops a
+   nicety the moment the sidebar collapses, `hide-xs` drops one on phones, and
+   the hamburger / topbar wordmark exist only while the sidebar is a drawer. */
+.nav-backdrop,
+.menu-btn,
+.topbar-brand {
+	display: none;
 }
-@media (max-width: 1150px) {
-	.stat-grid { grid-template-columns: repeat(2, 1fr); }
-	.balance-grid { grid-template-columns: 1fr; }
+
+/* The left column of the order detail holds four mutually exclusive cards and
+   there are real combinations where none applies (seller on a refunded order,
+   buyer on a pending order with no payment link). React still renders the
+   wrapper, so the split keeps a second track and the summary stack sits
+   squeezed beside a hole. `:empty` is the only thing that can see that, and it
+   can't be an inline style; the split itself is auto-fit, so with the wrapper
+   out of the flow the surviving column takes the full width on its own. */
+.order-primary:empty {
+	display: none;
 }
-@media (max-width: 1080px) {
+
+/* ── below desktop: the sidebar is a drawer, the splits go single file ──── */
+
+@media (max-width: 1127.98px) {
+	.hide-md {
+		display: none;
+	}
+	/* 16px inputs stop iOS Safari zooming the page on focus. */
+	.input {
+		font-size: 16px;
+	}
+
+	.card-grid,
+	.stat-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 	.layout-detail,
 	.layout-form,
-	.layout-two,
 	.layout-master {
 		grid-template-columns: minmax(0, 1fr);
 	}
-}
-@media (max-width: 760px) {
-	.card-grid { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 500px) {
-	.stat-grid { grid-template-columns: 1fr; }
-}
+	/* Deal Alerts puts its list first on desktop and its create form in the
+	   aside. Stacked, the form is what the screen is for, so it leads. */
+	.layout-form.aside-first > :last-child {
+		order: -1;
+	}
+	.buy-card {
+		position: static;
+	}
 
-/* Collapsible sidebar below tablet width. */
-.nav-backdrop { display: none; }
-.menu-btn { display: none; }
-@media (max-width: 980px) {
+	/* The sidebar leaves the flow and slides in over the page. */
 	.app-sidebar {
 		position: fixed;
 		top: 0;
 		bottom: 0;
 		left: 0;
 		z-index: 60;
+		max-width: 86vw;
 		transform: translateX(-102%);
-		transition:
-			transform 0.25s ease,
-			background-color 0.25s ease;
-		background: var(--color-bg);
+		transition: transform 0.25s ease;
+		background: var(--canvas);
 	}
 	.app-sidebar.open {
 		transform: none;
-		box-shadow: var(--shadow-lg);
+		box-shadow: var(--shadow-card);
 	}
 	.nav-backdrop.show {
 		display: block;
 		position: fixed;
 		inset: 0;
 		z-index: 55;
-		background: color-mix(in srgb, var(--color-bg) 55%, transparent);
+		background: var(--scrim);
 	}
-	.menu-btn { display: inline-flex; }
-}
-@media (max-width: 700px) {
-	.hide-md { display: none; }
-}
+	.menu-btn,
+	.topbar-brand {
+		display: inline-flex;
+	}
 
-/* Auth split screen stacks on small viewports. */
-@media (max-width: 900px) {
+	/* The sticky buy card's CTA becomes a fixed bottom bar. */
+	.buy-cta-desktop {
+		display: none;
+	}
+	.buy-bar {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 40;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
+			max(16px, env(safe-area-inset-left));
+		background: var(--surface-card);
+		border-top: 1px solid var(--hairline);
+		box-shadow: var(--shadow-card);
+	}
+	.buy-bar .btn {
+		flex: none;
+		min-width: 150px;
+	}
+	/* Room for the bar, so it covers the page ground and never the content. */
+	.has-buy-bar {
+		padding-bottom: calc(84px + env(safe-area-inset-bottom));
+	}
+	/* Toasts are bottom-centre, which is exactly where the buy bar is. Lift
+	   them over it, but only on the one screen that has one. */
+	body:has(.buy-bar) {
+		--toast-bottom: calc(92px + env(safe-area-inset-bottom));
+	}
+
+	/* Auth: the poster stops being a column and becomes a banner. */
 	.auth-split {
 		flex-direction: column;
 		overflow-y: auto !important;
 	}
 	.auth-poster {
 		flex: none !important;
-		min-height: 300px;
-		padding: 24px !important;
+		padding: 28px !important;
 	}
 	.auth-pane {
 		flex: none !important;
-		padding: 32px 20px 48px !important;
+		padding: 36px 24px 56px !important;
 	}
 }
 
-/* ── animations (timing per handoff spec) ─────────────────────────────── */
+/* ── mobile ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 743.98px) {
+	.hide-xs {
+		display: none;
+	}
+
+	.page-frame {
+		padding: 20px max(16px, env(safe-area-inset-right)) 48px
+			max(16px, env(safe-area-inset-left));
+		gap: 20px;
+	}
+	/* One column, everywhere, without exception. */
+	.card-grid,
+	.stat-grid,
+	.balance-grid,
+	.layout-two {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* Touch targets: nothing tappable stays under 44px. The base sizes are
+	   mouse sizes — 40px icon buttons, 36px row buttons, 41px chips. */
+	.btn-ghost,
+	.btn-sm {
+		min-height: 44px;
+	}
+	.btn-icon {
+		width: 44px;
+		height: 44px;
+		min-height: 44px;
+	}
+	.chip {
+		min-height: 44px;
+		padding: 10px 16px;
+	}
+	/* The circular accent button inside the search pill. */
+	.searchbar button {
+		width: 44px;
+		height: 44px;
+	}
+	/* 12px + 12px + a 21px line = 45px of tappable label. The 3px track padding
+	   around it is the `.seg` box, which is not itself a target. */
+	.seg-opt {
+		padding: 12px 14px;
+	}
+
+	/* Filter rows stop wrapping into a ragged block and stack full-width.
+	   The `!important` is deliberate and load-bearing: every one of these
+	   widths is an inline style on the screen that renders the row, and the
+	   alternative is editing thirty call sites. */
+	.filter-bar {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 10px;
+	}
+	.filter-bar > * {
+		width: 100% !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		margin-left: 0 !important;
+	}
+	/* The same escape hatch for one fixed-width item inside a wrapping row —
+	   a 150px form field, a 200px button column — that should simply own the
+	   row on a phone. */
+	.mobile-full {
+		flex: 1 1 100% !important;
+		width: 100% !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		margin-left: 0 !important;
+	}
+	/* The search pill takes its own line above the scope toggle. */
+	.searchbar {
+		flex-basis: 100%;
+	}
+
+	/* Segmented controls fill the row; with four options (admin) they scroll
+	   rather than squeeze, which is why the options keep their natural width. */
+	.seg {
+		width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+	.seg::-webkit-scrollbar {
+		display: none;
+	}
+	.seg-opt {
+		flex: 1 0 auto;
+		justify-content: center;
+	}
+
+	/* Five columns in a 340px card are unreadable; the strip becomes a
+	   vertical timeline, each step keeping its colour as a left rail. */
+	.flow-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+	}
+	.flow-step {
+		border-top: 0;
+		border-left: 3px solid var(--step, var(--hairline));
+		border-radius: 0;
+		padding: 6px 0 10px 12px;
+	}
+
+	/* A row of buttons becomes a stack of full-width ones. */
+	.action-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.action-row > .btn {
+		width: 100%;
+	}
+
+	.pager {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.pager > * {
+		margin-left: 0 !important;
+	}
+	.pager > div {
+		justify-content: space-between;
+	}
+	.pager .btn {
+		flex: 1;
+	}
+
+	/* Tables that read better as cards than as a sideways scroll: the head is
+	   dropped and every cell carries its own label through `data-label`. A cell
+	   with `data-label=""` is the row's headline and keeps the full width.
+	   Dense admin tables deliberately do NOT opt in — six columns of ids and
+	   addresses are a spreadsheet, and a spreadsheet should scroll. */
+	.table-wrap .table-cards {
+		min-width: 0;
+	}
+	.table-cards,
+	.table-cards tbody,
+	.table-cards tr,
+	.table-cards td {
+		display: block;
+		width: 100%;
+	}
+	.table-cards thead {
+		display: none;
+	}
+	.table-cards tr {
+		margin-bottom: 12px;
+		padding: 12px 14px;
+		border: 1px solid var(--hairline);
+		border-radius: var(--r-card);
+		background: var(--surface-card);
+	}
+	.table-cards tbody tr:hover {
+		background: var(--surface-card);
+	}
+	.table-cards td {
+		display: flex;
+		gap: 12px;
+		align-items: baseline;
+		justify-content: space-between;
+		padding: 5px 0;
+		border: 0;
+	}
+	.table-cards td::before {
+		content: attr(data-label);
+		flex: none;
+		font-size: 13px;
+		color: var(--muted);
+		/* A `.price-was` cell strikes its own text through; the label it grew is
+		   not a price and must not be struck through with it. */
+		text-decoration: none;
+	}
+	.table-cards td[data-label=""] {
+		display: block;
+		padding-top: 0;
+	}
+	.table-cards td[data-label=""]::before {
+		content: none;
+	}
+
+	.buy-bar {
+		gap: 12px;
+		padding-left: max(14px, env(safe-area-inset-left));
+		padding-right: max(14px, env(safe-area-inset-right));
+	}
+	/* The label can be "Currently unavailable" — let it wrap inside the button
+	   instead of pushing the bar wider than the screen. */
+	.buy-bar .btn {
+		flex: 1 1 auto;
+		min-width: 0;
+		padding: 0 12px;
+	}
+
+	/* Auth: the poster is a desktop luxury. On a phone the form is the page. */
+	.auth-poster {
+		display: none !important;
+	}
+	.auth-split {
+		justify-content: center;
+	}
+	.auth-pane {
+		flex: 1 !important;
+		justify-content: center;
+		padding: 28px max(20px, env(safe-area-inset-right)) 44px
+			max(20px, env(safe-area-inset-left)) !important;
+	}
+}
+
+/* ── animations ───────────────────────────────────────────────────────── */
 
 @keyframes fadeUp {
 	from {
 		opacity: 0;
-		transform: translateY(10px);
+		transform: translateY(8px);
 	}
 	to {
 		opacity: 1;
@@ -683,43 +1585,40 @@ select.input { appearance: none; }
 	}
 }
 @keyframes growBar {
-	from { transform: scaleX(0); }
-	to { transform: scaleX(1); }
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
 }
 @keyframes pulseDot {
 	0%,
-	100% { opacity: 1; }
-	50% { opacity: 0.55; }
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.55;
+	}
 }
 @keyframes marquee {
-	from { transform: translateX(0); }
-	to { transform: translateX(-50%); }
-}
-@keyframes scan {
-	0% {
-		transform: translateY(0);
-		opacity: 0.9;
+	from {
+		transform: translateX(0);
 	}
-	100% {
-		transform: translateY(146px);
-		opacity: 0.9;
+	to {
+		transform: translateX(-50%);
 	}
-}
-@keyframes sheen {
-	from { transform: translateX(-100%); }
-	to { transform: translateX(100%); }
-}
-@keyframes drift {
-	from { transform: translate(0, 0); }
-	to { transform: translate(74px, 74px); }
 }
 
-.fade-up { animation: fadeUp 0.45s ease both; }
+.fade-up {
+	animation: fadeUp 0.35s ease both;
+}
 
 /* ── micro transitions ────────────────────────────────────────────────── */
 
 button,
 .btn,
+.chip,
 .tag,
 .input,
 .seg-opt,
@@ -728,20 +1627,7 @@ a {
 		background-color 0.16s ease,
 		color 0.16s ease,
 		border-color 0.16s ease,
-		box-shadow 0.16s ease,
-		transform 0.16s ease;
-}
-[data-theme],
-aside,
-header,
-.card,
-.table th,
-.table td,
-tr {
-	transition:
-		background-color 0.25s ease,
-		color 0.25s ease,
-		border-color 0.25s ease;
+		box-shadow 0.16s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

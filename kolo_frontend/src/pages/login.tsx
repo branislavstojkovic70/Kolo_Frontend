@@ -12,6 +12,23 @@ export default function Login() {
 	return isClerkEnabled ? <ClerkSignIn /> : <DevSignIn />;
 }
 
+function Footnote() {
+	return (
+		<>
+			<div style={{ height: 1, background: "var(--hairline-soft)", margin: "24px 0" }} />
+			<div
+				className="text-muted"
+				style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13 }}
+			>
+				<LockIcon size={14} style={{ flex: "none", marginTop: 2 }} />
+				<span style={{ minWidth: 0 }}>
+					Every order is covered by Buyer Protection. Your money only moves once you're happy.
+				</span>
+			</div>
+		</>
+	);
+}
+
 function ClerkSignIn() {
 	const { user, loading } = useAuth();
 	const location = useLocation();
@@ -21,32 +38,13 @@ function ClerkSignIn() {
 
 	return (
 		<AuthLayout>
-			<h1
-				style={{
-					margin: "0 0 8px",
-					fontSize: 44,
-					lineHeight: 0.95,
-					textTransform: "uppercase",
-					letterSpacing: "-0.02em",
-				}}
-			>
-				Sign in
-			</h1>
-			<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
-				New here? <Link to="/register">Create an account</Link> · it takes a minute.
+			<h1 style={{ margin: "0 0 6px" }}>Welcome back</h1>
+			<div className="text-muted" style={{ fontSize: 15, marginBottom: 28 }}>
+				New here? <Link to="/register">Create an account</Link>, it takes a minute.
 			</div>
 			{/* routing="path" needs the /login/* splat route in main.tsx */}
 			<SignIn routing="path" path="/login" signUpUrl="/register" fallbackRedirectUrl={from} />
-			<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
-			<div
-				className="text-muted"
-				style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
-			>
-				<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
-				<span>
-					Protected by escrow and admin arbitration. Your funds move only when you confirm.
-				</span>
-			</div>
+			<Footnote />
 		</AuthLayout>
 	);
 }
@@ -81,21 +79,11 @@ function DevSignIn() {
 	return (
 		<AuthLayout>
 			<form onSubmit={handleSubmit}>
-				<h1
-					style={{
-						margin: "0 0 8px",
-						fontSize: 44,
-						lineHeight: 0.95,
-						textTransform: "uppercase",
-						letterSpacing: "-0.02em",
-					}}
-				>
-					Sign in
-				</h1>
-				<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
-					New here? <Link to="/register">Create an account</Link> · it takes a minute.
+				<h1 style={{ margin: "0 0 6px" }}>Welcome back</h1>
+				<div className="text-muted" style={{ fontSize: 15, marginBottom: 28 }}>
+					New here? <Link to="/register">Create an account</Link>, it takes a minute.
 				</div>
-				<div className="field" style={{ marginBottom: 14 }}>
+				<div className="field" style={{ marginBottom: 16 }}>
 					<label htmlFor="login-email">Email</label>
 					<input
 						id="login-email"
@@ -109,7 +97,7 @@ function DevSignIn() {
 					/>
 				</div>
 				{/* Decorative: dev-bypass auth has no password. Clerk's form does. */}
-				<div className="field" style={{ marginBottom: 8 }}>
+				<div className="field" style={{ marginBottom: 10 }}>
 					<label htmlFor="login-password">Password</label>
 					<input
 						id="login-password"
@@ -121,23 +109,14 @@ function DevSignIn() {
 					/>
 				</div>
 				<div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-					<a href="#" style={{ fontSize: 12 }} onClick={(e) => e.preventDefault()}>
-						Forgot password?
+					<a href="#" style={{ fontSize: 14 }} onClick={(e) => e.preventDefault()}>
+						Forgot your password?
 					</a>
 				</div>
 				<button className="btn btn-primary btn-block" type="submit" disabled={submitting}>
-					{submitting ? "Signing in…" : "Sign in →"}
+					{submitting ? "Signing in…" : "Sign in"}
 				</button>
-				<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
-				<div
-					className="text-muted"
-					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
-				>
-					<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
-					<span>
-						Protected by escrow and admin arbitration. Your funds move only when you confirm.
-					</span>
-				</div>
+				<Footnote />
 			</form>
 		</AuthLayout>
 	);

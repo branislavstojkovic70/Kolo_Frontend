@@ -1,33 +1,24 @@
 import { useNavigate } from "react-router-dom";
+import { useDocumentTitle } from "../hooks/use-document-title";
 
 export default function NotFound() {
 	const navigate = useNavigate();
+	useDocumentTitle("Page not found");
 
 	return (
 		<div className="page-frame">
-			<div
-				style={{
-					borderBottom: "2px solid var(--color-divider)",
-					paddingBottom: 14,
-					display: "flex",
-					alignItems: "flex-end",
-					gap: 18,
-					animation: "fadeUp .4s ease both",
-				}}
-			>
-				<span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--color-accent)", paddingBottom: 9 }}>
-					404
-				</span>
-				<h1 style={{ margin: 0, fontSize: "clamp(32px, 8vw, 52px)", lineHeight: 0.92, letterSpacing: "-0.025em", textTransform: "uppercase" }}>
-					Not found
-				</h1>
-			</div>
-			<div className="text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: 13, letterSpacing: "0.06em" }}>
-				THIS PAGE ISN'T IN ESCROW · IT SIMPLY DOESN'T EXIST.
-			</div>
 			<div>
+				<div className="text-muted" style={{ fontSize: 14 }}>
+					Page not found
+				</div>
+				<h1 style={{ margin: "6px 0 0" }}>We can't find that page</h1>
+			</div>
+			<div className="text-muted" style={{ fontSize: 16, maxWidth: "min(52ch, 100%)" }}>
+				The link may be out of date, or the listing it pointed to is no longer on sale.
+			</div>
+			<div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
 				<button className="btn btn-primary" onClick={() => navigate("/ads")}>
-					Back to marketplace →
+					Back to browsing
 				</button>
 			</div>
 		</div>

@@ -1,11 +1,11 @@
 import { disputesApi, MAX_PAGE_SIZE, ordersApi, walletApi, type PlatformConfig } from "../api";
-import { shortRef } from "../utils/format";
-import { fmtUsd } from "../utils/money";
+import { money } from "../utils/money";
 
 /**
- * The backend has no notifications table — the inbox, the unread badge and the
- * live ticker are all derived from the caller's real orders, disputes and
- * withdrawals. Read state is tracked client-side as a last-seen timestamp.
+ * The backend has no notifications table — the activity list, the unread badge
+ * and the strip under the topbar are all derived from the caller's real orders,
+ * requests and transfers. Read state is tracked client-side as a last-seen
+ * timestamp.
  *
  * The source lists are paginated, so the feed covers the most recent
  * MAX_PAGE_SIZE of each — plenty for an inbox, and it never walks every page.
@@ -18,7 +18,7 @@ export interface AppEvent {
 	tag: string;
 	body: string;
 	href: string;
-	/** Uppercase mono one-liner for the ticker strip. */
+	/** One-liner for the quiet strip under the topbar. */
 	ticker: string;
 }
 
@@ -44,9 +44,9 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 			time: order.createdAt,
 			title: "Order placed",
 			tag: "Order",
-			body: `You ordered “${order.titleSnapshot}” for ${fmtUsd(order.amountUsd)} USDT.`,
+			body: `You ordered “${order.titleSnapshot}” for ${money(order.amountUsd)}.`,
 			href: `/orders/${order.id}`,
-			ticker: `ORDER ${shortRef(order.id)} PLACED · ${fmtUsd(order.amountUsd)} USDT`,
+			ticker: `You ordered ${order.titleSnapshot} · ${money(order.amountUsd)}`,
 		});
 		if (order.paidAt) {
 			events.push({
@@ -54,9 +54,9 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 				time: order.paidAt,
 				title: "Payment confirmed",
 				tag: "Payment",
-				body: `Payment for “${order.titleSnapshot}” confirmed — delivery details are unlocked on the order.`,
+				body: `Your payment for “${order.titleSnapshot}” went through. The access details are on the order.`,
 				href: `/orders/${order.id}`,
-				ticker: `PAYMENT CONFIRMED ${shortRef(order.id)} · ${fmtUsd(order.amountUsd)} USDT ▸ ESCROW`,
+				ticker: `Payment confirmed · ${order.titleSnapshot}`,
 			});
 		}
 	}
@@ -67,30 +67,30 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 			time: order.createdAt,
 			title: "New order on your listing",
 			tag: "Sale",
-			body: `${order.buyer.username ?? "A buyer"} ordered “${order.titleSnapshot}” · ${fmtUsd(order.amountUsd)} USDT.`,
+			body: `${order.buyer.username ?? "A buyer"} ordered “${order.titleSnapshot}” · ${money(order.amountUsd)}.`,
 			href: `/orders/${order.id}`,
-			ticker: `NEW ORDER ${shortRef(order.id)} · ${order.titleSnapshot.toUpperCase().slice(0, 32)}`,
+			ticker: `New order · ${order.titleSnapshot}`,
 		});
 		if (order.paidAt) {
 			events.push({
 				id: `sale-paid-${order.id}`,
 				time: order.paidAt,
 				title: "Payment received",
-				tag: "Escrow",
-				body: `${fmtUsd(order.sellerAmountUsd)} USDT moved to escrow for “${order.titleSnapshot}” after the platform fee.`,
+				tag: "Protected",
+				body: `${money(order.sellerAmountUsd)} is being held for you on “${order.titleSnapshot}” after the service fee.`,
 				href: `/orders/${order.id}`,
-				ticker: `${fmtUsd(order.sellerAmountUsd)} USDT ▸ ESCROW · ${shortRef(order.id)}`,
+				ticker: `${money(order.sellerAmountUsd)} held for you · ${order.titleSnapshot}`,
 			});
 		}
 		if (order.vestedAt && new Date(order.vestedAt).getTime() <= now && order.status === "PAID") {
 			events.push({
 				id: `sale-vested-${order.id}`,
 				time: order.vestedAt,
-				title: "Funds released",
-				tag: "Vesting",
-				body: `${fmtUsd(order.sellerAmountUsd)} USDT from “${order.titleSnapshot}” finished vesting and is withdrawable.`,
+				title: "Money ready to withdraw",
+				tag: "Cleared",
+				body: `${money(order.sellerAmountUsd)} from “${order.titleSnapshot}” has finished clearing.`,
 				href: "/profile",
-				ticker: `VESTING RELEASED · ${fmtUsd(order.sellerAmountUsd)} USDT → AVAILABLE`,
+				ticker: `${money(order.sellerAmountUsd)} is ready to withdraw`,
 			});
 		}
 	}
@@ -99,24 +99,24 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 		events.push({
 			id: `dispute-opened-${dispute.id}`,
 			time: dispute.createdAt,
-			title: "Dispute opened",
-			tag: "Dispute",
-			body: `“${dispute.order.titleSnapshot}” — ${dispute.reason}`,
+			title: "Help requested on an order",
+			tag: "Resolution",
+			body: `“${dispute.order.titleSnapshot}”: ${dispute.reason}`,
 			href: `/disputes/${dispute.id}`,
-			ticker: `DISPUTE ${shortRef(dispute.id)} OPENED · ${shortRef(dispute.orderId)}`,
+			ticker: `Help requested · ${dispute.order.titleSnapshot}`,
 		});
 		if (dispute.resolvedAt) {
 			const winner = dispute.status === "RESOLVED_BUYER" ? "buyer" : "seller";
 			events.push({
 				id: `dispute-resolved-${dispute.id}`,
 				time: dispute.resolvedAt,
-				title: `Dispute resolved in ${winner}'s favour`,
-				tag: "Dispute",
+				title: `Resolved in the ${winner}'s favour`,
+				tag: "Resolution",
 				body:
 					dispute.resolutionNote ??
-					`The dispute on “${dispute.order.titleSnapshot}” was decided for the ${winner}.`,
+					`The request on “${dispute.order.titleSnapshot}” was decided for the ${winner}.`,
 				href: `/disputes/${dispute.id}`,
-				ticker: `DISPUTE ${shortRef(dispute.id)} RESOLVED · ${winner.toUpperCase()}`,
+				ticker: `Request resolved for the ${winner}`,
 			});
 		}
 	}
@@ -125,21 +125,21 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 		events.push({
 			id: `withdrawal-${withdrawal.id}`,
 			time: withdrawal.createdAt,
-			title: "Withdrawal requested",
-			tag: "Payout",
-			body: `${fmtUsd(withdrawal.amountUsd)} ${withdrawal.currency} to ${withdrawal.address.slice(0, 10)}… via ${withdrawal.network}.`,
+			title: "Transfer requested",
+			tag: "Transfer",
+			body: `${money(withdrawal.amountUsd)} on its way to your account.`,
 			href: "/profile",
-			ticker: `PAYOUT ${fmtUsd(withdrawal.amountUsd)} ${withdrawal.currency} · ${withdrawal.network}`,
+			ticker: `Transfer requested · ${money(withdrawal.amountUsd)}`,
 		});
 		if (withdrawal.completedAt) {
 			events.push({
 				id: `withdrawal-done-${withdrawal.id}`,
 				time: withdrawal.completedAt,
-				title: "Payout completed",
-				tag: "Payout",
-				body: `${fmtUsd(withdrawal.amountUsd)} ${withdrawal.currency} arrived at your wallet.`,
+				title: "Transfer complete",
+				tag: "Transfer",
+				body: `${money(withdrawal.amountUsd)} arrived in your account.`,
 				href: "/profile",
-				ticker: `PAYOUT SENT · ${fmtUsd(withdrawal.amountUsd)} ${withdrawal.currency} VIA ${withdrawal.network}`,
+				ticker: `${money(withdrawal.amountUsd)} paid out`,
 			});
 		}
 	}
@@ -163,10 +163,10 @@ export function countUnread(events: AppEvent[]): number {
 /** Fallback strip while events load (or for a brand-new account). */
 export function tickerFallback(platform: PlatformConfig | undefined): string {
 	return (
-		"ESCROW PROTECTED · EVERY ORDER MOVES PAID → ESCROWED → VESTED → RELEASED ··· " +
-		(platform ? `${platform.feePercent}% FLAT FEE · NO HIDDEN CHARGES ··· ` : "") +
-		"100+ CRYPTO ASSETS VIA OXAPAY ··· " +
-		"ADMIN-ARBITRATED DISPUTES · EVIDENCE + CHAT ··· "
+		"Every order is covered by Buyer Protection · " +
+		(platform ? `${platform.feePercent}% service fee, nothing hidden · ` : "") +
+		"Your payment is held until you've checked your order · " +
+		"Real people settle anything that goes wrong · "
 	);
 }
 
@@ -178,6 +178,6 @@ export function buildTickerText(
 	return events
 		.slice(0, 8)
 		.map((event) => event.ticker)
-		.join(" ··· ")
-		.concat(" ··· ");
+		.join(" · ")
+		.concat(" · ");
 }

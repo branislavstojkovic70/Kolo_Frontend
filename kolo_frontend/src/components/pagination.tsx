@@ -1,6 +1,7 @@
 import { PAGE_SIZES } from "../lib/pagination";
 
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+/** The smallest selectable size — at or under it, a single page needs no pager. */
+const MIN_PAGE_SIZE = Math.min(...PAGE_SIZES);
 
 interface PaginationProps {
 	page: number;
@@ -27,7 +28,11 @@ export default function Pagination({
 	onLimit,
 	noun,
 }: PaginationProps) {
+	// No chrome for three rows: with everything on one page and nothing a
+	// smaller page size could change, the pager has no job to do. (Doing what
+	// the doc above always promised.)
 	if (total === 0) return null;
+	if (page === 1 && total <= MIN_PAGE_SIZE && total <= limit) return null;
 
 	const first = (page - 1) * limit + 1;
 	const last = Math.min(page * limit, total);
@@ -41,18 +46,29 @@ export default function Pagination({
 				alignItems: "center",
 				gap: 12,
 				flexWrap: "wrap",
-				borderTop: "2px solid var(--color-divider)",
-				paddingTop: 12,
+				borderTop: "1px solid var(--hairline-soft)",
+				paddingTop: 16,
 			}}
 		>
 			<label
 				className="text-muted"
-				style={{ display: "flex", alignItems: "center", gap: 7, ...mono, fontSize: 11.5, letterSpacing: "0.1em" }}
+				style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0, fontSize: 14 }}
 			>
-				PER PAGE
+				Per page
+				{/* 44px, not the 40px a mouse would be happy with — this is one of
+				    the controls a thumb has to hit. The arrow glyph is drawn with a
+				    background gradient, so its offset is tied to the height. */}
 				<select
 					className="input"
-					style={{ width: 78, flex: "none", padding: "5px 8px", fontSize: 13 }}
+					style={{
+						width: 84,
+						maxWidth: "100%",
+						flex: "none",
+						minHeight: 44,
+						padding: "10px 30px 10px 12px",
+						fontSize: 14,
+						backgroundPosition: "calc(100% - 16px) 19px, calc(100% - 11px) 19px",
+					}}
 					value={limit}
 					onChange={(e) => onLimit(Number(e.target.value))}
 					aria-label={`${noun} per page`}
@@ -65,29 +81,42 @@ export default function Pagination({
 				</select>
 			</label>
 
-			<span className="text-muted" style={{ ...mono, fontSize: 11.5, letterSpacing: "0.1em" }}>
-				SHOWING {first}–{last} OF {total} {noun.toUpperCase()}
+			<span className="text-muted" style={{ minWidth: 0, fontSize: 14 }}>
+				Showing {first}-{last} of {total} {noun}
 			</span>
 
-			<div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+			{/* The pager is not always the width of a page: Resolution puts one in the
+			    240px master column, where prev/next has to be allowed to fall under
+			    the counter rather than reach past the column edge. Below 744px the
+			    sheet stacks the three groups and stretches the buttons; wrapping is
+			    what carries every width in between. */}
+			<div
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 10,
+					flexWrap: "wrap",
+					justifyContent: "flex-end",
+					minWidth: 0,
+					marginLeft: "auto",
+				}}
+			>
 				<button
-					className="btn btn-secondary"
+					className="btn btn-secondary btn-sm"
 					onClick={() => onPage(page - 1)}
 					disabled={page <= 1}
-					style={{ padding: "5px 12px" }}
 				>
-					← Prev
+					Previous
 				</button>
-				<span className="text-muted" style={{ ...mono, fontSize: 11.5, letterSpacing: "0.1em" }}>
-					{page} / {lastPage}
+				<span className="text-muted" style={{ fontSize: 14 }}>
+					{page} of {lastPage}
 				</span>
 				<button
-					className="btn btn-secondary"
+					className="btn btn-secondary btn-sm"
 					onClick={() => onPage(page + 1)}
 					disabled={page >= lastPage}
-					style={{ padding: "5px 12px" }}
 				>
-					Next →
+					Next
 				</button>
 			</div>
 		</div>

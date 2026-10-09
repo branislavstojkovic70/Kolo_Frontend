@@ -29,25 +29,20 @@ function icon(children: ReactNode) {
 	};
 }
 
-export const SunIcon = icon(
+export const SearchIcon = icon(
 	<>
-		<circle cx="12" cy="12" r="4" />
-		<path d="M12 2v2" />
-		<path d="M12 20v2" />
-		<path d="m4.93 4.93 1.41 1.41" />
-		<path d="m17.66 17.66 1.41 1.41" />
-		<path d="M2 12h2" />
-		<path d="M20 12h2" />
-		<path d="m6.34 17.66-1.41 1.41" />
-		<path d="m19.07 4.93-1.41 1.41" />
+		<circle cx="11" cy="11" r="7" />
+		<path d="m20 20-3.2-3.2" />
 	</>
 );
 
-export const MoonIcon = icon(<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />);
+export const MessageIcon = icon(
+	<path d="M21 11.5a8.38 8.38 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.1A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5Z" />
+);
 
 export const LockIcon = icon(
 	<>
-		<rect x="3" y="11" width="18" height="11" />
+		<rect x="3" y="11" width="18" height="11" rx="2" />
 		<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 	</>
 );
@@ -200,3 +195,22 @@ export const MenuIcon = icon(
 		<path d="M4 18h16" />
 	</>
 );
+
+/* The theme switch shows the destination, not the current state: a sun while
+   you are in the dark theme, a moon while you are in the light one. */
+
+export const SunIcon = icon(
+	<>
+		<circle cx="12" cy="12" r="4" />
+		<path d="M12 2v2" />
+		<path d="M12 20v2" />
+		<path d="M4.9 4.9l1.4 1.4" />
+		<path d="M17.7 17.7l1.4 1.4" />
+		<path d="M2 12h2" />
+		<path d="M20 12h2" />
+		<path d="M4.9 19.1l1.4-1.4" />
+		<path d="M17.7 6.3l1.4-1.4" />
+	</>
+);
+
+export const MoonIcon = icon(<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />);

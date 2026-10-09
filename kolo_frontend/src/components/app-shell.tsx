@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { EventsContext, useEvents } from "../hooks/use-events";
 import { buildTickerText, tickerFallback } from "../lib/events";
@@ -38,6 +38,20 @@ export default function AppShell() {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [navOpen]);
 
+	// Keyboard journey of the drawer: focus moves into it on open and back to
+	// the hamburger on close. Only below the desktop breakpoint, where the
+	// sidebar actually overlays the page — on desktop it is plain page chrome.
+	const wasOpen = useRef(false);
+	useEffect(() => {
+		const isDrawer = window.matchMedia("(max-width: 1127.98px)").matches;
+		if (isDrawer && navOpen) {
+			document.querySelector<HTMLElement>(".app-sidebar")?.focus();
+		} else if (isDrawer && !navOpen && wasOpen.current) {
+			document.querySelector<HTMLElement>(".menu-btn")?.focus();
+		}
+		wasOpen.current = navOpen;
+	}, [navOpen]);
+
 	return (
 		<EventsContext.Provider value={events}>
 			<div className="app-frame">
@@ -48,7 +62,7 @@ export default function AppShell() {
 					aria-hidden="true"
 				/>
 				<main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-					<Topbar onMenu={() => setOpenedOn(navOpen ? null : pathname)} />
+					<Topbar menuOpen={navOpen} onMenu={() => setOpenedOn(navOpen ? null : pathname)} />
 					<Ticker text={events.loading ? tickerFallback(platform) : buildTickerText(events.events, platform)} />
 					<div style={{ flex: 1, overflowY: "auto" }}>
 						<Outlet />

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { adminApi, disputesApi, type Dispute, type DisputeStatus, type Page as Paged } from "../api";
 import AsyncPanel from "../components/async-panel";
 import { MessageIcon } from "../components/icons";
@@ -89,7 +89,6 @@ function MessagePlate({
 
 export default function Disputes() {
 	const { id } = useParams<{ id: string }>();
-	const navigate = useNavigate();
 	const { isAdmin } = useAuth();
 	const [note, setNote] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -183,10 +182,10 @@ export default function Disputes() {
 							const chip = disputeStatusTag(entry.status);
 							const selected = entry.id === selectedId;
 							return (
-								<div
+								<Link
 									key={entry.id}
-									className="row-click"
-									onClick={() => navigate(`/disputes/${entry.id}`)}
+									to={`/disputes/${entry.id}`}
+									className="row-click link-plain"
 									style={{
 										padding: "14px 16px",
 										borderRadius: "var(--r-card)",
@@ -231,7 +230,7 @@ export default function Disputes() {
 									<div className="text-muted" style={{ fontSize: 14 }}>
 										{entry.order.titleSnapshot} · {money(entry.order.amountUsd)}
 									</div>
-								</div>
+								</Link>
 							);
 						})}
 						<Pagination
@@ -264,13 +263,13 @@ export default function Disputes() {
 								>
 									<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
 										<StatusTag {...disputeStatusTag(dispute.status)} />
-										<span
-											className="text-muted row-click"
-											onClick={() => navigate(`/orders/${dispute.orderId}`)}
-											style={{ whiteSpace: "nowrap", fontSize: 14, textDecoration: "underline" }}
+										<Link
+											to={`/orders/${dispute.orderId}`}
+											className="text-muted"
+											style={{ whiteSpace: "nowrap", fontSize: 14 }}
 										>
 											Order #{shortRef(dispute.orderId)}
-										</span>
+										</Link>
 										<span className="text-muted" style={{ whiteSpace: "nowrap", fontSize: 14 }}>
 											Opened {formatDate(dispute.createdAt)} by the buyer
 										</span>

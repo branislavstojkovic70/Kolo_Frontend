@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import AsyncPanel from "../components/async-panel";
 import Page from "../components/page";
 import Pagination from "../components/pagination";
@@ -18,7 +18,6 @@ const TAGS = ["Order", "Sale", "Payment", "Protected", "Cleared", "Resolution", 
 type EventTag = (typeof TAGS)[number];
 
 export default function Notifications() {
-	const navigate = useNavigate();
 	const { events, loading, error, unreadCount, markAllRead, reload } = useSharedEvents();
 	const controls = useListControls<EventTag>(20);
 	const { search, status, page, limit } = controls;
@@ -99,10 +98,10 @@ export default function Notifications() {
 					{visible.map((event) => {
 						const unread = event.time > seen;
 						return (
-							<div
+							<Link
 								key={event.id}
-								className="row-click"
-								onClick={() => navigate(event.href)}
+								to={event.href}
+								className="row-click link-plain"
 								style={{
 									display: "flex",
 									flexDirection: "column",
@@ -114,16 +113,19 @@ export default function Notifications() {
 							>
 								<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
 									{unread && (
-										<span
-											aria-hidden="true"
-											style={{
-												width: 7,
-												height: 7,
-												borderRadius: "var(--r-pill)",
-												background: "var(--accent)",
-												flex: "none",
-											}}
-										/>
+										<>
+											<span
+												aria-hidden="true"
+												style={{
+													width: 7,
+													height: 7,
+													borderRadius: "var(--r-pill)",
+													background: "var(--accent)",
+													flex: "none",
+												}}
+											/>
+											<span className="visually-hidden">Unread:</span>
+										</>
 									)}
 									<span style={{ fontSize: 16, fontWeight: 600 }}>{event.title}</span>
 									<span className="tag tag-neutral">{event.tag}</span>
@@ -134,7 +136,7 @@ export default function Notifications() {
 								<div className="text-muted" style={{ fontSize: 15, maxWidth: "80ch" }}>
 									{event.body}
 								</div>
-							</div>
+							</Link>
 						);
 					})}
 				</div>

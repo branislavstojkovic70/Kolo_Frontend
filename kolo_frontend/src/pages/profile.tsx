@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
 	disputesApi,
 	MAX_PAGE_SIZE,
@@ -412,7 +412,16 @@ export default function Profile() {
 												onClick={() => navigate(`/orders/${row.orderId}`)}
 											>
 												<td data-label="">
-													<div style={{ fontWeight: 600, fontSize: 15 }}>{row.title}</div>
+													{/* The row's onClick is a mouse convenience; the link is
+													    the real, keyboard-reachable navigation. */}
+													<Link
+														to={`/orders/${row.orderId}`}
+														className="link-plain"
+														style={{ display: "block" }}
+														onClick={(e) => e.stopPropagation()}
+													>
+														<div style={{ fontWeight: 600, fontSize: 15 }}>{row.title}</div>
+													</Link>
 												</td>
 												<td data-label="Amount" style={{ fontSize: 15, whiteSpace: "nowrap" }}>
 													{money(row.amount)}
@@ -478,7 +487,14 @@ export default function Profile() {
 										style={{ fontSize: 14 }}
 									>
 										<td data-label="" style={{ fontSize: 14, fontWeight: 600 }}>
-											{item.productName}
+											<Link
+												to={`/orders/${item.orderId}`}
+												className="link-plain"
+												style={{ display: "block" }}
+												onClick={(e) => e.stopPropagation()}
+											>
+												{item.productName}
+											</Link>
 										</td>
 										<td data-label="You paid" style={{ fontSize: 14 }}>
 											{money(item.paidUsd)}

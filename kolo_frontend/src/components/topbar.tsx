@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { MenuIcon, PlusIcon } from "./icons";
 import ThemeToggle from "./theme-toggle";
 
@@ -16,8 +16,7 @@ function crumbOf(pathname: string): string {
 	return "Browse";
 }
 
-export default function Topbar({ onMenu }: { onMenu?: () => void }) {
-	const navigate = useNavigate();
+export default function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menuOpen?: boolean }) {
 	const crumb = crumbOf(useLocation().pathname);
 
 	return (
@@ -37,17 +36,19 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
 		>
 			{/* Below 1128px the sidebar is a drawer, so the topbar grows the two
 			    things it took with it: the opener and the wordmark. */}
-			<button className="btn btn-icon menu-btn" onClick={onMenu} title="Menu" aria-label="Menu">
+			<button
+				className="btn btn-icon menu-btn"
+				onClick={onMenu}
+				title="Menu"
+				aria-label="Menu"
+				aria-expanded={menuOpen}
+				aria-controls="app-nav"
+			>
 				<MenuIcon size={18} />
 			</button>
-			<button
-				type="button"
-				className="topbar-brand"
-				title="Kolo marketplace"
-				onClick={() => navigate("/ads")}
-			>
+			<Link to="/ads" className="topbar-brand" title="Kolo marketplace">
 				Kolo
-			</button>
+			</Link>
 			{/* The breadcrumb is the first thing to go on a phone: the drawer's
 			    active row says the same thing and the wordmark needs the room. */}
 			<div
@@ -68,16 +69,16 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
 					Every order is covered by Buyer Protection
 				</span>
 				<ThemeToggle />
-				<button
+				<Link
+					to="/ads/new"
 					className="btn btn-primary"
 					style={{ whiteSpace: "nowrap" }}
-					onClick={() => navigate("/ads/new")}
 					title="Sell a subscription"
 					aria-label="Sell a subscription"
 				>
 					<PlusIcon size={16} />
 					<span className="hide-xs">Sell a subscription</span>
-				</button>
+				</Link>
 			</div>
 		</header>
 	);

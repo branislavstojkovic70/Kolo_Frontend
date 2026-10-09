@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ordersApi, type OrderRole, type OrderStatus } from "../api";
 import AsyncPanel from "../components/async-panel";
 import Page from "../components/page";
@@ -129,10 +129,19 @@ export default function Orders() {
 										onClick={() => navigate(`/orders/${order.id}`)}
 									>
 										<td data-label="">
-											<div style={{ fontWeight: 600, fontSize: 15 }}>{order.titleSnapshot}</div>
-											<div className="text-muted" style={{ fontSize: 13 }}>
-												#{shortRef(order.id)}
-											</div>
+											{/* The row's onClick is a mouse convenience; this link is the
+											    real navigation — keyboard, middle-click, screen readers. */}
+											<Link
+												to={`/orders/${order.id}`}
+												className="link-plain"
+												style={{ display: "block" }}
+												onClick={(e) => e.stopPropagation()}
+											>
+												<div style={{ fontWeight: 600, fontSize: 15 }}>{order.titleSnapshot}</div>
+												<div className="text-muted" style={{ fontSize: 13 }}>
+													#{shortRef(order.id)}
+												</div>
+											</Link>
 										</td>
 										<td
 											className="text-muted"

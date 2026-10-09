@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { listingsApi, ordersApi } from "../api";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
@@ -275,11 +275,12 @@ export default function AdDetails() {
 										style={{ display: "flex", flexDirection: "column", maxWidth: "min(640px, 100%)" }}
 									>
 										{moreFromSeller.map((l) => (
-											<div
+											<Link
 												key={l.id}
-												className="row-click"
-												onClick={() => navigate(`/ads/${l.id}`)}
+												to={`/ads/${l.id}`}
+												className="row-click link-plain"
 												style={{
+													display: "block",
 													padding: "12px 0",
 													borderBottom: "1px solid var(--hairline-soft)",
 												}}
@@ -288,7 +289,7 @@ export default function AdDetails() {
 												<div className="text-muted" style={{ fontSize: 14 }}>
 													{money(l.priceUsd)} · {(l.category ?? "subscription").toLowerCase()}
 												</div>
-											</div>
+											</Link>
 										))}
 									</div>
 								</div>

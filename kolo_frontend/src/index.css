@@ -814,6 +814,8 @@ select.input {
 	border-radius: var(--r-btn);
 	background: transparent;
 	color: var(--ink);
+	/* Nav rows are links now — same skin, no underline. */
+	text-decoration: none;
 }
 .snav svg {
 	color: var(--muted);
@@ -845,6 +847,10 @@ select.input {
 	font-weight: 700;
 	letter-spacing: -0.01em;
 	line-height: 1;
+	color: var(--accent);
+	text-decoration: none;
+}
+.topbar-brand:hover {
 	color: var(--accent);
 }
 
@@ -1003,6 +1009,29 @@ select.input {
 /* Clickable table rows / list plates. */
 .row-click {
 	cursor: pointer;
+}
+
+/* A link wearing its surroundings' clothes: card links, headline cells, nav
+   plates. The global `a` underline/colour is for links inside prose. */
+.link-plain {
+	color: inherit;
+	text-decoration: none;
+}
+.link-plain:hover {
+	color: inherit;
+}
+
+/* Screen-reader-only text (unread counts, row context). */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
 }
 
 /* Flat placeholder plate (image fallbacks, QR frame). */

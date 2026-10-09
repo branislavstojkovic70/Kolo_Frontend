@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import type { ListingRow } from "../api/types";
 import { availableOf, formatCountdown, listingStatusTag } from "../lib/listing-ui";
 import { useNow } from "../hooks/use-now";
@@ -13,7 +13,6 @@ interface ListingCardProps {
 }
 
 export default function ListingCard({ listing, index, showStatus = false }: ListingCardProps) {
-	const navigate = useNavigate();
 	// Sellers paste any URL they like, so a dead link must not leave a hole.
 	const [imageFailed, setImageFailed] = useState(false);
 
@@ -35,9 +34,11 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 	const heldIn = soonest === undefined ? null : formatCountdown(soonest - now);
 
 	return (
-		<div
-			className="card mcard"
-			onClick={() => navigate(`/ads/${listing.id}`)}
+		// A real link: keyboard focus, Enter, middle-click and screen-reader
+		// semantics for the app's primary navigation.
+		<Link
+			to={`/ads/${listing.id}`}
+			className="card mcard link-plain"
 			style={{
 				padding: 0,
 				gap: 0,
@@ -47,7 +48,12 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 		>
 			<div className="mcard-media">
 				{showImage ? (
-					<img src={cover ?? undefined} alt="" loading="lazy" onError={() => setImageFailed(true)} />
+					<img
+						src={cover ?? undefined}
+						alt={listing.title}
+						loading="lazy"
+						onError={() => setImageFailed(true)}
+					/>
 				) : (
 					<span
 						aria-hidden="true"
@@ -139,6 +145,6 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 					</div>
 				)}
 			</div>
-		</div>
+		</Link>
 	);
 }

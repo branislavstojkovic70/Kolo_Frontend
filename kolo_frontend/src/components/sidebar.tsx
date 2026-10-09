@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { walletApi } from "../api";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
@@ -44,36 +44,45 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 	// "Clearing" and "On hold" together: money that is yours but not yet movable.
 	const clearing = balance ? sumUsd(balance.vesting, balance.disputed) : undefined;
 
+	// Real links: cmd/middle-click, keyboard focus and `aria-current` all come
+	// with the element. `onNavigate` still closes the drawer on tap.
 	const item = (section: Section, label: string, icon: React.ReactNode, to: string, badge?: number) => (
-		<button
+		<Link
+			to={to}
 			className={`snav${active === section ? " active" : ""}`}
-			onClick={() => {
-				navigate(to);
-				onNavigate?.();
-			}}
+			aria-current={active === section ? "page" : undefined}
+			onClick={() => onNavigate?.()}
 		>
 			{icon}
 			{label}
 			{badge !== undefined && badge > 0 && (
-				<span
-					style={{
-						marginLeft: "auto",
-						fontSize: 11,
-						fontWeight: 600,
-						background: "var(--accent)",
-						color: "var(--on-accent)",
-						borderRadius: "var(--r-pill)",
-						padding: "2px 8px",
-					}}
-				>
-					{badge}
-				</span>
+				<>
+					<span
+						aria-hidden="true"
+						style={{
+							marginLeft: "auto",
+							fontSize: 11,
+							fontWeight: 600,
+							background: "var(--accent)",
+							color: "var(--on-accent)",
+							borderRadius: "var(--r-pill)",
+							padding: "2px 8px",
+						}}
+					>
+						{badge}
+					</span>
+					<span className="visually-hidden">{badge} unread</span>
+				</>
 			)}
-		</button>
+		</Link>
 	);
 
 	return (
 		<aside
+			id="app-nav"
+			aria-label="Main navigation"
+			// Focus target when the drawer opens — see the effect in app-shell.
+			tabIndex={-1}
 			className={`app-sidebar${open ? " open" : ""}`}
 			style={{
 				width: 264,
@@ -91,14 +100,13 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 			}}
 		>
 			<div style={{ padding: "0 10px 20px" }}>
-				<div
-					className="row-click"
+				<Link
+					to="/ads"
+					className="link-plain"
 					title="Kolo marketplace"
-					onClick={() => {
-						navigate("/ads");
-						onNavigate?.();
-					}}
+					onClick={() => onNavigate?.()}
 					style={{
+						display: "inline-block",
 						fontSize: 26,
 						fontWeight: 700,
 						letterSpacing: "-0.01em",
@@ -108,7 +116,7 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 					}}
 				>
 					Kolo
-				</div>
+				</Link>
 				<div className="text-muted" style={{ fontSize: 13, marginTop: 6 }}>
 					Subscriptions below retail
 				</div>
@@ -125,13 +133,12 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 			</nav>
 
 			{/* Wallet at a glance — the full breakdown lives on the wallet page. */}
-			<div
-				className="row-click"
-				onClick={() => {
-					navigate("/profile");
-					onNavigate?.();
-				}}
+			<Link
+				to="/profile"
+				className="link-plain"
+				onClick={() => onNavigate?.()}
 				style={{
+					display: "block",
 					margin: "20px 4px 0",
 					padding: 16,
 					// Same ground as the wallet page, so the glance card reads as a
@@ -162,7 +169,7 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 							: `${money(clearing)} clearing`
 						: "Nothing clearing right now"}
 				</div>
-			</div>
+			</Link>
 
 			<div style={{ flex: 1 }} />
 

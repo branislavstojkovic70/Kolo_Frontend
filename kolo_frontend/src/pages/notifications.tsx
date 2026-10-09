@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import AsyncPanel from "../components/async-panel";
 import Page from "../components/page";
 import Pagination from "../components/pagination";
@@ -8,24 +8,21 @@ import { useListControls } from "../hooks/use-list-controls";
 import { getLastSeen } from "../lib/events";
 import { formatRelative } from "../utils/format";
 
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-
 /**
- * The inbox has no backend table — events are derived client-side — so its
- * search, filter and pagination all run over the in-memory feed. The `tag` is
- * the closest thing an event has to a status.
+ * The activity list has no backend table — events are derived client-side — so
+ * its search, filter and pagination all run over the in-memory feed. The `tag`
+ * is the closest thing an event has to a status.
  */
-const TAGS = ["Order", "Sale", "Payment", "Escrow", "Vesting", "Dispute", "Payout"] as const;
+const TAGS = ["Order", "Sale", "Payment", "Protected", "Cleared", "Resolution", "Transfer"] as const;
 
 type EventTag = (typeof TAGS)[number];
 
 export default function Notifications() {
-	const navigate = useNavigate();
 	const { events, loading, error, unreadCount, markAllRead, reload } = useSharedEvents();
 	const controls = useListControls<EventTag>(20);
 	const { search, status, page, limit } = controls;
 
-	// Freshen the shared feed when the inbox opens.
+	// Freshen the shared feed when the list opens.
 	useEffect(() => {
 		reload();
 	}, [reload]);
@@ -38,7 +35,7 @@ export default function Notifications() {
 			(event) =>
 				(!status || event.tag === status) &&
 				// Titles repeat across events ("Order placed"), so the body — which
-				// carries the service name — is searched too.
+				// carries the item name — is searched too.
 				(!needle ||
 					event.title.toLowerCase().includes(needle) ||
 					event.body.toLowerCase().includes(needle))
@@ -52,35 +49,37 @@ export default function Notifications() {
 	);
 
 	return (
-		<Page title="Inbox" sub={`${unreadCount} unread · derived from your orders, disputes and payouts`}>
+		<Page
+			title="Activity"
+			sub={
+				unreadCount > 0
+					? `${unreadCount} new since you last looked.`
+					: "Everything that's happened on your orders, requests and transfers."
+			}
+		>
 			<div className="filter-bar">
 				<input
 					className="input"
-					style={{ flex: 1 }}
+					style={{ flex: 1, maxWidth: 420 }}
 					placeholder="Search your activity…"
+					aria-label="Search your activity"
 					value={controls.searchInput}
 					onChange={(e) => controls.setSearchInput(e.target.value)}
 				/>
 				<select
 					className="input"
-					style={{ width: 160, flex: "none" }}
+					style={{ width: 180, flex: "0 1 auto", minWidth: 0 }}
 					value={status}
 					onChange={(e) => controls.setStatus(e.target.value as EventTag | "")}
 					aria-label="Filter by type"
 				>
-					<option value="">Any type</option>
+					<option value="">Everything</option>
 					{TAGS.map((tag) => (
 						<option key={tag} value={tag}>
 							{tag}
 						</option>
 					))}
 				</select>
-			</div>
-
-			<div style={{ display: "flex", alignItems: "center" }}>
-				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-					{unreadCount} UNREAD
-				</span>
 				<button className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={markAllRead}>
 					Mark all as read
 				</button>
@@ -89,45 +88,65 @@ export default function Notifications() {
 			<AsyncPanel
 				loading={loading}
 				error={error}
+				onRetry={reload}
+				skeletonRows={5}
 				isEmpty={visible.length === 0}
 				emptyMessage={
 					search || status
-						? "Nothing matches these filters"
-						: "Nothing yet — activity on your orders lands here"
+						? "Nothing matches those filters."
+						: "Nothing yet. What happens on your orders shows up here."
+				}
+				emptyAction={
+					!search && !status ? (
+						<Link to="/ads" className="btn btn-secondary">
+							Browse the marketplace
+						</Link>
+					) : undefined
 				}
 			>
-				<div style={{ borderTop: "2px solid var(--color-divider)" }}>
-					{visible.map((event, index) => {
+				<div style={{ borderTop: "1px solid var(--hairline-soft)" }}>
+					{visible.map((event) => {
 						const unread = event.time > seen;
 						return (
-							<div
+							<Link
 								key={event.id}
-								className="row-click"
-								onClick={() => navigate(event.href)}
+								to={event.href}
+								className="row-click link-plain"
 								style={{
 									display: "flex",
 									flexDirection: "column",
 									gap: 4,
-									padding: "14px 16px",
-									borderLeft: `3px solid ${unread ? "var(--color-accent)" : "transparent"}`,
-									background: unread ? "var(--color-neutral-100)" : "transparent",
-									borderBottom: "1px solid var(--color-divider)",
-									animation: `fadeUp .4s ease ${(Math.min(index, 12) * 0.05).toFixed(2)}s both`,
+									padding: "16px 14px",
+									background: unread ? "var(--surface-soft)" : "transparent",
+									borderBottom: "1px solid var(--hairline-soft)",
 								}}
 							>
 								<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-									<span style={{ fontSize: 15, fontWeight: 700 }}>{event.title}</span>
-									<span className="tag tag-neutral" style={{ ...mono, fontSize: 10.5 }}>
-										{event.tag}
-									</span>
-									<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 12 }}>
+									{unread && (
+										<>
+											<span
+												aria-hidden="true"
+												style={{
+													width: 7,
+													height: 7,
+													borderRadius: "var(--r-pill)",
+													background: "var(--accent)",
+													flex: "none",
+												}}
+											/>
+											<span className="visually-hidden">Unread:</span>
+										</>
+									)}
+									<span style={{ fontSize: 16, fontWeight: 600 }}>{event.title}</span>
+									<span className="tag tag-neutral">{event.tag}</span>
+									<span className="text-muted" style={{ marginLeft: "auto", fontSize: 14 }}>
 										{formatRelative(event.time)}
 									</span>
 								</div>
-								<div className="text-muted" style={{ fontSize: 14, maxWidth: "80ch" }}>
+								<div className="text-muted" style={{ fontSize: 15, maxWidth: "80ch" }}>
 									{event.body}
 								</div>
-							</div>
+							</Link>
 						);
 					})}
 				</div>
@@ -140,7 +159,7 @@ export default function Notifications() {
 				total={filtered.length}
 				onPage={controls.setPage}
 				onLimit={controls.setLimit}
-				noun="events"
+				noun="updates"
 			/>
 		</Page>
 	);

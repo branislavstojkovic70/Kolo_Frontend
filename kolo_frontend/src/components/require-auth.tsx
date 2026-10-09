@@ -14,13 +14,11 @@ export default function RequireAuth({ adminOnly = false }: { adminOnly?: boolean
 					display: "flex",
 					justifyContent: "center",
 					paddingTop: 120,
-					fontFamily: "var(--font-mono)",
-					fontSize: 12,
-					letterSpacing: "0.12em",
+					fontSize: 16,
 					animation: "pulseDot 1.2s ease-in-out infinite",
 				}}
 			>
-				KOLO / LOADING…
+				Loading Kolo…
 			</div>
 		);
 	}

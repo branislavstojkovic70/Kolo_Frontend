@@ -2,7 +2,33 @@
 <html lang="en" data-theme="dark">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to
+		     anything but 0. The mobile buy bar and the page gutters pad
+		     themselves with it so nothing lands under a notch or a home bar. -->
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+		/>
+		<!-- Mirrors --canvas for the active theme; kept in sync by src/theme.ts. -->
+		<meta name="theme-color" content="#161616" />
+		<script>
+			// Restore the stored theme BEFORE the first paint. Waiting for React to
+			// mount would flash the default palette for a frame on every reload.
+			// Deliberately duplicates src/theme.ts — keep the key, the default and
+			// the chrome colours in step with it.
+			(function () {
+				var mode = "dark";
+				try {
+					var stored = localStorage.getItem("kolo.theme");
+					if (stored === "dark" || stored === "light") mode = stored;
+				} catch (error) {
+					// Blocked storage — dark it is.
+				}
+				document.documentElement.dataset.theme = mode;
+				var meta = document.querySelector('meta[name="theme-color"]');
+				if (meta) meta.setAttribute("content", mode === "light" ? "#ffffff" : "#161616");
+			})();
+		</script>
 		<link
 			rel="icon"
 			type="image/png"
@@ -10,10 +36,23 @@
 			sizes="48x48"
 		/>
 		<title>Kolo</title>
+		<meta
+			name="description"
+			content="Kolo is a marketplace where people share the spare months on their subscriptions. Buy below retail with Buyer Protection, or sell the months you won't use."
+		/>
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Kolo" />
+		<meta property="og:title" content="Kolo: subscriptions below retail" />
+		<meta
+			property="og:description"
+			content="People share the spare months on their subscriptions and everyone saves. Payments stay protected until the buyer confirms."
+		/>
+		<meta property="og:image" content="/logo.png" />
+		<meta name="twitter:card" content="summary" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
-			href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
 			rel="stylesheet"
 		/>
 	</head>

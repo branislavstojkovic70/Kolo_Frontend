@@ -1,19 +1,17 @@
 import { useState } from "react";
-import { listingsApi, type ListingSort } from "../api";
+import { Link } from "react-router-dom";
+import { listingsApi, type ListingRow, type ListingSort, type Page as Paged } from "../api";
 import AsyncPanel from "../components/async-panel";
-import CountUp from "../components/count-up";
 import ListingCard from "../components/listing-card";
 import Page from "../components/page";
 import Pagination from "../components/pagination";
+import { LockIcon, MessageIcon, SearchIcon, ShieldCheckIcon } from "../components/icons";
 import { useAsync } from "../hooks/use-async";
 import { useListControls } from "../hooks/use-list-controls";
-import { usd } from "../utils/money";
-import { usePlatformConfig } from "../hooks/use-platform-config";
+import { money } from "../utils/money";
 
 type Scope = "all" | "mine";
 type PriceBand = "any" | "under25" | "25to75" | "over75";
-
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
 /** Bands map to the API's minPrice / maxPrice — the filtering happens in SQL. */
 const PRICE_BANDS: Record<PriceBand, { minPrice?: number; maxPrice?: number }> = {
@@ -26,44 +24,29 @@ const PRICE_BANDS: Record<PriceBand, { minPrice?: number; maxPrice?: number }> =
 const SORT_OPTIONS: { value: ListingSort; label: string }[] = [
 	{ value: "newest", label: "Newest first" },
 	{ value: "oldest", label: "Oldest first" },
-	{ value: "price_asc", label: "Price · low to high" },
-	{ value: "price_desc", label: "Price · high to low" },
+	{ value: "price_asc", label: "Price: low to high" },
+	{ value: "price_desc", label: "Price: high to low" },
 ];
 
-function StatCell({
-	label,
-	sub,
-	delay,
-	children,
-}: {
-	label: string;
-	sub: string;
-	delay: number;
-	children: React.ReactNode;
-}) {
-	return (
-		<div
-			style={{
-				borderTop: "2px solid var(--color-divider)",
-				paddingTop: 10,
-				animation: `fadeUp .45s ease ${delay}s both`,
-			}}
-		>
-			<div className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
-				{label}
-			</div>
-			<div style={{ ...mono, fontSize: 30, fontWeight: 600, marginTop: 6, lineHeight: 1, whiteSpace: "nowrap" }}>
-				{children}
-			</div>
-			<div className="text-muted" style={{ fontSize: 12 }}>
-				{sub}
-			</div>
-		</div>
-	);
-}
+const PROMISES = [
+	{
+		icon: <ShieldCheckIcon size={18} />,
+		title: "Buyer Protection on every order",
+		body: "If what you get isn't what was described, you get your money back.",
+	},
+	{
+		icon: <LockIcon size={18} />,
+		title: "Your payment is held safely",
+		body: "The seller is only paid out after you've had time to check your order.",
+	},
+	{
+		icon: <MessageIcon size={18} />,
+		title: "Help from a real person",
+		body: "Something off? Open a request and we'll sort it out with the seller.",
+	},
+];
 
 export default function Ads() {
-	const platform = usePlatformConfig();
 	const controls = useListControls(20);
 	const { search, page, limit } = controls;
 	const [category, setCategoryValue] = useState("");
@@ -84,7 +67,8 @@ export default function Ads() {
 		limit,
 	};
 
-	const listing = useAsync(
+	// Both feeds render the same card; only `mine` carries the held units.
+	const listing = useAsync<Paged<ListingRow>>(
 		() => (scope === "all" ? listingsApi.list(query) : listingsApi.mine(query)),
 		[scope, search, category, priceBand, sort, page, limit]
 	);
@@ -110,82 +94,88 @@ export default function Ads() {
 	};
 
 	return (
-		<Page title="Marketplace" sub="Browse digital services · pay in any crypto · escrow protected">
-			<div className="stat-grid">
-				<StatCell label="SERVICES LIVE" sub={`across ${stats?.categories.length ?? 0} categories`} delay={0}>
-					<CountUp to={stats?.total ?? 0} />
-				</StatCell>
-				<StatCell label="CATALOGUE VALUE" sub="sum of live asking prices" delay={0.06}>
-					<CountUp to={usd(stats?.catalogueValueUsd ?? 0)} dec={2} />{" "}
-					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
-						USDT
-					</span>
-				</StatCell>
-				<StatCell label="MEDIAN PRICE" sub="per service · any crypto" delay={0.12}>
-					<CountUp to={usd(stats?.medianPriceUsd ?? 0)} dec={2} />{" "}
-					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
-						USDT
-					</span>
-				</StatCell>
-				<StatCell label="PLATFORM FEE" sub="flat · no hidden charges" delay={0.18}>
-					{platform?.feePercent ?? "—"}
-					<span className="text-muted" style={{ fontSize: 13, fontWeight: 400 }}>
-						%
-					</span>
-				</StatCell>
-			</div>
-
-			<div className="filter-bar">
-				<input
-					className="input"
-					style={{ flex: 1 }}
-					placeholder="Search VPNs, streaming, IPTV, software…"
-					value={controls.searchInput}
-					onChange={(e) => controls.setSearchInput(e.target.value)}
-				/>
-				<select
-					className="input"
-					style={{ width: 170, flex: "none" }}
-					value={category}
-					onChange={(e) => setCategory(e.target.value)}
-				>
-					<option value="">All categories</option>
-					{(stats?.categories ?? []).map((c) => (
-						<option key={c} value={c}>
-							{c}
-						</option>
-					))}
-				</select>
-				<select
-					className="input"
-					style={{ width: 150, flex: "none" }}
-					value={priceBand}
-					onChange={(e) => setPriceBand(e.target.value as PriceBand)}
-				>
-					<option value="any">Any price</option>
-					<option value="under25">Under 25 USDT</option>
-					<option value="25to75">25 – 75 USDT</option>
-					<option value="over75">Over 75 USDT</option>
-				</select>
+		<Page
+			title="Subscriptions, below retail"
+			sub="Buy a subscription from a seller you can hold to account. Your payment is protected until you've checked it."
+		>
+			{/* `filter-bar` is doing the responsive work here, not the layout: on a
+			    phone it stacks the search pill above the scope toggle and gives
+			    both the full width instead of letting them wrap unevenly. */}
+			<form
+				className="filter-bar"
+				style={{ gap: 12 }}
+				onSubmit={(e) => e.preventDefault()}
+			>
+				<div className="searchbar">
+					<input
+						placeholder="Search streaming, VPNs, software…"
+						value={controls.searchInput}
+						onChange={(e) => controls.setSearchInput(e.target.value)}
+						aria-label="Search subscriptions"
+					/>
+					<button type="submit" aria-label="Search">
+						<SearchIcon size={17} />
+					</button>
+				</div>
 				<div className="seg" style={{ flex: "none" }}>
 					<label className="seg-opt">
 						<input type="radio" name="mktf" checked={scope === "all"} onChange={() => setScope("all")} />
-						All
+						Everything
 					</label>
 					<label className="seg-opt">
 						<input type="radio" name="mktf" checked={scope === "mine"} onChange={() => setScope("mine")} />
-						Mine
+						My listings
 					</label>
 				</div>
+			</form>
+
+			<div className="chip-row">
+				<button
+					type="button"
+					className={`chip${category === "" ? " active" : ""}`}
+					onClick={() => setCategory("")}
+				>
+					All categories
+				</button>
+				{(stats?.categories ?? []).map((c) => (
+					<button
+						key={c}
+						type="button"
+						className={`chip${category === c ? " active" : ""}`}
+						onClick={() => setCategory(category === c ? "" : c)}
+					>
+						{c}
+					</button>
+				))}
 			</div>
 
-			<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-				<span className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-					{listing.data?.total ?? 0} OF {stats?.total ?? 0} SERVICES
+			{/* The two selects keep their desktop width as a flex *basis* and stay
+			    shrinkable, so on a tablet the row narrows them instead of growing
+			    past the page; below 744px `filter-bar` stacks them full-width. */}
+			<div className="filter-bar">
+				<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
+					{/* No count until there is one — a literal "0 subscriptions" that
+					    jumps to the real total a beat later reads as a glitch. */}
+					{listing.data
+						? `${listing.data.total} ${listing.data.total === 1 ? "subscription" : "subscriptions"}`
+						: "Counting subscriptions…"}
+					{stats ? ` · median ${money(stats.medianPriceUsd)}` : ""}
 				</span>
 				<select
 					className="input"
-					style={{ width: 190, flex: "none", padding: "5px 8px", fontSize: 13 }}
+					style={{ width: 170, flex: "0 1 auto", minWidth: 0, marginLeft: "auto", minHeight: 44 }}
+					value={priceBand}
+					onChange={(e) => setPriceBand(e.target.value as PriceBand)}
+					aria-label="Filter by price"
+				>
+					<option value="any">Any price</option>
+					<option value="under25">Under $25</option>
+					<option value="25to75">$25 - $75</option>
+					<option value="over75">Over $75</option>
+				</select>
+				<select
+					className="input"
+					style={{ width: 190, flex: "0 1 auto", minWidth: 0, minHeight: 44 }}
 					value={sort}
 					onChange={(e) => setSort(e.target.value as ListingSort)}
 					aria-label="Sort listings"
@@ -201,8 +191,21 @@ export default function Ads() {
 			<AsyncPanel
 				loading={listing.loading}
 				error={listing.error}
+				onRetry={listing.reload}
+				skeletonRows={6}
 				isEmpty={items.length === 0}
-				emptyMessage={scope === "mine" ? "You have no listings yet — post an ad" : "No services match"}
+				emptyMessage={
+					scope === "mine"
+						? "You haven't listed anything yet."
+						: "Nothing matches that search just yet."
+				}
+				emptyAction={
+					scope === "mine" ? (
+						<Link to="/ads/new" className="btn btn-primary">
+							List your first subscription
+						</Link>
+					) : undefined
+				}
 			>
 				<div className="card-grid">
 					{items.map((item, index) => (
@@ -218,29 +221,34 @@ export default function Ads() {
 				total={listing.data?.total ?? 0}
 				onPage={controls.setPage}
 				onLimit={controls.setLimit}
-				noun="services"
+				noun="subscriptions"
 			/>
 
-			<div className="poster" style={{ padding: "36px 28px", marginTop: 4, animation: "fadeUp .5s ease .25s both" }}>
-				<div className="poster-stripes" />
-				<div style={{ position: "relative" }}>
-					<div
-						className="poster-ink"
-						style={{
-							fontFamily: "var(--font-heading)",
-							fontWeight: 800,
-							fontSize: "clamp(28px, 6vw, 46px)",
-							lineHeight: 0.98,
-							letterSpacing: "-0.02em",
-						}}
-					>
-						PAID. ESCROWED.
-						<br />
-						VESTED. RELEASED.
-					</div>
-					<div className="poster-ink-soft" style={{ ...mono, fontSize: 13, marginTop: 14 }}>
-						Every order on Kolo moves through the same four steps · no exceptions, no trust required.
-					</div>
+			<div
+				className="poster"
+				style={{ padding: "clamp(20px, 5vw, 28px) clamp(16px, 5vw, 26px)", marginTop: 8 }}
+			>
+				<h2 style={{ margin: "0 0 16px" }}>Why it's safe to buy here</h2>
+				<div
+					style={{
+						display: "grid",
+						gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+						gap: "20px 28px",
+					}}
+				>
+					{PROMISES.map((promise) => (
+						<div key={promise.title} style={{ display: "flex", gap: 12, minWidth: 0 }}>
+							<span className="text-muted" style={{ flex: "none", marginTop: 2 }}>
+								{promise.icon}
+							</span>
+							<div style={{ minWidth: 0 }}>
+								<div style={{ fontSize: 16, fontWeight: 600 }}>{promise.title}</div>
+								<div className="text-muted" style={{ fontSize: 14, marginTop: 2 }}>
+									{promise.body}
+								</div>
+							</div>
+						</div>
+					))}
 				</div>
 			</div>
 		</Page>

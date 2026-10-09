@@ -1,52 +1,24 @@
 import type { ReactNode } from "react";
+import { useDocumentTitle } from "../hooks/use-document-title";
 
 interface PageProps {
 	title: string;
-	/** Right-aligned mono subtitle; rendered uppercase. */
+	/** One quiet line under the title. */
 	sub: string;
 	children: ReactNode;
 }
 
-/** Content frame: 24px padding, 22px section gap, giant page header with 2px rule. */
+/** Content frame: page title at 28/700, a muted subtitle, then the sections. */
 export default function Page({ title, sub, children }: PageProps) {
+	useDocumentTitle(title);
+
 	return (
 		<div className="page-frame">
-			<div
-				style={{
-					display: "flex",
-					alignItems: "flex-end",
-					flexWrap: "wrap",
-					gap: 18,
-					borderBottom: "2px solid var(--color-divider)",
-					paddingBottom: 14,
-					animation: "fadeUp .4s ease both",
-				}}
-			>
-				<h1
-					style={{
-						margin: 0,
-						fontSize: "clamp(32px, 5.5vw, 52px)",
-						lineHeight: 0.92,
-						letterSpacing: "-0.025em",
-						textTransform: "uppercase",
-					}}
-				>
-					{title}
-				</h1>
-				<span
-					className="text-muted"
-					style={{
-						marginLeft: "auto",
-						fontFamily: "var(--font-mono)",
-						fontSize: 11,
-						letterSpacing: "0.08em",
-						paddingBottom: 9,
-						textAlign: "right",
-						textTransform: "uppercase",
-					}}
-				>
+			<div>
+				<h1 style={{ margin: 0 }}>{title}</h1>
+				<div className="text-muted" style={{ fontSize: 16, marginTop: 4 }}>
 					{sub}
-				</span>
+				</div>
 			</div>
 			{children}
 		</div>

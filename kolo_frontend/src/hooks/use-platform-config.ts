@@ -16,7 +16,7 @@ export function usePlatformConfig(): PlatformConfig | undefined {
 
 /** "4%" / "—" — the fee label, never a hardcoded number. */
 export function feeLabel(config: PlatformConfig | undefined): string {
-	return config ? `${config.feePercent}%` : "—";
+	return config ? `${config.feePercent}%` : "…";
 }
 
 /** Fee on a preview price. Real orders always carry the backend's own feeUsd. */

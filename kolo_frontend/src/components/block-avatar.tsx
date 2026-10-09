@@ -5,7 +5,7 @@ interface BlockAvatarProps {
 	fontSize?: number;
 }
 
-/** Hard-edged square avatar: seller image when present, heading-weight initial otherwise. */
+/** Round avatar: profile image when present, a quiet initial otherwise. */
 export default function BlockAvatar({ name, imageUrl, size = 32, fontSize = 14 }: BlockAvatarProps) {
 	const initial = (name ?? "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -14,7 +14,13 @@ export default function BlockAvatar({ name, imageUrl, size = 32, fontSize = 14 }
 			<img
 				src={imageUrl}
 				alt={name ?? ""}
-				style={{ width: size, height: size, flex: "none", objectFit: "cover" }}
+				style={{
+					width: size,
+					height: size,
+					flex: "none",
+					objectFit: "cover",
+					borderRadius: "var(--r-pill)",
+				}}
 			/>
 		);
 	}
@@ -27,9 +33,10 @@ export default function BlockAvatar({ name, imageUrl, size = 32, fontSize = 14 }
 				flex: "none",
 				display: "grid",
 				placeItems: "center",
-				background: "var(--color-neutral-300)",
-				fontFamily: "var(--font-heading)",
-				fontWeight: 800,
+				background: "var(--surface-strong)",
+				color: "var(--body-soft)",
+				borderRadius: "var(--r-pill)",
+				fontWeight: 600,
 				fontSize,
 			}}
 		>

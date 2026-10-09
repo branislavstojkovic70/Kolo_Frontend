@@ -21,15 +21,13 @@ export default function AsyncPanel({
 			<div
 				className="text-muted"
 				style={{
-					padding: "48px 0",
+					padding: "56px 0",
 					textAlign: "center",
-					fontFamily: "var(--font-mono)",
-					fontSize: 12,
-					letterSpacing: "0.12em",
+					fontSize: 16,
 					animation: "pulseDot 1.2s ease-in-out infinite",
 				}}
 			>
-				LOADING…
+				Loading…
 			</div>
 		);
 	}
@@ -38,15 +36,17 @@ export default function AsyncPanel({
 		return (
 			<div
 				style={{
-					borderLeft: "3px solid var(--bad)",
-					background: "var(--color-neutral-100)",
-					padding: "14px 16px",
-					fontSize: 14,
+					borderRadius: "var(--r-card)",
+					background: "var(--surface-soft)",
+					padding: "16px 18px",
+					fontSize: 15,
+					color: "var(--body-soft)",
+					// Server messages carry ids and URLs — single tokens longer than a
+					// phone is wide. They break instead of widening the page.
+					overflowWrap: "anywhere",
 				}}
 			>
-				<span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.12em", color: "var(--bad)" }}>
-					ERROR ·{" "}
-				</span>
+				<span style={{ fontWeight: 600, color: "var(--error)" }}>Something went wrong. </span>
 				{error}
 			</div>
 		);
@@ -56,15 +56,9 @@ export default function AsyncPanel({
 		return (
 			<div
 				className="text-muted"
-				style={{
-					padding: "48px 0",
-					textAlign: "center",
-					fontFamily: "var(--font-mono)",
-					fontSize: 12,
-					letterSpacing: "0.12em",
-				}}
+				style={{ padding: "56px 0", textAlign: "center", fontSize: 16 }}
 			>
-				{emptyMessage.toUpperCase()}
+				{emptyMessage}
 			</div>
 		);
 	}

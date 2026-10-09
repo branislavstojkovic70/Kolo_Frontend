@@ -1,50 +1,54 @@
 import type { DisputeStatus, OrderStatus, WithdrawalStatus } from "../api/types";
 
-/** Solid inverted status chips — background is the status color, ink is the page bg. */
+/**
+ * Status chips. `color` is the chip's ink; StatusTag tints it down for the
+ * fill. Labels are the shopper-facing wording — the API enum names never
+ * reach the screen.
+ */
 export function orderStatusTag(status: OrderStatus): { label: string; color: string } {
 	switch (status) {
 		case "PENDING_PAYMENT":
-			return { label: "Pending payment", color: "var(--warn)" };
+			return { label: "Awaiting payment", color: "var(--caution)" };
 		case "PAID":
-			return { label: "Paid", color: "var(--ok)" };
+			return { label: "Completed", color: "var(--success)" };
 		case "DISPUTED":
-			return { label: "Disputed", color: "var(--bad)" };
+			return { label: "In resolution", color: "var(--error)" };
 		case "REFUNDED":
-			return { label: "Refunded", color: "var(--color-neutral-700)" };
+			return { label: "Refunded", color: "var(--muted)" };
 		case "EXPIRED":
-			return { label: "Expired", color: "var(--color-neutral-600)" };
+			return { label: "Expired", color: "var(--muted)" };
 	}
 }
 
 export function disputeStatusTag(status: DisputeStatus): { label: string; color: string } {
 	switch (status) {
 		case "OPEN":
-			return { label: "Open", color: "var(--warn)" };
+			return { label: "In review", color: "var(--caution)" };
 		case "RESOLVED_BUYER":
-			return { label: "Resolved · buyer", color: "var(--ok)" };
+			return { label: "Resolved for buyer", color: "var(--success)" };
 		case "RESOLVED_SELLER":
-			return { label: "Resolved · seller", color: "var(--ok)" };
+			return { label: "Resolved for seller", color: "var(--success)" };
 	}
 }
 
 export function withdrawalStatusTag(status: WithdrawalStatus): { label: string; color: string } {
 	switch (status) {
 		case "PENDING":
-			return { label: "Pending", color: "var(--warn)" };
+			return { label: "Requested", color: "var(--caution)" };
 		case "PROCESSING":
-			return { label: "Processing", color: "var(--color-accent)" };
+			return { label: "On its way", color: "var(--accent)" };
 		case "COMPLETED":
-			return { label: "Completed", color: "var(--ok)" };
+			return { label: "Paid out", color: "var(--success)" };
 		case "FAILED":
-			return { label: "Failed", color: "var(--bad)" };
+			return { label: "Failed", color: "var(--error)" };
 	}
 }
 
 /**
- * The 5-step escrow bar: Payment → Escrow → Delivery → Vesting → Released.
- * Steps light up from real order state; a dispute paints the bar red.
+ * The 5-step protection bar: Payment → Protected → Delivered → Clearing →
+ * Paid out. Steps light up from real order state; a problem paints it red.
  */
-export function escrowSteps(order: {
+export function protectionSteps(order: {
 	status: OrderStatus;
 	vestedAt: string | null;
 	withdrawalId: string | null;

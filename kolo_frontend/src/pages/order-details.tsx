@@ -5,7 +5,7 @@ import { disputesApi, MAX_PAGE_SIZE, ordersApi, type Dispute, type Order, type P
 import { usePlatformConfig } from "../hooks/use-platform-config";
 import AsyncPanel from "../components/async-panel";
 import BlockAvatar from "../components/block-avatar";
-import { ArrowLeftIcon, CopyIcon, ExternalLinkIcon, LockIcon } from "../components/icons";
+import { ArrowLeftIcon, CopyIcon, ExternalLinkIcon, LockIcon, MessageIcon } from "../components/icons";
 import Page from "../components/page";
 import QrPlate from "../components/qr-plate";
 import StatusTag from "../components/status-tag";
@@ -13,13 +13,14 @@ import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { useNow } from "../hooks/use-now";
 import { formatDate, formatDateTime, shortRef } from "../utils/format";
-import { fmtUsd } from "../utils/money";
+import { money } from "../utils/money";
+import { formatClock } from "../lib/listing-ui";
 import { orderStatusTag } from "../lib/order-ui";
 
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-const muted15 = "color-mix(in srgb, var(--color-text) 15%, transparent)";
-const INVOICE_LIFETIME_MS = 60 * 60 * 1000; // backend invoice lifetime: 60 min
-const DISPUTE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const hairline = "var(--hairline)";
+/** Fallbacks for the two windows the backend owns, used only until /config lands. */
+const DEFAULT_DISPUTE_WINDOW_DAYS = 30;
+const DEFAULT_HOLD_MINUTES = 15;
 
 type StepState = "done" | "current" | "ready" | "bad" | "future";
 
@@ -30,93 +31,96 @@ interface FlowStep {
 }
 
 const stepColor: Record<StepState, string> = {
-	done: "var(--color-accent)",
-	current: "var(--warn)",
-	ready: "var(--ok)",
-	bad: "var(--bad)",
-	future: muted15,
+	done: "var(--accent)",
+	current: "var(--caution)",
+	ready: "var(--success)",
+	bad: "var(--error)",
+	future: "var(--hairline)",
 };
 
 function buildFlow(
 	order: Order,
-	countdown: string,
+	clock: string | null,
 	platform: PlatformConfig | undefined
 ): FlowStep[] {
 	// Rule text comes from the backend config; per-order dates come from the order.
-	const vestingLabel = platform ? `${platform.vestingDays} days` : "vesting period";
+	const clearingLabel = platform ? `${platform.vestingDays} days` : "clearing period";
 	const vested = !!order.vestedAt && new Date(order.vestedAt).getTime() <= Date.now();
 	switch (order.status) {
 		case "PENDING_PAYMENT":
 			return [
-				{ t: "Payment", d: `awaiting · ${countdown}`, state: "current" },
-				{ t: "Escrow", d: "locks on confirmation", state: "future" },
-				{ t: "Delivery", d: "unlocks after escrow", state: "future" },
-				{ t: "Vesting", d: `${vestingLabel} from payment`, state: "future" },
-				{ t: "Released", d: "withdrawable by seller", state: "future" },
+				{ t: "Payment", d: clock ? `held for you · ${clock}` : "waiting for payment", state: "current" },
+				{ t: "Protected", d: "starts when you pay", state: "future" },
+				{ t: "Delivered", d: "unlocks right after payment", state: "future" },
+				{ t: "Clearing", d: `${clearingLabel} from payment`, state: "future" },
+				{ t: "Seller paid", d: "after the clearing period", state: "future" },
 			];
 		case "EXPIRED":
 			return [
-				{ t: "Payment", d: "invoice expired", state: "bad" },
-				{ t: "Escrow", d: "—", state: "future" },
-				{ t: "Delivery", d: "—", state: "future" },
-				{ t: "Vesting", d: "—", state: "future" },
-				{ t: "Released", d: "—", state: "future" },
+				{ t: "Payment", d: "not completed in time", state: "bad" },
+				{ t: "Protected", d: "—", state: "future" },
+				{ t: "Delivered", d: "—", state: "future" },
+				{ t: "Clearing", d: "—", state: "future" },
+				{ t: "Seller paid", d: "—", state: "future" },
 			];
 		case "DISPUTED":
 			return [
-				{ t: "Payment", d: order.paidAt ? `confirmed ${formatDate(order.paidAt)}` : "confirmed", state: "done" },
-				{ t: "Escrow", d: `${fmtUsd(order.sellerAmountUsd)} USDT locked`, state: "done" },
-				{ t: "Delivery", d: "details unlocked for buyer", state: "done" },
-				{ t: "Vesting", d: "frozen by open dispute", state: "bad" },
-				{ t: "Released", d: "after arbitration", state: "future" },
+				{ t: "Payment", d: order.paidAt ? `paid ${formatDate(order.paidAt)}` : "paid", state: "done" },
+				{ t: "Protected", d: `${money(order.sellerAmountUsd)} held`, state: "done" },
+				{ t: "Delivered", d: "details shared with you", state: "done" },
+				{ t: "Clearing", d: "paused while we look into it", state: "bad" },
+				{ t: "Seller paid", d: "after the decision", state: "future" },
 			];
 		case "REFUNDED":
 			return [
-				{ t: "Payment", d: order.paidAt ? `confirmed ${formatDate(order.paidAt)}` : "confirmed", state: "done" },
-				{ t: "Escrow", d: `${fmtUsd(order.sellerAmountUsd)} USDT held`, state: "done" },
-				{ t: "Delivery", d: "disputed by buyer", state: "done" },
-				{ t: "Vesting", d: "waived · buyer won", state: "done" },
-				{ t: "Released", d: "refund withdrawable by buyer", state: "ready" },
+				{ t: "Payment", d: order.paidAt ? `paid ${formatDate(order.paidAt)}` : "paid", state: "done" },
+				{ t: "Protected", d: `${money(order.sellerAmountUsd)} held`, state: "done" },
+				{ t: "Delivered", d: "reported as a problem", state: "done" },
+				{ t: "Clearing", d: "waived · decided for the buyer", state: "done" },
+				{ t: "Refunded", d: "ready to withdraw", state: "ready" },
 			];
 		case "PAID":
 			return [
-				{ t: "Payment", d: order.paidAt ? `confirmed ${formatDate(order.paidAt)}` : "confirmed", state: "done" },
-				{ t: "Escrow", d: `${fmtUsd(order.sellerAmountUsd)} USDT locked`, state: "done" },
-				{ t: "Delivery", d: "details unlocked for buyer", state: "done" },
+				{ t: "Payment", d: order.paidAt ? `paid ${formatDate(order.paidAt)}` : "paid", state: "done" },
+				{ t: "Protected", d: `${money(order.sellerAmountUsd)} held`, state: "done" },
+				{ t: "Delivered", d: "details shared with the buyer", state: "done" },
 				vested
-					? { t: "Vesting", d: `completed ${order.vestedAt ? formatDate(order.vestedAt) : ""}`, state: "done" }
-					: { t: "Vesting", d: order.vestedAt ? `until ${formatDate(order.vestedAt)}` : vestingLabel, state: "current" },
+					? { t: "Clearing", d: `done ${order.vestedAt ? formatDate(order.vestedAt) : ""}`, state: "done" }
+					: {
+							t: "Clearing",
+							d: order.vestedAt ? `available ${formatDate(order.vestedAt)}` : clearingLabel,
+							state: "current",
+						},
 				order.withdrawalId
-					? { t: "Released", d: "paid out to seller", state: "done" }
+					? { t: "Seller paid", d: "transferred", state: "done" }
 					: vested
-						? { t: "Released", d: "withdrawable now", state: "ready" }
-						: { t: "Released", d: "after vesting", state: "future" },
+						? { t: "Seller paid", d: "ready to withdraw", state: "ready" }
+						: { t: "Seller paid", d: "after clearing", state: "future" },
 			];
 	}
 }
 
-function useCountdown(expiresAt: number | undefined, active: boolean): string {
-	const [now, setNow] = useState(Date.now);
-
-	useEffect(() => {
-		if (!active) return;
-		const timer = setInterval(() => setNow(Date.now()), 1000);
-		return () => clearInterval(timer);
-	}, [active]);
-
-	if (!expiresAt) return "";
-	const left = expiresAt - now;
-	if (left <= 0) return "may have expired";
-	const minutes = Math.floor(left / 60000);
-	const seconds = Math.floor((left % 60000) / 1000);
-	return `expires in ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
 function Row({ label, value, color }: { label: string; value: string; color?: string }) {
+	// The value is a sentence as often as it is a figure ("On hold while we look
+	// into it"), and this row lives in a card that is 300px wide on a phone — so
+	// it wraps onto a second line rather than squeezing the label away. The value
+	// grows to fill whichever line it lands on, which keeps it right-aligned
+	// there too.
 	return (
-		<div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-			<span className="text-muted">{label}</span>
-			<span style={{ ...mono, color }}>{value}</span>
+		<div
+			style={{
+				display: "flex",
+				justifyContent: "space-between",
+				flexWrap: "wrap",
+				gap: 4,
+				columnGap: 12,
+				fontSize: 15,
+			}}
+		>
+			<span className="text-muted" style={{ flex: "none" }}>
+				{label}
+			</span>
+			<span style={{ flex: "1 1 auto", minWidth: 0, color, textAlign: "right" }}>{value}</span>
 		</div>
 	);
 }
@@ -146,22 +150,17 @@ export default function OrderDetails() {
 	const pending = order?.status === "PENDING_PAYMENT";
 	const now = useNow(pending ? 1000 : undefined);
 
-	// The OxaPay webhook flips the order — poll while the invoice is open.
+	// The payment webhook flips the order — poll while the checkout is open.
 	useEffect(() => {
 		if (!pending) return;
 		const timer = setInterval(reload, 5000);
 		return () => clearInterval(timer);
 	}, [pending, reload]);
 
-	const countdown = useCountdown(
-		order ? new Date(order.createdAt).getTime() + INVOICE_LIFETIME_MS : undefined,
-		pending
-	);
-
 	if (!order) {
 		return (
-			<Page title="Order" sub="Payment, escrow flow and activity">
-				<AsyncPanel loading={loading} error={error} isEmpty emptyMessage="Order not found">
+			<Page title="Order" sub="Payment, delivery and protection">
+				<AsyncPanel loading={loading} error={error} isEmpty emptyMessage="We couldn't find that order.">
 					<span />
 				</AsyncPanel>
 			</Page>
@@ -170,105 +169,137 @@ export default function OrderDetails() {
 
 	const isBuyer = user?.id === order.buyerId;
 	const chip = orderStatusTag(order.status);
-	const flow = buildFlow(order, countdown, platform);
+	// The unit is held for the reservation window, counted from the order's birth.
+	const holdMinutes = platform?.autoBuyReservationMinutes ?? DEFAULT_HOLD_MINUTES;
+	const clock = pending
+		? formatClock(new Date(order.createdAt).getTime() + holdMinutes * 60_000 - now)
+		: null;
+	const flow = buildFlow(order, clock, platform);
+	// The help window is a platform rule — it comes from /api/config, never a constant here.
+	const disputeWindowDays = platform?.disputeWindowDays ?? DEFAULT_DISPUTE_WINDOW_DAYS;
 	const canDispute =
 		isBuyer &&
 		order.status === "PAID" &&
 		!dispute &&
 		!!order.paidAt &&
-		now - new Date(order.paidAt).getTime() < DISPUTE_WINDOW_MS;
+		now - new Date(order.paidAt).getTime() < disputeWindowDays * 86_400_000;
 
 	const copyPaymentUrl = () => {
 		if (!order.paymentUrl) return;
 		void navigator.clipboard.writeText(order.paymentUrl);
-		toast.success("Invoice link copied");
+		toast.success("Payment link copied");
 	};
 
 	const submitDispute = async () => {
-		if (disputeReason.trim().length < 5) return toast.error("Describe the problem first");
+		if (disputeReason.trim().length < 5) return toast.error("Tell us what went wrong first");
 		setBusy(true);
 		try {
 			const created = await disputesApi.open(order.id, disputeReason.trim());
-			toast.success("Dispute opened — an admin will arbitrate");
+			toast.success("Request sent — we'll take it from here");
 			reloadDisputes();
 			navigate(`/disputes/${created.dispute.id}`);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Could not open the dispute");
+			toast.error(err instanceof Error ? err.message : "Could not send your request");
 			setBusy(false);
 		}
 	};
 
 	const activity: Array<{ time: string; text: string; color?: string }> = [
-		{ time: order.createdAt, text: `Order created from listing ${order.listingId}` },
+		{ time: order.createdAt, text: "Order placed" },
 	];
-	if (order.oxapayTrackId) {
-		activity.push({ time: order.createdAt, text: `OxaPay invoice #${order.oxapayTrackId} issued` });
-	}
 	if (order.paidAt) {
 		activity.push({
 			time: order.paidAt,
-			text: `Payment confirmed · ${fmtUsd(order.sellerAmountUsd)} USDT locked in escrow`,
+			text: `Payment confirmed · ${money(order.sellerAmountUsd)} held for the seller`,
 		});
 	}
 	if (dispute) {
-		activity.push({ time: dispute.createdAt, text: `Dispute opened · ${dispute.reason}`, color: "var(--bad)" });
+		activity.push({
+			time: dispute.createdAt,
+			text: `Help requested · ${dispute.reason}`,
+			color: "var(--error)",
+		});
 		if (dispute.resolvedAt) {
 			activity.push({
 				time: dispute.resolvedAt,
-				text: `Dispute resolved · ${dispute.status === "RESOLVED_BUYER" ? "buyer" : "seller"} won`,
+				text: `Resolved for the ${dispute.status === "RESOLVED_BUYER" ? "buyer" : "seller"}`,
 			});
 		}
 	}
 	if (order.status === "PAID" && order.vestedAt && new Date(order.vestedAt).getTime() <= now) {
-		activity.push({ time: order.vestedAt, text: "Vesting complete · funds withdrawable", color: "var(--ok)" });
+		activity.push({
+			time: order.vestedAt,
+			text: "Clearing complete · funds ready to withdraw",
+			color: "var(--success)",
+		});
 	}
 
 	return (
-		<Page title={`Order ${shortRef(order.id)}`} sub={chip.label + " · escrow protected"}>
+		<Page title={`Order #${shortRef(order.id)}`} sub={order.titleSnapshot}>
 			<div>
 				<button
 					className="btn btn-ghost"
 					onClick={() => navigate("/orders")}
-					style={{ marginLeft: -6, whiteSpace: "nowrap" }}
+					style={{ marginLeft: -10, whiteSpace: "nowrap" }}
 				>
-					<ArrowLeftIcon size={14} />
+					<ArrowLeftIcon size={15} />
 					Back to orders
 				</button>
 			</div>
 
-			<div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+			{pending && (
+				<div className="hold-banner">
+					<span>
+						We're holding this item for you
+						{clock ? " — " : ""}
+						{clock && <span className="hold-clock">{clock}</span>}
+					</span>
+					<span className="text-muted" style={{ fontSize: 14 }}>
+						{clock
+							? "Finish the payment before the timer runs out and it's yours."
+							: "The hold has run out — finish the payment or place the order again."}
+					</span>
+				</div>
+			)}
+
+			<div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
 				<StatusTag label={chip.label} color={chip.color} />
-				<span className="text-muted" style={{ fontSize: 14 }}>
-					{order.titleSnapshot} · seller {order.seller.username ?? "—"}
+				<span className="text-muted" style={{ fontSize: 15 }}>
+					{isBuyer ? `Sold by ${order.seller.username ?? "a Kolo seller"}` : `Bought by ${order.buyer.username ?? "a Kolo buyer"}`}
 				</span>
-				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 13 }}>
-					created {formatDate(order.createdAt)}
+				{/* `mobile-full` drops the auto margin below 744px — once this line has
+				    wrapped onto its own row, pushing it to the right edge only makes the
+				    header look broken. */}
+				<span className="text-muted mobile-full" style={{ marginLeft: "auto", fontSize: 14 }}>
+					Placed {formatDate(order.createdAt)}
 				</span>
 			</div>
 
-			<div className="card" style={{ padding: 18 }}>
-				<h6 style={{ marginBottom: 12 }}>Money flow</h6>
+			<div className="card">
+				<h2 className="section-head" style={{ marginBottom: 12 }}>
+					Where your order is
+				</h2>
 				<div className="flow-row">
-					{flow.map((step, i) => (
+					{flow.map((step) => (
 						<div
 							key={step.t}
 							style={{
 								flex: 1,
 								borderTop: `3px solid ${stepColor[step.state]}`,
-								paddingTop: 9,
-								animation: `fadeUp .4s ease ${(i * 0.08).toFixed(2)}s both`,
+								borderRadius: 2,
+								paddingTop: 10,
 							}}
 						>
 							<div
 								style={{
-									fontSize: 13.5,
+									fontSize: 15,
 									fontWeight: 600,
 									color: step.state === "done" || step.state === "future" ? "inherit" : stepColor[step.state],
 								}}
 							>
 								{step.t}
 							</div>
-							<div className="text-muted" style={{ ...mono, fontSize: 11, marginTop: 3 }}>
+							<div className="text-muted" style={{ fontSize: 13, marginTop: 2 }}>
 								{step.d}
 							</div>
 						</div>
@@ -276,191 +307,181 @@ export default function OrderDetails() {
 				</div>
 			</div>
 
-			<div className="layout-two">
-				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+			{/* The two columns split on the space they actually have, not on the
+			    viewport: the sidebar eats 264px of a desktop window, and the same
+			    1000px of page can be one column or two depending on it. `min(360px,
+			    100%)` is what stops the 360px floor from being wider than a 360px
+			    phone. The left column is conditional in every branch — a seller
+			    looking at a refunded order renders nothing into it — so it collapses
+			    when empty (`.order-primary:empty`) instead of leaving the summary
+			    stack squeezed into half a page beside a hole. */}
+			<div
+				className="order-split"
+				style={{
+					display: "grid",
+					gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))",
+					gap: 20,
+				}}
+			>
+				<div className="order-primary" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
 					{pending && order.paymentUrl && (
-						<div className="card elev-md" style={{ padding: 18, gap: 14, animation: "fadeUp .45s ease .08s both", flex: 1 }}>
-							<div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-								<h5 style={{ margin: 0 }}>Pay {fmtUsd(order.amountUsd)} USDT</h5>
-								<span style={{ ...mono, fontSize: 12, color: "var(--warn)" }}>{countdown}</span>
+						<div className="card elev-md" style={{ padding: 20, gap: 16, flex: 1 }}>
+							<h2 className="section-head">Pay {money(order.amountUsd)}</h2>
+							<div className="text-muted" style={{ fontSize: 15 }}>
+								You'll finish on our secure checkout. The moment it clears, your access details
+								appear here — this page updates itself.
 							</div>
-							<div className="text-muted" style={{ fontSize: 13 }}>
-								Seller accepts <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>100+ crypto assets</span> —
-								pick yours at the OxaPay checkout; the USDT price is fixed for this invoice.
-							</div>
-							<div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-								<QrPlate value={order.paymentUrl} />
-								<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5 }}>
-									<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-										<span className="text-muted">Network</span>
-										<span style={{ ...mono, whiteSpace: "nowrap" }}>any · via OxaPay</span>
-									</div>
-									<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-										<span className="text-muted">Amount</span>
-										<span style={{ ...mono, whiteSpace: "nowrap" }}>{fmtUsd(order.amountUsd)} USDT</span>
-									</div>
-									<div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-										<span className="text-muted" style={{ flex: "none" }}>Invoice</span>
-										<span style={{ ...mono, wordBreak: "break-all", textAlign: "right" }}>
-											oxapay #{order.oxapayTrackId ?? "—"}
-										</span>
-									</div>
-									<div>
-										<div className="text-muted" style={{ fontSize: 12, marginBottom: 4 }}>
-											Invoice link
-										</div>
-										<div style={{ display: "flex", alignItems: "center", gap: 6, border: "1px solid var(--color-divider)", padding: "7px 9px" }}>
-											<span style={{ ...mono, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-												{order.paymentUrl}
-											</span>
-											<button
-												className="btn btn-icon btn-secondary"
-												style={{ width: 28, height: 28, flex: "none" }}
-												title="Copy invoice link"
-												onClick={copyPaymentUrl}
-											>
-												<CopyIcon size={13} />
-											</button>
-										</div>
-									</div>
-								</div>
-							</div>
-							<a
-								className="btn btn-secondary btn-block"
-								href={order.paymentUrl}
-								target="_blank"
-								rel="noreferrer"
-							>
-								Open OxaPay checkout · 100+ assets
-								<ExternalLinkIcon size={13} />
+							<a className="btn btn-primary btn-block" href={order.paymentUrl} target="_blank" rel="noreferrer">
+								Complete payment
+								<ExternalLinkIcon size={15} />
 							</a>
-							<div className="text-muted" style={{ fontSize: 12 }}>
-								Pay the exact amount in one transaction. Confirmation usually lands within 1–2 minutes; the
-								order then moves to escrow automatically — this page refreshes itself.
+							<div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+								<QrPlate value={order.paymentUrl} />
+								<div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 10 }}>
+									<div style={{ fontSize: 15, fontWeight: 600 }}>Prefer to pay on your phone?</div>
+									<div className="text-muted" style={{ fontSize: 14 }}>
+										Scan the code, or send yourself the link.
+									</div>
+									<button className="btn btn-secondary btn-sm" style={{ alignSelf: "flex-start" }} onClick={copyPaymentUrl}>
+										<CopyIcon size={14} />
+										Copy payment link
+									</button>
+								</div>
 							</div>
 						</div>
 					)}
 
 					{order.status === "EXPIRED" && (
-						<div className="card elev-md" style={{ padding: 18, gap: 12, flex: 1 }}>
-							<h5 style={{ margin: 0 }}>Invoice expired</h5>
-							<div className="text-muted" style={{ fontSize: 14 }}>
-								This OxaPay invoice was not paid in time. The order is closed — you can re-order the
-								service to get a fresh invoice.
+						<div className="card" style={{ padding: 20, gap: 12, flex: 1 }}>
+							<h2 className="section-head">This order wasn't paid in time</h2>
+							<div className="text-muted" style={{ fontSize: 15 }}>
+								The hold on your item has been released, so the order is closed. If it's still
+								listed, you can order it again.
 							</div>
-							<button className="btn btn-primary btn-block" onClick={() => navigate(`/ads/${order.listingId}`)}>
-								View service again →
+							<button className="btn btn-primary" style={{ alignSelf: "flex-start" }} onClick={() => navigate(`/ads/${order.listingId}`)}>
+								View the listing again
 							</button>
 						</div>
 					)}
 
 					{isBuyer && order.deliveryInfo !== undefined && (
-						<div className="card elev-md" style={{ padding: 18, gap: 12, flex: 1 }}>
-							<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-								<h5 style={{ margin: 0 }}>Your delivery</h5>
-								<span className="tag tag-status" style={{ background: "var(--ok)", fontSize: 10.5 }}>
-									Unlocked
-								</span>
+						<div className="card" style={{ padding: 20, gap: 14, flex: 1 }}>
+							<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+								<h2 className="section-head">Your access details</h2>
+								<StatusTag label="Unlocked" color="var(--success)" />
 							</div>
 							<div
 								style={{
-									...mono,
-									fontSize: 13.5,
+									fontSize: 15,
 									lineHeight: 1.6,
 									whiteSpace: "pre-wrap",
-									background: "var(--color-neutral-100)",
-									borderLeft: "3px solid var(--ok)",
-									padding: "12px 14px",
+									background: "var(--surface-soft)",
+									borderRadius: "var(--r-card)",
+									padding: "16px 18px",
 									wordBreak: "break-word",
 								}}
 							>
-								{order.deliveryInfo || "The seller left no delivery note — contact them via a dispute if nothing arrived."}
+								{order.deliveryInfo ||
+									"The seller left no note here. If nothing arrived, ask us for help below."}
 							</div>
-							<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
-								<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
+							<div
+								className="text-muted"
+								style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 14 }}
+							>
+								<LockIcon size={14} style={{ flex: "none", marginTop: 2 }} />
 								<span>
-									Only you can see this. If something is wrong, open a dispute within{" "}
-									{platform?.disputeWindowDays ?? "—"} days of payment —
-									the escrow stays frozen until an admin decides.
+									Only you can see this. If anything is wrong, ask for help within{" "}
+									{platform?.disputeWindowDays ?? "—"} days of paying — your payment stays put
+									until it's sorted.
 								</span>
 							</div>
 						</div>
 					)}
 
 					{!isBuyer && (order.status === "PAID" || order.status === "DISPUTED") && (
-						<div className="card elev-md" style={{ padding: 18, gap: 12, flex: 1 }}>
-							<h5 style={{ margin: 0 }}>Escrow position</h5>
-							<Row label="Locked for you" value={`${fmtUsd(order.sellerAmountUsd)} USDT`} color={order.status === "DISPUTED" ? "var(--bad)" : undefined} />
+						<div className="card" style={{ padding: 20, gap: 12, flex: 1 }}>
+							<h2 className="section-head">Your payout</h2>
 							<Row
-								label="Vesting until"
+								label="Held for you"
+								value={money(order.sellerAmountUsd)}
+								color={order.status === "DISPUTED" ? "var(--error)" : undefined}
+							/>
+							<Row
+								label="Available"
 								value={order.vestedAt ? formatDate(order.vestedAt) : "—"}
 							/>
 							<Row
-								label="State"
+								label="Status"
 								value={
 									order.status === "DISPUTED"
-										? "frozen · open dispute"
+										? "On hold while we look into it"
 										: order.withdrawalId
-											? "paid out"
+											? "Paid out"
 											: order.vestedAt && new Date(order.vestedAt).getTime() <= now
-												? "withdrawable in wallet"
-												: "vesting"
+												? "Ready to withdraw"
+												: "Clearing"
 								}
 							/>
-							<div className="text-muted" style={{ fontSize: 12 }}>
-								The buyer's delivery details unlocked the moment payment confirmed. Funds release to your
-								wallet once vesting passes{order.status === "DISPUTED" ? " and the dispute resolves" : ""}.
+							<div className="text-muted" style={{ fontSize: 14 }}>
+								The buyer got their access details the moment the payment cleared. Your money moves
+								to your wallet once the clearing period ends
+								{order.status === "DISPUTED" ? " and the request is resolved" : ""}.
 							</div>
 						</div>
 					)}
 				</div>
 
-				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-					<div className="card" style={{ padding: 16, gap: 8 }}>
-						<h6 style={{ marginBottom: 4 }}>Breakdown</h6>
-						<Row label="Service price" value={`${fmtUsd(order.amountUsd)} USDT`} />
-						<Row label="Kolo fee (4%)" value={`${fmtUsd(order.feeUsd)} USDT`} />
-						<Row label="Seller receives" value={`${fmtUsd(order.sellerAmountUsd)} USDT`} />
+				<div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+					<div className="card" style={{ padding: 18, gap: 10 }}>
+						<h2 className="section-head">Summary</h2>
+						{order.retailPriceUsdSnapshot && (
+							<Row label="Regular price" value={money(order.retailPriceUsdSnapshot)} />
+						)}
+						<Row label="You paid" value={money(order.amountUsd)} />
+						{!isBuyer && <Row label="Service fee" value={money(order.feeUsd)} />}
+						{!isBuyer && <Row label="You receive" value={money(order.sellerAmountUsd)} />}
 						<Row
-							label="Vesting"
+							label="Clearing"
 							value={
 								order.vestedAt
-									? `until ${formatDate(order.vestedAt)}`
+									? `available ${formatDate(order.vestedAt)}`
 									: platform
 										? `${platform.vestingDays} days after payment`
 										: "after payment"
 							}
 						/>
 					</div>
-					<div className="card" style={{ padding: 16, gap: 10 }}>
-						<h6 style={{ marginBottom: 2 }}>Parties</h6>
-						<div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-							<BlockAvatar name={order.buyer.username} imageUrl={order.buyer.imageUrl} size={22} fontSize={10} />
-							<span style={{ fontWeight: 600 }}>{order.buyer.username ?? "Buyer"}</span>
-							<span className="text-muted">· buyer{isBuyer ? " (you)" : ""}</span>
+					<div className="card" style={{ padding: 18, gap: 12 }}>
+						<h2 className="section-head">People on this order</h2>
+						{/* A seller-typed username is a string nobody chose the length of: the
+						    role label wraps under it rather than off the card. */}
+						<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 15 }}>
+							<BlockAvatar name={order.buyer.username} imageUrl={order.buyer.imageUrl} size={26} fontSize={11} />
+							<span style={{ fontWeight: 600, minWidth: 0 }}>{order.buyer.username ?? "Buyer"}</span>
+							<span className="text-muted">buyer{isBuyer ? " (you)" : ""}</span>
 						</div>
-						<div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-							<BlockAvatar name={order.seller.username} imageUrl={order.seller.imageUrl} size={22} fontSize={10} />
-							<span style={{ fontWeight: 600 }}>{order.seller.username ?? "Seller"}</span>
-							<span className="text-muted">· seller{!isBuyer ? " (you)" : ""}</span>
+						<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 15 }}>
+							<BlockAvatar name={order.seller.username} imageUrl={order.seller.imageUrl} size={26} fontSize={11} />
+							<span style={{ fontWeight: 600, minWidth: 0 }}>{order.seller.username ?? "Seller"}</span>
+							<span className="text-muted">seller{!isBuyer ? " (you)" : ""}</span>
 						</div>
 					</div>
-					<div className="card" style={{ padding: 16, gap: 8, flex: 1 }}>
-						<h6 style={{ marginBottom: 4 }}>Activity</h6>
+					<div className="card" style={{ padding: 18, gap: 10, flex: 1 }}>
+						<h2 className="section-head">History</h2>
 						{activity.map((entry, i) => (
-							<div key={i} style={{ display: "flex", gap: 10, fontSize: 13.5 }}>
-								<span className="text-muted" style={{ ...mono, flex: "none" }}>
+							<div key={i} style={{ display: "flex", gap: 12, fontSize: 14, flexWrap: "wrap" }}>
+								<span className="text-muted" style={{ flex: "none" }}>
 									{formatDateTime(entry.time)}
 								</span>
 								<span style={{ color: entry.color }}>{entry.text}</span>
 							</div>
 						))}
 						{pending && (
-							<div style={{ display: "flex", gap: 10, fontSize: 13.5 }}>
-								<span className="text-muted" style={{ ...mono, flex: "none" }}>
-									- now
+							<div style={{ display: "flex", gap: 12, fontSize: 14, flexWrap: "wrap" }}>
+								<span className="text-muted" style={{ flex: "none" }}>
+									Now
 								</span>
-								<span style={{ color: "var(--warn)" }}>Awaiting payment</span>
+								<span style={{ color: "var(--caution)" }}>Waiting for your payment</span>
 							</div>
 						)}
 					</div>
@@ -468,22 +489,22 @@ export default function OrderDetails() {
 			</div>
 
 			{disputeOpen && (
-				<div className="card elev-md" style={{ padding: 18, gap: 12 }}>
-					<h6 style={{ margin: 0 }}>Open a dispute</h6>
-					<div className="text-muted" style={{ fontSize: 13 }}>
-						The escrow freezes immediately and an admin arbitrates in a dedicated Telegram group with
-						both parties. Describe what went wrong:
+				<div className="card elev-md" style={{ padding: 20, gap: 14 }}>
+					<h2 className="section-head">Report a problem</h2>
+					<div className="text-muted" style={{ fontSize: 15 }}>
+						We'll hold the payment and open a private chat with you, the seller and our team.
+						Tell us what happened:
 					</div>
 					<textarea
 						className="input"
 						value={disputeReason}
 						onChange={(e) => setDisputeReason(e.target.value)}
-						placeholder="e.g. The redeem code was already used when I tried it."
+						placeholder="e.g. The code had already been used when I tried it."
 						autoFocus
 					/>
-					<div style={{ display: "flex", gap: 8 }}>
+					<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
 						<button className="btn btn-primary" onClick={submitDispute} disabled={busy}>
-							{busy ? "Opening…" : "Open dispute · freeze escrow"}
+							{busy ? "Sending…" : "Send request"}
 						</button>
 						<button className="btn btn-secondary" onClick={() => setDisputeOpen(false)} disabled={busy}>
 							Cancel
@@ -492,28 +513,50 @@ export default function OrderDetails() {
 				</div>
 			)}
 
-			<div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "2px solid var(--color-divider)", paddingTop: 14, flexWrap: "wrap" }}>
+			{/* `action-row` stacks these full-width below 744px. The labels are
+			    sentences, not words, so none of them may be `nowrap` — at 360px a
+			    nowrap "Chat with support and the seller" is wider than the screen. */}
+			<div
+				className="action-row"
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 14,
+					borderTop: `1px solid ${hairline}`,
+					paddingTop: 18,
+					flexWrap: "wrap",
+				}}
+			>
 				{canDispute && !disputeOpen && (
-					<button className="btn btn-secondary" style={{ whiteSpace: "nowrap" }} onClick={() => setDisputeOpen(true)}>
-						Open a dispute
+					<button className="btn btn-secondary" onClick={() => setDisputeOpen(true)}>
+						Get help with this order
 					</button>
 				)}
 				{dispute && (
-					<button className="btn btn-ghost" style={{ whiteSpace: "nowrap" }} onClick={() => navigate(`/disputes/${dispute.id}`)}>
-						View dispute →
+					<button className="btn btn-ghost" onClick={() => navigate(`/disputes/${dispute.id}`)}>
+						View your request
 					</button>
 				)}
-				<span className="text-muted" style={{ fontSize: 12 }}>
+				{/* Buyer and seller both get the chat link — neither is added to it for them. */}
+				{dispute?.telegramInviteLink && (
+					<a
+						className="btn btn-secondary"
+						href={dispute.telegramInviteLink}
+						target="_blank"
+						rel="noreferrer"
+					>
+						<MessageIcon size={15} />
+						Chat with support and the {isBuyer ? "seller" : "buyer"}
+					</a>
+				)}
+				<span className="text-muted" style={{ fontSize: 14 }}>
 					{pending
-						? "Disputes become available once payment is confirmed."
+						? "You can ask for help once your payment has gone through."
 						: canDispute
-							? `Something wrong? You can open a dispute within ${platform?.disputeWindowDays ?? "—"} days of payment.`
+							? `Something wrong? Ask for help within ${platform?.disputeWindowDays ?? "—"} days of paying.`
 							: dispute
-								? "This order has a dispute on file."
-								: "Escrow releases automatically once vesting completes."}
-				</span>
-				<span className="text-muted" style={{ marginLeft: "auto", whiteSpace: "nowrap", ...mono, fontSize: 12 }}>
-					{order.id} · created {formatDate(order.createdAt)}
+								? "There's an open help request on this order."
+								: "Nothing to do — the seller is paid automatically once clearing ends."}
 				</span>
 			</div>
 		</Page>

@@ -1,8 +1,8 @@
-export function formatCurrency(amount: number, currency = "USDT"): string {
-	return `${amount.toLocaleString("en-US", {
+export function formatCurrency(amount: number, currency = "$"): string {
+	return `${currency}${amount.toLocaleString("en-US", {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	})} ${currency}`;
+	})}`;
 }
 
 export function formatDate(iso: string): string {

@@ -1,28 +1,38 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Listing } from "../api/types";
-import { formatDate } from "../utils/format";
-import { fmtUsd } from "../utils/money";
-import BlockAvatar from "./block-avatar";
-import { feeLabel, usePlatformConfig } from "../hooks/use-platform-config";
+import type { ListingRow } from "../api/types";
+import { availableOf, formatCountdown, listingStatusTag } from "../lib/listing-ui";
+import { useNow } from "../hooks/use-now";
+import { money, savedPercent } from "../utils/money";
 
 interface ListingCardProps {
-	listing: Listing;
+	listing: ListingRow;
 	index: number;
 	/** Show the listing status tag (Mine view — PAUSED listings are invisible to buyers). */
 	showStatus?: boolean;
 }
 
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-
 export default function ListingCard({ listing, index, showStatus = false }: ListingCardProps) {
 	const navigate = useNavigate();
 	// Sellers paste any URL they like, so a dead link must not leave a hole.
 	const [imageFailed, setImageFailed] = useState(false);
-	const platform = usePlatformConfig();
-	const category = listing.category?.toUpperCase() ?? "SERVICE";
-	const remaining = Math.max(listing.quantity - listing.soldCount, 0);
-	const showImage = !!listing.imageUrl && !imageFailed;
+
+	const cover = listing.imageUrl ?? listing.product.imageUrl ?? null;
+	const showImage = !!cover && !imageFailed;
+	const category = listing.category ?? listing.product.category;
+	const available = availableOf(listing);
+	const retail = listing.product.retailPriceUsd;
+	const saved = savedPercent(listing.priceUsd, retail);
+	const status = listingStatusTag(listing);
+
+	// Held units only appear on the seller's own feed, so the clock only runs there.
+	const held = listing.reservations ?? [];
+	const now = useNow(held.length > 0 ? 30_000 : undefined);
+	const soonest = held.reduce<number | undefined>((earliest, reservation) => {
+		const at = new Date(reservation.expiresAt).getTime();
+		return earliest === undefined || at < earliest ? at : earliest;
+	}, undefined);
+	const heldIn = soonest === undefined ? null : formatCountdown(soonest - now);
 
 	return (
 		<div
@@ -31,24 +41,13 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 			style={{
 				padding: 0,
 				gap: 0,
-				borderRadius: 0,
-				animation: `fadeUp .45s ease ${(index * 0.06).toFixed(2)}s both`,
+				overflow: "hidden",
+				animation: `fadeUp .3s ease ${(Math.min(index, 11) * 0.04).toFixed(2)}s both`,
 			}}
 		>
-			<div
-				className="grid-plate"
-				style={{ height: 132, position: "relative", borderBottom: "1px solid var(--color-divider)" }}
-			>
-				{/* Seller cover art. Falls back to the initial watermark when the
-				    listing has no image or the URL fails to load. */}
+			<div className="mcard-media">
 				{showImage ? (
-					<img
-						src={listing.imageUrl ?? undefined}
-						alt=""
-						loading="lazy"
-						onError={() => setImageFailed(true)}
-						style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-					/>
+					<img src={cover ?? undefined} alt="" loading="lazy" onError={() => setImageFailed(true)} />
 				) : (
 					<span
 						aria-hidden="true"
@@ -57,136 +56,88 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 							inset: 0,
 							display: "grid",
 							placeItems: "center",
-							fontFamily: "var(--font-heading)",
-							fontWeight: 800,
-							fontSize: 54,
-							letterSpacing: "-0.02em",
-							color: "color-mix(in srgb, var(--color-text) 10%, transparent)",
-							textTransform: "uppercase",
-							userSelect: "none",
+							fontSize: 44,
+							fontWeight: 600,
+							color: "var(--hairline)",
 						}}
 					>
-						{category.slice(0, 1)}
+						{category.slice(0, 1).toUpperCase()}
 					</span>
 				)}
-				<span
-					style={{
-						pointerEvents: "none",
-						position: "absolute",
-						top: 10,
-						left: 12,
-						...mono,
-						fontSize: 10.5,
-						letterSpacing: "0.12em",
-						background: "color-mix(in srgb, var(--color-bg) 78%, transparent)",
-						padding: "2px 7px",
-					}}
-				>
-					{category}
-				</span>
 				{showStatus && (
 					<span
-						className="tag"
-						style={{
-							pointerEvents: "none",
-							position: "absolute",
-							top: 8,
-							right: 10,
-							background:
-								listing.status === "ACTIVE"
-									? "var(--ok)"
-									: listing.status === "SOLD_OUT"
-										? "var(--bad)"
-										: "var(--warn)",
-							color: "var(--color-bg)",
-							fontWeight: 600,
-							...mono,
-							fontSize: 10.5,
-						}}
+						className="tag tag-status"
+						style={
+							{
+								pointerEvents: "none",
+								position: "absolute",
+								top: 10,
+								right: 10,
+								// Opaque, so the chip stays readable over the cover image.
+								background: "var(--surface-card)",
+								"--chip": status.color,
+							} as React.CSSProperties
+						}
 					>
-						{listing.status === "ACTIVE" ? "Live" : listing.status === "SOLD_OUT" ? "Sold out" : "Paused"}
+						{status.label}
 					</span>
 				)}
 			</div>
-			<div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 9, flex: 1 }}>
-				<div
-					style={{
-						fontFamily: "var(--font-heading)",
-						fontWeight: 800,
-						fontSize: 16,
-						lineHeight: 1.25,
-						minHeight: 38,
-					}}
-				>
-					{listing.title}
-				</div>
-				<div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-					<BlockAvatar
-						name={listing.seller.username}
-						imageUrl={listing.seller.imageUrl}
-						size={18}
-						fontSize={10}
-					/>
-					<span className="text-muted" style={{ fontSize: 13 }}>
-						{listing.seller.username ?? "Seller"}
-					</span>
-					<span
-						className="text-muted"
-						style={{
-							whiteSpace: "nowrap",
-							flex: "none",
-							marginLeft: "auto",
-							...mono,
-							fontSize: 10.5,
-							padding: "1px 6px",
-							border: "1px solid var(--color-divider)",
-						}}
-					>
-						{formatDate(listing.createdAt).toUpperCase()}
-					</span>
-				</div>
-				<div
-					className="text-muted"
-					style={{
-						fontSize: 13,
-						lineHeight: 1.5,
-						display: "-webkit-box",
-						WebkitLineClamp: 2,
-						WebkitBoxOrient: "vertical",
-						overflow: "hidden",
-					}}
-				>
-					{listing.description}
-				</div>
-				<div className="text-muted" style={{ ...mono, fontSize: 12, marginTop: "auto" }}>
-					<span style={{ color: "var(--color-accent)" }}>▣</span> escrow protected · {feeLabel(platform)} flat fee
-					{remaining === 0 ? (
-						<span style={{ color: "var(--bad)" }}> · sold out</span>
-					) : listing.quantity > 1 ? (
-						<span style={{ color: remaining <= 2 ? "var(--warn)" : undefined }}> · {remaining} left</span>
-					) : null}
-				</div>
-			</div>
+
+			{/* `minWidth: 0` on the text column: the grid cell is a `minmax(0, 1fr)`
+			    track, so the card is as narrow as a one-up phone column, and a
+			    seller's title or username can be one long unbroken token. Those two
+			    lines break mid-word rather than reach past the card. */}
 			<div
 				style={{
+					padding: 14,
 					display: "flex",
-					alignItems: "center",
-					borderTop: "1px solid var(--color-divider)",
-					padding: "10px 14px",
+					flexDirection: "column",
+					gap: 4,
+					flex: 1,
+					minWidth: 0,
 				}}
 			>
-				<span style={{ ...mono, fontSize: 17, fontWeight: 600 }}>
-					{fmtUsd(listing.priceUsd)}{" "}
-					<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
-						USDT
-					</span>
-				</span>
-				<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
-					NO.{String(index + 1).padStart(2, "0")}
-				</span>
-				<span style={{ marginLeft: 12, fontSize: 13, fontWeight: 600, color: "var(--color-accent)" }}>
-					View →
-				</span>
+				<div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3, overflowWrap: "anywhere" }}>
+					{listing.title}
+				</div>
+				<div className="text-muted" style={{ fontSize: 14, overflowWrap: "anywhere" }}>
+					{category} · {listing.seller.username ?? "Kolo seller"}
+				</div>
+				<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+					<span style={{ fontSize: 16, fontWeight: 600 }}>{money(listing.priceUsd)}</span>
+					{saved !== null && (
+						<>
+							<span className="price-was" style={{ fontSize: 14 }}>
+								{money(retail)}
+							</span>
+							<span className="save-badge">Save {saved}%</span>
+						</>
+					)}
+				</div>
+				<div className="text-muted" style={{ fontSize: 14, marginTop: "auto", paddingTop: 4 }}>
+					{available === 0 ? (
+						listing.soldCount >= listing.quantity ? (
+							"Sold out"
+						) : (
+							"All units are being paid for"
+						)
+					) : available === 1 ? (
+						<span style={{ color: "var(--accent-ink)", fontWeight: 500 }}>Only 1 left</span>
+					) : listing.soldCount > 0 ? (
+						`${listing.soldCount} sold`
+					) : (
+						`${available} available`
+					)}
+				</div>
+				{/* Why availableCount sits below quantity − soldCount, in the seller's words. */}
+				{held.length > 0 && (
+					<div className="text-muted" style={{ fontSize: 13 }}>
+						{held.length} {held.length === 1 ? "unit" : "units"} held by a buyer
+						{held.length === 1 ? "" : "s"}
+						{heldIn ? ` · frees up in ${heldIn}` : " · freeing up now"}
+					</div>
+				)}
 			</div>
 		</div>
 	);

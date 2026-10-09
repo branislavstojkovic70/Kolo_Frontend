@@ -1,5 +1,6 @@
 import type { ClerkProvider } from "@clerk/clerk-react";
 import type { ComponentProps } from "react";
+import type { ThemeMode } from "../theme";
 
 type Appearance = ComponentProps<typeof ClerkProvider>["appearance"];
 
@@ -18,54 +19,53 @@ export const isClerkEnabled: boolean = CLERK_PUBLISHABLE_KEY.length > 0;
 
 /**
  * Clerk parses `variables` in JS to derive its own shades and pick readable
- * text colours, so they must be concrete values — a `var()` is unparseable and
- * makes Clerk assume a white ground (black-on-black social buttons in dark
- * mode). Mirrors the two theme blocks in index.css; `elements` below is raw CSS
- * and can keep using var().
+ * text colours, so they must be concrete values — a `var()` is unparseable.
+ * This is therefore the one place in the app that duplicates palette values;
+ * it mirrors the two token blocks in index.css and must be kept in step with
+ * them. `elements` below is raw CSS and keeps using var().
  */
-const PALETTE = {
+const PALETTES = {
 	dark: {
-		bg: "#0a0f1a",
-		surface: "#111a2b",
-		text: "#e9eef7",
-		muted: "#7c8fa5",
-		ok: "#3ecf8e",
-		bad: "#ff5c5c",
+		canvas: "#161616",
+		surface: "#1f1f1f",
+		ink: "#f5f5f5",
+		muted: "#a3a3a3",
+		accent: "#ff385c",
+		success: "#5cb882",
+		error: "#ff6b5e",
 	},
 	light: {
-		bg: "#eef1f5",
+		canvas: "#ffffff",
 		surface: "#ffffff",
-		text: "#17263a",
-		muted: "#748496",
-		ok: "#1e9e63",
-		bad: "#d33d2e",
+		ink: "#222222",
+		muted: "#6a6a6a",
+		accent: "#ff385c",
+		success: "#0f7b3f",
+		error: "#c13515",
 	},
-} as const;
+} as const satisfies Record<ThemeMode, Record<string, string>>;
 
-const ACCENT = "#f97316";
-
-/** Clerk's widgets, wearing Kolo's skin. Rebuilt when the theme toggles. */
-export function buildClerkAppearance(mode: "dark" | "light"): Appearance {
-	const c = PALETTE[mode];
+/** Clerk's widgets, wearing Kolo's skin for the active theme. */
+export function buildClerkAppearance(mode: ThemeMode = "dark"): Appearance {
+	const palette = PALETTES[mode];
 
 	return {
 		variables: {
-			colorPrimary: ACCENT,
-			// The auth pane shows the page ground, not the surface.
-			colorBackground: c.bg,
-			colorText: c.text,
-			colorTextSecondary: c.muted,
-			colorInputBackground: c.surface,
-			colorInputText: c.text,
-			colorDanger: c.bad,
-			colorSuccess: c.ok,
-			fontFamily: '"Archivo", system-ui, sans-serif',
-			fontFamilyButtons: '"Archivo", system-ui, sans-serif',
-			borderRadius: "0px",
+			colorPrimary: palette.accent,
+			colorBackground: palette.canvas,
+			colorText: palette.ink,
+			colorTextSecondary: palette.muted,
+			colorInputBackground: palette.surface,
+			colorInputText: palette.ink,
+			colorDanger: palette.error,
+			colorSuccess: palette.success,
+			fontFamily: '"Inter", system-ui, sans-serif',
+			fontFamilyButtons: '"Inter", system-ui, sans-serif',
+			borderRadius: "8px",
 		},
 		elements: {
 			rootBox: { width: "100%" },
-			cardBox: { width: "100%", boxShadow: "none", border: "none", borderRadius: 0 },
+			cardBox: { width: "100%", boxShadow: "none", border: "none" },
 			card: {
 				width: "100%",
 				boxShadow: "none",
@@ -73,38 +73,40 @@ export function buildClerkAppearance(mode: "dark" | "light"): Appearance {
 				background: "transparent",
 				padding: 0,
 			},
-			// Kolo renders its own poster-style heading above the widget.
+			// Kolo renders its own heading above the widget.
 			header: { display: "none" },
 			footer: {
 				background: "transparent",
-				borderTop: "2px solid var(--color-divider)",
+				borderTop: "1px solid var(--hairline-soft)",
 				marginTop: 22,
 			},
 			footerAction: { justifyContent: "flex-start" },
-			formFieldLabel: {
-				fontFamily: "var(--font-mono)",
-				fontSize: 11,
-				letterSpacing: "0.1em",
-				textTransform: "uppercase",
+			formFieldLabel: { fontSize: 14, fontWeight: 500, color: "var(--ink)" },
+			formFieldInput: {
+				borderRadius: "var(--r-btn)",
+				border: "1px solid var(--hairline)",
+				minHeight: 48,
 			},
-			formFieldInput: { borderRadius: 0, border: "1px solid var(--color-divider)" },
 			formButtonPrimary: {
-				borderRadius: 0,
+				borderRadius: "var(--r-btn)",
+				minHeight: 48,
 				fontFamily: "var(--font-body)",
-				fontWeight: 700,
-				textTransform: "uppercase",
-				letterSpacing: "0.04em",
+				fontSize: 16,
+				fontWeight: 500,
+				textTransform: "none",
+				letterSpacing: "normal",
 				boxShadow: "none",
 			},
 			socialButtonsBlockButton: {
-				borderRadius: 0,
-				border: "1px solid var(--color-divider)",
-				color: "var(--color-text)",
+				borderRadius: "var(--r-btn)",
+				minHeight: 48,
+				border: "1px solid var(--hairline)",
+				color: "var(--ink)",
 			},
-			socialButtonsBlockButtonText: { color: "var(--color-text)", fontWeight: 600 },
-			dividerLine: { background: "var(--color-divider)" },
-			dividerText: { fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em" },
-			footerActionLink: { color: "var(--color-accent)", fontWeight: 600 },
+			socialButtonsBlockButtonText: { color: "var(--ink)", fontWeight: 500 },
+			dividerLine: { background: "var(--hairline-soft)" },
+			dividerText: { fontSize: 14, color: "var(--muted)" },
+			footerActionLink: { color: "var(--accent)", fontWeight: 600 },
 		},
 	};
 }

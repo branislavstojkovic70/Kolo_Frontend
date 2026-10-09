@@ -1,13 +1,18 @@
+import type { CSSProperties } from "react";
+
 interface StatusTagProps {
 	label: string;
 	color: string;
 	fontSize?: number;
 }
 
-/** Solid inverted block chip: mono, 600, status color behind page-bg ink. */
-export default function StatusTag({ label, color, fontSize = 10.5 }: StatusTagProps) {
+/**
+ * Soft status pill: a 12% tint of the status colour behind the status colour
+ * as ink. The colour travels as a custom property so the tint is mixed in CSS.
+ */
+export default function StatusTag({ label, color, fontSize = 11 }: StatusTagProps) {
 	return (
-		<span className="tag tag-status" style={{ background: color, fontSize }}>
+		<span className="tag tag-status" style={{ "--chip": color, fontSize } as CSSProperties}>
 			{label}
 		</span>
 	);

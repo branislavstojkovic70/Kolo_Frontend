@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { adminApi, disputesApi, type Dispute, type DisputeStatus, type Page as Paged } from "../api";
 import AsyncPanel from "../components/async-panel";
-import { PaperclipIcon, SendIcon } from "../components/icons";
+import { MessageIcon } from "../components/icons";
 import Page from "../components/page";
 import Pagination from "../components/pagination";
 import StatusTag from "../components/status-tag";
@@ -12,20 +12,31 @@ import { useAuth } from "../hooks/use-auth";
 import { useListControls } from "../hooks/use-list-controls";
 import { disputeStatusTag } from "../lib/order-ui";
 import { formatDate, formatRelative, shortRef } from "../utils/format";
-import { fmtUsd } from "../utils/money";
-
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+import { money } from "../utils/money";
 
 const STATUS_OPTIONS: { value: DisputeStatus; label: string }[] = [
-	{ value: "OPEN", label: "Open" },
-	{ value: "RESOLVED_BUYER", label: "Resolved · buyer" },
-	{ value: "RESOLVED_SELLER", label: "Resolved · seller" },
+	{ value: "OPEN", label: "In review" },
+	{ value: "RESOLVED_BUYER", label: "Resolved for buyer" },
+	{ value: "RESOLVED_SELLER", label: "Resolved for seller" },
 ];
 
-const roleColor = {
-	BUYER: "var(--color-neutral-600)",
-	SELLER: "var(--warn)",
-	ADMIN: "var(--color-accent)",
+/**
+ * The queue renders the same five fields whether they came from /disputes/mine
+ * or, for an admin, from /admin/disputes — and those two payloads differ
+ * elsewhere, so the list is typed down to what it actually reads.
+ */
+interface DisputeRow {
+	id: string;
+	status: DisputeStatus;
+	createdAt: string;
+	reason: string;
+	order: { titleSnapshot: string; amountUsd: string };
+}
+
+const ROLES = {
+	BUYER: { label: "Buyer", color: "var(--muted)" },
+	SELLER: { label: "Seller", color: "var(--caution)" },
+	ADMIN: { label: "Kolo support", color: "var(--accent)" },
 } as const;
 
 function MessagePlate({
@@ -33,35 +44,45 @@ function MessagePlate({
 	name,
 	time,
 	children,
-	delay = 0,
 }: {
-	role: keyof typeof roleColor;
+	role: keyof typeof ROLES;
 	name: string;
 	time?: string;
 	children: React.ReactNode;
-	delay?: number;
 }) {
 	return (
 		<div
 			style={{
-				borderLeft: `2px solid ${roleColor[role]}`,
-				background: role === "ADMIN" ? "var(--color-accent-100)" : "var(--color-neutral-100)",
-				padding: "11px 14px",
-				animation: `fadeUp .4s ease ${delay.toFixed(2)}s both`,
+				background: role === "ADMIN" ? "var(--accent-tint)" : "var(--surface-soft)",
+				borderRadius: "var(--r-card)",
+				// Three nested paddings sit between a phone edge and this text —
+				// the card, the thread's gutter, then the plate. The inner two give
+				// width back as the viewport narrows.
+				padding: "14px clamp(12px, 3.5vw, 16px)",
 			}}
 		>
 			<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", lineHeight: 1.4 }}>
-				<span style={{ whiteSpace: "nowrap", flex: "none", ...mono, fontSize: 10, letterSpacing: "0.12em", color: roleColor[role] }}>
-					{role}
+				<span
+					style={{
+						whiteSpace: "nowrap",
+						flex: "none",
+						fontSize: 13,
+						fontWeight: 600,
+						color: ROLES[role].color,
+					}}
+				>
+					{ROLES[role].label}
 				</span>
-				<span style={{ whiteSpace: "nowrap", flex: "none", fontSize: 13.5, fontWeight: 600 }}>{name}</span>
+				<span style={{ whiteSpace: "nowrap", flex: "none", fontSize: 15, fontWeight: 600 }}>{name}</span>
 				{time && (
-					<span className="text-muted" style={{ whiteSpace: "nowrap", marginLeft: "auto", ...mono, fontSize: 11 }}>
+					<span className="text-muted" style={{ whiteSpace: "nowrap", marginLeft: "auto", fontSize: 13 }}>
 						{time}
 					</span>
 				)}
 			</div>
-			<div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 5 }}>{children}</div>
+			<div style={{ fontSize: 15, lineHeight: 1.5, marginTop: 6, color: "var(--body-soft)" }}>
+				{children}
+			</div>
 		</div>
 	);
 }
@@ -76,9 +97,9 @@ export default function Disputes() {
 	const controls = useListControls<DisputeStatus>(10);
 	const { search, status, page, limit } = controls;
 
-	// An admin arbitrates disputes he is never a party to, so /disputes/mine would
+	// An admin settles requests he is never a party to, so /disputes/mine would
 	// always come back empty for him — the whole list lives behind /admin/disputes.
-	const list = useAsync<Paged<Dispute>>(
+	const list = useAsync<Paged<DisputeRow>>(
 		() => {
 			const query = {
 				search: search || undefined,
@@ -110,25 +131,28 @@ export default function Disputes() {
 			detail.reload();
 			list.reload();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Could not resolve");
+			toast.error(err instanceof Error ? err.message : "Could not resolve this request");
 		} finally {
 			setBusy(false);
 		}
 	};
 
 	return (
-		<Page title="Disputes" sub="Admin-arbitrated · evidence + Telegram chat">
+		<Page
+			title="Resolution"
+			sub="Orders you've asked for help with. Your payment stays put until each one is settled."
+		>
 			<div className="filter-bar">
 				<input
 					className="input"
-					style={{ flex: 1 }}
-					placeholder="Search disputes by order title…"
+					style={{ flex: 1, maxWidth: 420 }}
+					placeholder="Search by item…"
 					value={controls.searchInput}
 					onChange={(e) => controls.setSearchInput(e.target.value)}
 				/>
 				<select
 					className="input"
-					style={{ width: 190, flex: "none" }}
+					style={{ width: 200, maxWidth: "100%", flex: "none" }}
 					value={status}
 					onChange={(e) => controls.setStatus(e.target.value as DisputeStatus | "")}
 					aria-label="Filter by status"
@@ -147,15 +171,15 @@ export default function Disputes() {
 				error={list.error}
 				isEmpty={entries.length === 0}
 				emptyMessage={
-					search || status ? "No disputes match these filters" : "No disputes — that's a good thing"
+					search || status ? "Nothing matches those filters." : "No open requests — that's a good sign."
 				}
 			>
 				<div className="layout-master">
-					<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-						<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-							{list.data?.total ?? 0} DISPUTES
-						</div>
-						{entries.map((entry, index) => {
+					{/* minWidth 0: the master track has a 240px floor, and a grid item
+					    defaults to min-content — without this an unbreakable string in
+					    a plate widens the track instead of wrapping inside it. */}
+					<div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
+						{entries.map((entry) => {
 							const chip = disputeStatusTag(entry.status);
 							const selected = entry.id === selectedId;
 							return (
@@ -165,24 +189,35 @@ export default function Disputes() {
 									onClick={() => navigate(`/disputes/${entry.id}`)}
 									style={{
 										padding: "14px 16px",
-										borderLeft: `3px solid ${selected ? "var(--color-accent)" : "var(--color-divider)"}`,
-										background: selected ? "var(--color-neutral-100)" : "transparent",
+										borderRadius: "var(--r-card)",
+										border: `1px solid ${
+											selected ? "var(--border-strong)" : "var(--hairline-soft)"
+										}`,
+										background: selected ? "var(--surface-soft)" : "var(--surface-card)",
 										display: "flex",
 										flexDirection: "column",
 										gap: 8,
-										transition: "background-color .15s ease, border-color .15s ease",
-										animation: `fadeUp .4s ease ${(index * 0.06).toFixed(2)}s both`,
 									}}
 								>
-									<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-										<StatusTag label={chip.label} color={chip.color} fontSize={10} />
-										<span className="text-muted" style={{ marginLeft: "auto", ...mono, fontSize: 10.5 }}>
-											{formatRelative(entry.createdAt).toUpperCase()}
+									{/* "Resolved for seller" is a nowrap pill and the master column
+									    is only 240px at its floor — the timestamp drops to its own
+									    line rather than pushing the row wider than the plate. */}
+									<div
+										style={{
+											display: "flex",
+											alignItems: "center",
+											gap: 8,
+											flexWrap: "wrap",
+										}}
+									>
+										<StatusTag label={chip.label} color={chip.color} />
+										<span className="text-muted" style={{ marginLeft: "auto", fontSize: 13 }}>
+											{formatRelative(entry.createdAt)}
 										</span>
 									</div>
 									<div
 										style={{
-											fontSize: 14.5,
+											fontSize: 15,
 											fontWeight: 600,
 											lineHeight: 1.4,
 											display: "-webkit-box",
@@ -193,10 +228,8 @@ export default function Disputes() {
 									>
 										{entry.reason}
 									</div>
-									<div className="text-muted" style={{ display: "flex", gap: 7, ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
-										<span>{shortRef(entry.orderId)}</span>
-										<span>·</span>
-										<span>{fmtUsd(entry.order.amountUsd)} USDT</span>
+									<div className="text-muted" style={{ fontSize: 14 }}>
+										{entry.order.titleSnapshot} · {money(entry.order.amountUsd)}
 									</div>
 								</div>
 							);
@@ -208,136 +241,156 @@ export default function Disputes() {
 							total={list.data?.total ?? 0}
 							onPage={controls.setPage}
 							onLimit={controls.setLimit}
-							noun="disputes"
+							noun="requests"
 						/>
-						<div className="card" style={{ padding: 14, gap: 6 }}>
-							<h6 style={{ margin: 0 }}>How arbitration works</h6>
-							<div className="text-muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
-								Opening a dispute freezes the order's escrow — even after vesting. A Telegram group is
-								created with the admins; buyer and seller join via invite link and post evidence there.
-								The admin then resolves for one side and the winner withdraws the escrow.
+						<div className="card" style={{ gap: 8 }}>
+							<h2 className="section-head">How this works</h2>
+							<div className="text-muted" style={{ fontSize: 14, lineHeight: 1.5 }}>
+								Asking for help puts the payment on hold, even if the clearing period has already
+								passed. We open a private chat with you, the seller and our team, look at what each
+								side shows us, and decide. Whoever is right gets the money.
 							</div>
 						</div>
 					</div>
 
-					<div className="card elev-sm" style={{ padding: 0, gap: 0 }}>
+					<div className="card" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
 						{dispute ? (
 							<>
-								<div style={{ padding: "18px 20px", borderBottom: "2px solid var(--color-divider)" }}>
-									<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+								<div
+									style={{
+										padding: "20px clamp(14px, 4vw, 22px)",
+										borderBottom: "1px solid var(--hairline)",
+									}}
+								>
+									<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
 										<StatusTag {...disputeStatusTag(dispute.status)} />
 										<span
 											className="text-muted row-click"
 											onClick={() => navigate(`/orders/${dispute.orderId}`)}
-											style={{ whiteSpace: "nowrap", flex: "none", ...mono, fontSize: 11, border: "1px solid var(--color-divider)", padding: "2px 8px" }}
+											style={{ whiteSpace: "nowrap", fontSize: 14, textDecoration: "underline" }}
 										>
-											{dispute.orderId}
+											Order #{shortRef(dispute.orderId)}
 										</span>
-										<span className="text-muted" style={{ whiteSpace: "nowrap", ...mono, fontSize: 10.5, letterSpacing: "0.08em" }}>
-											OPENED {formatDate(dispute.createdAt).toUpperCase()} · BY BUYER
-										</span>
-									</div>
-									<h4 style={{ margin: "12px 0 0", fontSize: 19, lineHeight: 1.3 }}>{dispute.reason}</h4>
-									<div className="text-muted" style={{ display: "flex", gap: 16, marginTop: 12, ...mono, fontSize: 10, letterSpacing: "0.1em" }}>
-										<span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-											<span style={{ width: 8, height: 8, background: roleColor.BUYER }} />
-											BUYER
-										</span>
-										<span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-											<span style={{ width: 8, height: 8, background: roleColor.SELLER }} />
-											SELLER
-										</span>
-										<span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-											<span style={{ width: 8, height: 8, background: roleColor.ADMIN }} />
-											ADMIN ARBITRATOR
+										<span className="text-muted" style={{ whiteSpace: "nowrap", fontSize: 14 }}>
+											Opened {formatDate(dispute.createdAt)} by the buyer
 										</span>
 									</div>
+									<h2 style={{ margin: "12px 0 0", fontSize: 20, lineHeight: 1.35 }}>{dispute.reason}</h2>
 								</div>
 
-								<div style={{ maxHeight: 400, overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-									<MessagePlate role="BUYER" name="Dispute opened" time={formatDate(dispute.createdAt)} delay={0}>
+								<div
+									style={{
+										// Stacked, this pane is the page: a flat 420px window would
+										// be taller than a phone in landscape and push the footer
+										// CTA off-screen, so the thread never takes more than ~60%
+										// of the viewport it is actually rendered in.
+										maxHeight: "min(420px, 60vh)",
+										overflowY: "auto",
+										padding: "18px clamp(14px, 4vw, 20px)",
+										display: "flex",
+										flexDirection: "column",
+										gap: 12,
+									}}
+								>
+									<MessagePlate role="BUYER" name="Problem reported" time={formatDate(dispute.createdAt)}>
 										{dispute.reason}
-										<div
-											style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, border: "1px solid var(--color-divider)", padding: "4px 8px" }}
-										>
-											<PaperclipIcon size={12} />
-											<span style={{ ...mono, fontSize: 12 }}>
-												{fmtUsd(dispute.order.sellerAmountUsd)} USDT frozen in escrow
-											</span>
+										<div style={{ marginTop: 10, fontSize: 14, color: "var(--muted)" }}>
+											{money(dispute.order.sellerAmountUsd)} is on hold while this is open.
 										</div>
 									</MessagePlate>
 
-									<MessagePlate role="ADMIN" name="Kolo Arbitration" delay={0.07}>
+									<MessagePlate role="ADMIN" name="Kolo support">
 										{dispute.telegramInviteLink
-											? "A private Telegram group was opened for this dispute. Post your evidence and replies there — the admins moderate it and both parties can join with the invite link below."
-											: "The dispute is registered and the escrow is frozen. The Telegram evidence group is still being created — check back shortly."}
+											? "We've opened a private chat for this order. Share anything that helps — screenshots, messages, dates — and we'll take it from there."
+											: "Your request is logged and the payment is on hold. We're setting up the chat now — check back in a moment."}
 									</MessagePlate>
 
 									{dispute.status !== "OPEN" && (
 										<div
-											style={{ borderLeft: "3px solid var(--color-accent)", background: "var(--color-accent-100)", padding: "12px 14px", animation: "fadeUp .4s ease .3s both" }}
+											style={{
+												background: "var(--accent-tint)",
+												borderRadius: "var(--r-card)",
+												padding: "14px clamp(12px, 3.5vw, 16px)",
+											}}
 										>
-											<div style={{ ...mono, fontSize: 10, letterSpacing: "0.12em", color: "var(--color-accent)" }}>
-												ADMIN DECISION · FINAL{dispute.resolvedAt ? ` · ${formatDate(dispute.resolvedAt).toUpperCase()}` : ""}
+											<div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-ink)" }}>
+												Final decision
+												{dispute.resolvedAt ? ` · ${formatDate(dispute.resolvedAt)}` : ""}
 											</div>
-											<div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 5, color: "var(--color-accent-800)" }}>
+											<div style={{ fontSize: 15, lineHeight: 1.5, marginTop: 6 }}>
 												{dispute.resolutionNote ??
 													(dispute.status === "RESOLVED_BUYER"
-														? `Resolved in the buyer's favour · ${fmtUsd(dispute.order.sellerAmountUsd)} USDT refunded from escrow, withdrawable by the buyer immediately.`
-														: "Resolved in the seller's favour · escrow returns to the normal vesting schedule.")}
+														? `Decided for the buyer · ${money(dispute.order.sellerAmountUsd)} refunded and ready to withdraw straight away.`
+														: "Decided for the seller · the order goes back to its normal clearing schedule.")}
 											</div>
 										</div>
 									)}
 
 									{isAdmin && dispute.status === "OPEN" && (
-										<div className="card elev-sm" style={{ padding: 14, gap: 10 }}>
-											<h6 style={{ margin: 0 }}>Resolve · admin only</h6>
+										<div className="card" style={{ gap: 12 }}>
+											<h2 className="section-head">Decide this request</h2>
 											<input
 												className="input"
 												value={note}
 												onChange={(e) => setNote(e.target.value)}
-												placeholder="Resolution note (optional, shown to both parties)"
+												placeholder="Note for both parties (optional)"
 											/>
-											<div style={{ display: "flex", gap: 8 }}>
+											<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
 												<button className="btn btn-primary" disabled={busy} onClick={() => resolve("BUYER")}>
-													Buyer wins · refund
+													Refund the buyer
 												</button>
 												<button className="btn btn-secondary" disabled={busy} onClick={() => resolve("SELLER")}>
-													Seller wins · release
+													Pay the seller
 												</button>
 											</div>
 										</div>
 									)}
 								</div>
 
-								<div style={{ display: "flex", gap: 8, padding: "14px 18px", borderTop: "2px solid var(--color-divider)", alignItems: "center", flexWrap: "wrap" }}>
+								<div
+									className="action-row"
+									style={{
+										display: "flex",
+										gap: 12,
+										padding: "16px clamp(14px, 4vw, 20px)",
+										borderTop: "1px solid var(--hairline)",
+										alignItems: "center",
+										flexWrap: "wrap",
+									}}
+								>
 									{dispute.telegramInviteLink ? (
 										<>
+											{/* Not nowrap: the label is a sentence and would be wider
+											    than a 360px screen on one line. */}
 											<a
 												className="btn btn-primary"
-												style={{ whiteSpace: "nowrap" }}
 												href={dispute.telegramInviteLink}
 												target="_blank"
 												rel="noreferrer"
 											>
-												<SendIcon size={14} />
-												Join dispute chat on Telegram
+												<MessageIcon size={16} />
+												Chat with support and the seller
 											</a>
-											<span className="text-muted" style={{ fontSize: 12 }}>
-												Evidence, replies and the admin's questions all happen in the group.
+											<span className="text-muted" style={{ fontSize: 14 }}>
+												Everything about this order is discussed there.
 											</span>
 										</>
 									) : (
-										<span className="text-muted" style={{ fontSize: 12 }}>
-											Telegram group not available yet — the escrow is frozen regardless, and an admin
-											will follow up here.
+										<span className="text-muted" style={{ fontSize: 14 }}>
+											The chat isn't ready yet — your payment is on hold regardless, and we'll follow
+											up here.
 										</span>
 									)}
 								</div>
 							</>
 						) : (
-							<div style={{ padding: 40 }}>
-								<AsyncPanel loading={detail.loading} error={detail.error} isEmpty emptyMessage="Select a dispute">
+							<div style={{ padding: "clamp(24px, 8vw, 40px)" }}>
+								<AsyncPanel
+									loading={detail.loading}
+									error={detail.error}
+									isEmpty
+									emptyMessage="Pick a request to see the details."
+								>
 									<span />
 								</AsyncPanel>
 							</div>

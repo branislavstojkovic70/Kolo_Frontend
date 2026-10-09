@@ -12,6 +12,23 @@ export default function Register() {
 	return isClerkEnabled ? <ClerkSignUp /> : <DevSignUp />;
 }
 
+function Footnote() {
+	return (
+		<>
+			<div style={{ height: 1, background: "var(--hairline-soft)", margin: "24px 0" }} />
+			<div
+				className="text-muted"
+				style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13 }}
+			>
+				<LockIcon size={14} style={{ flex: "none", marginTop: 2 }} />
+				<span style={{ minWidth: 0 }}>
+					Every order is covered by Buyer Protection. Your money only moves once you're happy.
+				</span>
+			</div>
+		</>
+	);
+}
+
 function ClerkSignUp() {
 	const { user, loading } = useAuth();
 
@@ -19,32 +36,13 @@ function ClerkSignUp() {
 
 	return (
 		<AuthLayout>
-			<h1
-				style={{
-					margin: "0 0 8px",
-					fontSize: 44,
-					lineHeight: 0.95,
-					textTransform: "uppercase",
-					letterSpacing: "-0.02em",
-				}}
-			>
-				Create account
-			</h1>
-			<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
-				Already on Kolo? <Link to="/login">Sign in</Link> instead.
+			<h1 style={{ margin: "0 0 6px" }}>Create your account</h1>
+			<div className="text-muted" style={{ fontSize: 15, marginBottom: 28 }}>
+				Already with us? <Link to="/login">Sign in</Link> instead.
 			</div>
 			{/* The backend creates the Kolo row on the first /me call after sign-up. */}
 			<SignUp routing="path" path="/register" signInUrl="/login" fallbackRedirectUrl="/ads" />
-			<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
-			<div
-				className="text-muted"
-				style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
-			>
-				<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
-				<span>
-					Protected by escrow and admin arbitration. Your funds move only when you confirm.
-				</span>
-			</div>
+			<Footnote />
 		</AuthLayout>
 	);
 }
@@ -77,22 +75,12 @@ function DevSignUp() {
 	return (
 		<AuthLayout>
 			<form onSubmit={handleSubmit}>
-				<h1
-					style={{
-						margin: "0 0 8px",
-						fontSize: 44,
-						lineHeight: 0.95,
-						textTransform: "uppercase",
-						letterSpacing: "-0.02em",
-					}}
-				>
-					Create account
-				</h1>
-				<div className="text-muted" style={{ fontSize: 13.5, marginBottom: 26 }}>
-					Already on Kolo? <Link to="/login">Sign in</Link> instead.
+				<h1 style={{ margin: "0 0 6px" }}>Create your account</h1>
+				<div className="text-muted" style={{ fontSize: 15, marginBottom: 28 }}>
+					Already with us? <Link to="/login">Sign in</Link> instead.
 				</div>
-				<div className="field" style={{ marginBottom: 14 }}>
-					<label htmlFor="register-name">Display name</label>
+				<div className="field" style={{ marginBottom: 16 }}>
+					<label htmlFor="register-name">Your name</label>
 					<input
 						id="register-name"
 						className="input"
@@ -104,7 +92,7 @@ function DevSignUp() {
 						minLength={2}
 					/>
 				</div>
-				<div className="field" style={{ marginBottom: 14 }}>
+				<div className="field" style={{ marginBottom: 16 }}>
 					<label htmlFor="register-email">Email</label>
 					<input
 						id="register-email"
@@ -117,7 +105,7 @@ function DevSignUp() {
 					/>
 				</div>
 				{/* Decorative: dev-bypass auth has no password. Clerk's form does. */}
-				<div className="field" style={{ marginBottom: 20 }}>
+				<div className="field" style={{ marginBottom: 22 }}>
 					<label htmlFor="register-password">Password</label>
 					<input
 						id="register-password"
@@ -129,18 +117,9 @@ function DevSignUp() {
 					/>
 				</div>
 				<button className="btn btn-primary btn-block" type="submit" disabled={submitting}>
-					{submitting ? "Creating account…" : "Create account →"}
+					{submitting ? "Creating your account…" : "Create account"}
 				</button>
-				<div style={{ height: 2, background: "var(--color-divider)", margin: "22px 0" }} />
-				<div
-					className="text-muted"
-					style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
-				>
-					<LockIcon size={13} style={{ flex: "none", marginTop: 1 }} />
-					<span>
-						Protected by escrow and admin arbitration. Your funds move only when you confirm.
-					</span>
-				</div>
+				<Footnote />
 			</form>
 		</AuthLayout>
 	);

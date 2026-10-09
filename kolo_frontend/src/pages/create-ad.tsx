@@ -1,32 +1,33 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import { listingsApi } from "../api";
+import { listingsApi, productsApi } from "../api";
 import { ArrowLeftIcon, ShieldCheckIcon } from "../components/icons";
 import Page from "../components/page";
+import ProductPicker from "../components/product-picker";
+import { findProduct } from "../lib/listing-ui";
 import { useAsync } from "../hooks/use-async";
-import { fmtUsd } from "../utils/money";
+import { money, savedPercent, usd } from "../utils/money";
 import { feeLabel, previewFee, usePlatformConfig } from "../hooks/use-platform-config";
-
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
 const rowBetween: React.CSSProperties = {
 	display: "flex",
 	justifyContent: "space-between",
-	fontSize: 14,
+	gap: 12,
+	fontSize: 15,
 };
 
 /**
  * One form, two modes. `/ads/new` creates; `/ads/:id/edit` updates an existing
- * listing through PATCH /listings/:id, which accepts every field below.
+ * listing through PATCH /listings/:id, which accepts every field below except
+ * the product — that one is fixed the moment the listing is created.
  */
 export default function CreateAd() {
 	const navigate = useNavigate();
 	const { id } = useParams<{ id: string }>();
 	const isEdit = !!id;
 	const platform = usePlatformConfig();
-	const [title, setTitle] = useState("");
-	const [category, setCategory] = useState("");
+	const [productId, setProductId] = useState("");
 	const [price, setPrice] = useState("");
 	const [quantity, setQuantity] = useState("1");
 	const [description, setDescription] = useState("");
@@ -35,6 +36,7 @@ export default function CreateAd() {
 	const [imageFailed, setImageFailed] = useState(false);
 	const [busy, setBusy] = useState(false);
 
+	const { data: products } = useAsync(() => productsApi.list(), []);
 	const { data: existing } = useAsync(
 		() => (id ? listingsApi.get(id) : Promise.resolve(undefined)),
 		[id]
@@ -47,8 +49,7 @@ export default function CreateAd() {
 	const [prefilledId, setPrefilledId] = useState<string>();
 	if (existing && existing.id !== prefilledId) {
 		setPrefilledId(existing.id);
-		setTitle(existing.title);
-		setCategory(existing.category ?? "");
+		setProductId(existing.productId);
 		setPrice(existing.priceUsd);
 		setQuantity(String(existing.quantity));
 		setDescription(existing.description);
@@ -56,34 +57,45 @@ export default function CreateAd() {
 		setImageFailed(false);
 	}
 
-	const { data: catalogue } = useAsync(() => listingsApi.list({ limit: 100 }), []);
-	const knownCategories = useMemo(() => {
-		const set = new Set(["Streaming", "VPN", "IPTV", "Software", "Gaming", "Music"]);
-		for (const listing of catalogue?.items ?? []) {
-			if (listing.category) set.add(listing.category);
-		}
-		return [...set].sort();
-	}, [catalogue]);
-
+	// On create the catalogue is the source of truth; on edit the listing already
+	// carries its own (immutable) product, so that one wins.
+	const product = existing?.product ?? findProduct(products, productId);
 	const priceNum = parseFloat(price) || 0;
 	const quantityNum = parseInt(quantity, 10) || 0;
 	const soldCount = existing?.soldCount ?? 0;
+	const heldUnits = existing
+		? Math.max(existing.quantity - existing.soldCount - existing.availableCount, 0)
+		: 0;
 	const fee = previewFee(platform, priceNum);
+	const retail = product ? usd(product.retailPriceUsd) : 0;
+	const discount = product ? savedPercent(priceNum, product.retailPriceUsd) : null;
+
+	/** Picking a product seeds the cover photo — the seller can still override it. */
+	const pickProduct = (next: string) => {
+		setProductId(next);
+		const picked = findProduct(products, next);
+		if (picked && !imageUrl.trim()) {
+			setImageUrl(picked.imageUrl ?? "");
+			setImageFailed(false);
+		}
+	};
 
 	const submit = async (asDraft: boolean) => {
-		if (title.trim().length < 3) return toast.error("Title needs at least 3 characters");
-		if (description.trim().length < 10) return toast.error("Description needs at least 10 characters");
-		if (!(priceNum > 0)) return toast.error("Set a price in USDT");
-		if (!(quantityNum >= 1)) return toast.error("A listing has to be sellable at least once");
-		if (quantityNum < soldCount) {
-			return toast.error(`You have already sold ${soldCount} — the quantity cannot go below that`);
+		if (!isEdit && !productId) return toast.error("Pick what you're selling first");
+		if (description.trim().length < 10) return toast.error("Describe it in at least 10 characters");
+		if (!(priceNum > 0)) return toast.error("Set a price");
+		if (!(quantityNum >= 1)) return toast.error("You need at least one to sell");
+		// Mirrors the backend rule so the common case never needs a round trip;
+		// the server still has the last word and its message is shown as-is.
+		if (quantityNum < soldCount + heldUnits) {
+			return toast.error(
+				`${soldCount + heldUnits} of these are already sold or being paid for — the number can't go below that`
+			);
 		}
 
 		setBusy(true);
-		const payload = {
-			title: title.trim(),
+		const common = {
 			description: description.trim(),
-			category: category.trim() || undefined,
 			imageUrl: imageUrl.trim() || undefined,
 			priceUsd: Math.round(priceNum * 100) / 100,
 			quantity: quantityNum,
@@ -94,7 +106,7 @@ export default function CreateAd() {
 		try {
 			if (id) {
 				await listingsApi.update(id, {
-					...payload,
+					...common,
 					status: asDraft ? "PAUSED" : "ACTIVE",
 				});
 				toast.success(asDraft ? "Saved and paused" : "Listing updated");
@@ -102,12 +114,12 @@ export default function CreateAd() {
 				return;
 			}
 
-			const listing = await listingsApi.create(payload);
+			const listing = await listingsApi.create({ ...common, productId });
 			if (asDraft) {
 				await listingsApi.update(listing.id, { status: "PAUSED" });
-				toast.success("Saved as draft — activate it when you're ready");
+				toast.success("Saved as a draft — make it live whenever you're ready");
 			} else {
-				toast.success("Your ad is live");
+				toast.success("Your listing is live");
 			}
 			navigate(`/ads/${listing.id}`);
 		} catch (err) {
@@ -118,81 +130,84 @@ export default function CreateAd() {
 
 	return (
 		<Page
-			title={isEdit ? "Edit listing" : "Post an ad"}
+			title={isEdit ? "Edit your listing" : "Sell a subscription"}
 			sub={
 				isEdit
-					? `Update your service · ${feeLabel(platform)} fee · escrow protected`
-					: `List a service · ${feeLabel(platform)} fee · escrow protected`
+					? "Change the details buyers see. Your access note stays private until someone pays."
+					: `List what you're selling. Buyers pay up front, you keep ${100 - (platform?.feePercent ?? 0)}% once it clears.`
 			}
 		>
 			<div>
 				<button
 					className="btn btn-ghost"
 					onClick={() => navigate("/ads")}
-					style={{ marginLeft: -6, whiteSpace: "nowrap" }}
+					style={{ marginLeft: -10, whiteSpace: "nowrap" }}
 				>
-					<ArrowLeftIcon size={14} />
-					Back to marketplace
+					<ArrowLeftIcon size={15} />
+					Back to browsing
 				</button>
 			</div>
 
 			<div className="layout-form">
-				<div className="card" style={{ padding: 18, gap: 14 }}>
-					<h5 style={{ margin: 0 }}>Service details</h5>
-					<div className="field">
-						<label htmlFor="ad-title">Title</label>
-						<input
-							id="ad-title"
-							className="input"
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							placeholder="e.g. Netflix Premium 4K · private slot, 12 months"
-						/>
-					</div>
-					<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
+				<div className="card" style={{ padding: 20, gap: 18 }}>
+					<h2 className="section-head">What are you selling?</h2>
+					{isEdit ? (
+						/* The product is fixed at creation, so on edit it is shown, not offered. */
 						<div className="field">
-							<label htmlFor="ad-category">Category</label>
+							<label htmlFor="ad-product">Subscription</label>
 							<input
-								id="ad-category"
+								id="ad-product"
 								className="input"
-								list="ad-categories"
-								value={category}
-								onChange={(e) => setCategory(e.target.value)}
-								placeholder="Streaming, VPN, Software…"
+								value={product ? `${product.name} · ${product.category}` : "—"}
+								disabled
 							/>
-							<datalist id="ad-categories">
-								{knownCategories.map((c) => (
-									<option key={c} value={c} />
-								))}
-							</datalist>
+							<span className="text-muted" style={{ fontSize: 13 }}>
+								This can't be changed. List it separately if you want to sell something else.
+							</span>
 						</div>
+					) : (
+						<ProductPicker
+							id="ad-product"
+							label="Subscription"
+							products={products}
+							value={productId}
+							onChange={pickProduct}
+							hint="Buyers browse by product, so your listing sits next to every other offer for it."
+						/>
+					)}
+					<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
 						<div className="field">
-							<label htmlFor="ad-price">Price (USDT)</label>
+							<label htmlFor="ad-price">Price</label>
 							<input
 								id="ad-price"
 								className="input"
-								style={mono}
 								value={price}
 								onChange={(e) => setPrice(e.target.value)}
 								placeholder="0.00"
 								inputMode="decimal"
 							/>
+							<span className="text-muted" style={{ fontSize: 13 }}>
+								{product
+									? discount !== null
+										? `${discount}% under the ${money(retail)} regular price`
+										: `The regular price is ${money(retail)} — go under it to stand out`
+									: "Pick a subscription to see the regular price"}
+							</span>
 						</div>
 						<div className="field">
-							<label htmlFor="ad-quantity">How many can be sold</label>
+							<label htmlFor="ad-quantity">How many can you sell?</label>
 							<input
 								id="ad-quantity"
 								className="input"
-								style={mono}
 								value={quantity}
 								onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ""))}
 								placeholder="1"
 								inputMode="numeric"
 							/>
-							<span className="text-muted" style={{ fontSize: 12 }}>
-								{soldCount > 0
-									? `${soldCount} sold so far · ${Math.max(quantityNum - soldCount, 0)} left after this change`
-									: "Leaves the marketplace once this many orders exist"}
+							<span className="text-muted" style={{ fontSize: 13 }}>
+								{soldCount + heldUnits > 0
+									? `${soldCount} sold${heldUnits > 0 ? `, ${heldUnits} being paid for` : ""} · ${Math.max(quantityNum - soldCount, 0)} left after this change`
+									: "It leaves the marketplace once they're all sold"}
 							</span>
 						</div>
 					</div>
@@ -203,29 +218,27 @@ export default function CreateAd() {
 							className="input"
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
-							placeholder="What exactly does the buyer get, how is it delivered (invite, key, credentials), and what does the warranty cover…"
+							placeholder="What exactly does the buyer get, how do you hand it over (invite, key, login), and what's covered if something stops working?"
 						/>
 					</div>
 					<div className="field">
 						<label htmlFor="ad-delivery">
-							Delivery info · revealed to the buyer only after payment confirms
-							{isEdit ? " · leave blank to keep the current text" : ""}
+							Access details — shown to the buyer only after they pay
+							{isEdit ? " · leave blank to keep what's saved" : ""}
 						</label>
 						<textarea
 							id="ad-delivery"
 							className="input"
-							style={mono}
 							value={deliveryInfo}
 							onChange={(e) => setDeliveryInfo(e.target.value)}
-							placeholder="Credentials, redeem codes or step-by-step instructions. Kept encrypted-at-rest and never shown before payment."
+							placeholder="Logins, redeem codes or step-by-step instructions. Never shown before payment."
 						/>
 					</div>
 					<div className="field">
-						<label htmlFor="ad-image">Cover image URL · shown on your marketplace card</label>
+						<label htmlFor="ad-image">Cover photo link — shown on your card</label>
 						<input
 							id="ad-image"
 							className="input"
-							style={mono}
 							type="url"
 							value={imageUrl}
 							onChange={(e) => {
@@ -237,10 +250,11 @@ export default function CreateAd() {
 						<div
 							className="grid-plate"
 							style={{
-								height: 170,
-								marginTop: 8,
-								position: "relative",
-								border: "1px solid var(--color-divider)",
+								/* The plate is a preview, not the form — on a phone it gives
+								   back the height rather than pushing the fields off screen. */
+								height: "clamp(150px, 42vw, 190px)",
+								marginTop: 10,
+								borderRadius: "var(--r-card)",
 								display: "grid",
 								placeItems: "center",
 								overflow: "hidden",
@@ -256,64 +270,72 @@ export default function CreateAd() {
 									style={{ width: "100%", height: "100%", objectFit: "cover" }}
 								/>
 							) : (
-								<span className="text-muted" style={{ ...mono, fontSize: 10.5, letterSpacing: "0.12em" }}>
-									{imageFailed ? "THAT URL DID NOT LOAD" : "PASTE AN IMAGE URL TO PREVIEW"}
+								<span className="text-muted" style={{ fontSize: 14 }}>
+									{imageFailed ? "That link didn't load" : "Paste a photo link to preview it"}
 								</span>
 							)}
 						</div>
 					</div>
 				</div>
 
-				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-					<div className="card elev-md" style={{ padding: 18, gap: 10 }}>
-						<h6 style={{ margin: 0 }}>Listing preview</h6>
-						<div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 17, lineHeight: 1.3 }}>
-							{title || "Your service title appears here"}
+				<div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+					<div className="card elev-md" style={{ padding: 20, gap: 12 }}>
+						<h2 className="section-head">How buyers will see it</h2>
+						<div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>
+							{product?.name ?? "Pick a subscription to preview it"}
 						</div>
-						<div className="text-muted" style={{ ...mono, fontSize: 12, letterSpacing: "0.1em" }}>
-							{(category || "CATEGORY").toUpperCase()} · ESCROW PROTECTED
+						<div className="text-muted" style={{ fontSize: 14 }}>
+							{product?.category ?? "Category"}
 						</div>
-						<div style={{ ...mono, fontSize: 20, fontWeight: 600 }}>
-							{fmtUsd(priceNum)}{" "}
-							<span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}>
-								USDT
-							</span>
+						<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+							<span style={{ fontSize: 18, fontWeight: 600 }}>{money(priceNum)}</span>
+							{discount !== null && (
+								<>
+									<span className="price-was" style={{ fontSize: 14 }}>
+										{money(retail)}
+									</span>
+									<span className="save-badge">Save {discount}%</span>
+								</>
+							)}
 						</div>
-						<div className="text-muted" style={{ ...mono, fontSize: 11, letterSpacing: "0.06em" }}>
-							ACCEPTS: 100+ ASSETS VIA OXAPAY
-						</div>
-						<div style={{ height: 2, background: "var(--color-divider)", margin: "4px 0" }} />
-						<h6 style={{ margin: 0 }}>Payout per sale</h6>
+
+						<div style={{ height: 1, background: "var(--hairline-soft)", margin: "6px 0" }} />
+
+						<h2 className="section-head">What you'll get per sale</h2>
 						<div style={rowBetween}>
 							<span className="text-muted">Buyer pays</span>
-							<span style={mono}>{fmtUsd(priceNum)} USDT</span>
+							<span>{money(priceNum)}</span>
 						</div>
 						<div style={rowBetween}>
-							<span className="text-muted">Kolo fee ({feeLabel(platform)})</span>
-							<span style={mono}>{fmtUsd(fee)} USDT</span>
+							<span className="text-muted">Service fee ({feeLabel(platform)})</span>
+							<span>{money(fee)}</span>
 						</div>
 						<div style={rowBetween}>
 							<span className="text-muted">You receive</span>
-							<span style={{ ...mono, color: "var(--ok)" }}>{fmtUsd(priceNum - fee)} USDT</span>
+							<span style={{ fontWeight: 600 }}>{money(priceNum - fee)}</span>
 						</div>
 						<div style={rowBetween}>
-							<span className="text-muted">Vesting per order</span>
-							<span style={mono}>{platform ? `${platform.vestingDays} days` : "—"}</span>
+							<span className="text-muted">Clearing period</span>
+							<span>{platform ? `${platform.vestingDays} days` : "—"}</span>
 						</div>
 					</div>
 
-					<div className="card" style={{ padding: 18, gap: 12 }}>
+					<div className="card" style={{ padding: 20, gap: 12 }}>
 						<button className="btn btn-primary btn-block" onClick={() => submit(false)} disabled={busy}>
-							{busy ? "Saving…" : isEdit ? "Save changes" : "Publish ad"}
+							{busy ? "Saving…" : isEdit ? "Save changes" : "Publish listing"}
 						</button>
 						<button className="btn btn-secondary btn-block" onClick={() => submit(true)} disabled={busy}>
 							{isEdit ? "Save and pause" : "Save as draft"}
 						</button>
-						<div className="text-muted" style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
-							<ShieldCheckIcon size={13} style={{ flex: "none", marginTop: 1 }} />
+						<div
+							className="text-muted"
+							style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14 }}
+						>
+							<ShieldCheckIcon size={15} style={{ flex: "none", marginTop: 2 }} />
 							<span>
-								Drafts stay paused and invisible to buyers until you activate them. Earnings from every
-								sale vest {platform?.vestingDays ?? "—"} days in escrow before payout.
+								Drafts stay hidden until you make them live. Money from each sale clears for{" "}
+								{platform?.vestingDays ?? "—"} days before you can withdraw it — that's what backs
+								Buyer Protection.
 							</span>
 						</div>
 					</div>

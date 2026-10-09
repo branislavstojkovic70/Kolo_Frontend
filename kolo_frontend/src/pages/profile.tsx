@@ -5,7 +5,6 @@ import {
 	disputesApi,
 	MAX_PAGE_SIZE,
 	ordersApi,
-	statsApi,
 	usersApi,
 	walletApi,
 	type WalletBucket,
@@ -149,16 +148,9 @@ export default function Profile() {
 		return { purchases: purchases.items, sales: sales.items, disputes: disputes.items };
 	}, []);
 
-	/**
-	 * What the buyer kept versus the regular price. The backend owns this sum —
-	 * it works from each order's retail snapshot and already leaves out refunds,
-	 * so nothing here recomputes it.
-	 */
-	const savingsQ = useAsync(() => statsApi.savings(), []);
 
 	const balance = balanceQ.data;
 	const available = usd(balance?.available ?? 0);
-	const savings = savingsQ.data;
 
 	const memberMonths = useMemo(() => {
 		if (!user) return 0;
@@ -682,86 +674,6 @@ export default function Profile() {
 				)}
 
 			</section>
-
-			{/* ── buyer savings: the one loud number in the app ───────────────
-			    One plate, one story: the hero figure and the orders behind it live
-			    in the same tinted card — the table used to float detached below. */}
-			{savings && savings.orderCount > 0 && (
-				<div className="deal-card" style={{ padding: "clamp(18px, 5vw, 28px)" }}>
-					<div style={{ fontSize: 17, fontWeight: 600 }}>You've saved</div>
-					<div
-						style={{
-							display: "flex",
-							alignItems: "baseline",
-							gap: 16,
-							flexWrap: "wrap",
-							marginTop: 6,
-						}}
-					>
-						<span className="savings-hero">{money(savings.totalSavedUsd)}</span>
-						<span style={{ fontSize: 17, fontWeight: 600 }}>
-							{savings.savedPercent}% off the regular price
-						</span>
-					</div>
-					<div style={{ fontSize: 15, marginTop: 10, color: "var(--body-soft)" }}>
-						Across {savings.orderCount} {savings.orderCount === 1 ? "order" : "orders"}:{" "}
-						{money(savings.totalSpentUsd)} paid instead of {money(savings.totalRetailUsd)}.
-					</div>
-
-					<div style={{ height: 1, background: "var(--deal-border)", margin: "18px 0 4px" }} />
-
-					<div className="table-wrap">
-						<table className="table table-cards">
-							<thead>
-								<tr>
-									<th>Item</th>
-									<th>You paid</th>
-									<th>Regular</th>
-									<th>Saved</th>
-									<th>Bought</th>
-								</tr>
-							</thead>
-							<tbody>
-								{savings.items.map((item) => (
-									<tr
-										key={item.orderId}
-										className="row-click"
-										onClick={() => navigate(`/orders/${item.orderId}`)}
-										style={{ fontSize: 14 }}
-									>
-										<td data-label="" style={{ fontSize: 14, fontWeight: 600 }}>
-											<Link
-												to={`/orders/${item.orderId}`}
-												className="link-plain"
-												style={{ display: "block" }}
-												onClick={(e) => e.stopPropagation()}
-											>
-												{item.productName}
-											</Link>
-										</td>
-										<td data-label="You paid" style={{ fontSize: 14 }}>
-											{money(item.paidUsd)}
-										</td>
-										<td className="price-was" data-label="Regular" style={{ fontSize: 14 }}>
-											{money(item.retailUsd)}
-										</td>
-										<td data-label="Saved" style={{ fontSize: 14, fontWeight: 600 }}>
-											{money(item.savedUsd)}
-										</td>
-										<td
-											className="text-muted"
-											data-label="Bought"
-											style={{ fontSize: 14, whiteSpace: "nowrap" }}
-										>
-											{item.purchasedAt ? formatDate(item.purchasedAt) : "…"}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			)}
 
 		</Page>
 	);

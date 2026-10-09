@@ -1154,13 +1154,18 @@ select.input {
 .table-wrap .table {
 	min-width: 640px;
 }
+/* The order's 5-step protection strip. A grid, not a wrapping flex row: five
+   equal tracks that narrow together, so the fifth step can never drop onto
+   its own full-width line. Each step carries its colour in `--step`. */
 .flow-row {
-	display: flex;
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
 	gap: 14px;
-	flex-wrap: wrap;
 }
-.flow-row > div {
-	min-width: 150px;
+.flow-step {
+	border-top: 3px solid var(--step, var(--hairline));
+	border-radius: 2px;
+	padding-top: 10px;
 }
 
 /* Visibility helpers, all driven by the two breakpoints: `hide-md` drops a
@@ -1378,6 +1383,19 @@ select.input {
 	.seg-opt {
 		flex: 1 0 auto;
 		justify-content: center;
+	}
+
+	/* Five columns in a 340px card are unreadable; the strip becomes a
+	   vertical timeline, each step keeping its colour as a left rail. */
+	.flow-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+	}
+	.flow-step {
+		border-top: 0;
+		border-left: 3px solid var(--step, var(--hairline));
+		border-radius: 0;
+		padding: 6px 0 10px 12px;
 	}
 
 	/* A row of buttons becomes a stack of full-width ones. */

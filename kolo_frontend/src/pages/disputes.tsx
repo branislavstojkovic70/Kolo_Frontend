@@ -3,7 +3,8 @@ import toast from "react-hot-toast";
 import { Link, useParams } from "react-router-dom";
 import { adminApi, disputesApi, type Dispute, type DisputeStatus, type Page as Paged } from "../api";
 import AsyncPanel from "../components/async-panel";
-import { MessageIcon } from "../components/icons";
+import { ArrowLeftIcon, MessageIcon } from "../components/icons";
+import { useIsNarrow } from "../hooks/use-media";
 import Page from "../components/page";
 import Pagination from "../components/pagination";
 import StatusTag from "../components/status-tag";
@@ -111,8 +112,18 @@ export default function Disputes() {
 		[isAdmin, search, status, page, limit]
 	);
 	const entries = useMemo(() => list.data?.items ?? [], [list.data]);
-	// Falling back to the first row keeps the detail pane filled as filters change.
-	const selectedId = id ?? entries[0]?.id;
+
+	/**
+	 * Below the desktop breakpoint the master-detail stacks, which strands the
+	 * detail a screen below the list — tapping a request looked like nothing
+	 * happened. So on narrow viewports the route decides WHICH half renders:
+	 * /disputes is the list, /disputes/:id is the detail with a way back.
+	 * Desktop keeps both and auto-selects the first row as before.
+	 */
+	const isNarrow = useIsNarrow();
+	const selectedId = id ?? (isNarrow ? undefined : entries[0]?.id);
+	const showList = !isNarrow || !id;
+	const showDetail = !isNarrow || !!id;
 	const detail = useAsync<Dispute | undefined>(
 		() => (selectedId ? disputesApi.get(selectedId) : Promise.resolve(undefined)),
 		[selectedId]
@@ -191,6 +202,7 @@ export default function Disputes() {
 					{/* minWidth 0: the master track has a 240px floor, and a grid item
 					    defaults to min-content — without this an unbreakable string in
 					    a plate widens the track instead of wrapping inside it. */}
+					{showList && (
 					<div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
 						{entries.map((entry) => {
 							const chip = disputeStatusTag(entry.status);
@@ -265,8 +277,18 @@ export default function Disputes() {
 							</div>
 						</div>
 					</div>
+					)}
 
+					{showDetail && (
 					<div className="card" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
+						{isNarrow && (
+							<div style={{ padding: "10px 10px 0" }}>
+								<Link to="/disputes" className="btn btn-ghost btn-sm">
+									<ArrowLeftIcon size={14} />
+									All requests
+								</Link>
+							</div>
+						)}
 						{dispute ? (
 							<>
 								<div
@@ -445,6 +467,7 @@ export default function Disputes() {
 							</div>
 						)}
 					</div>
+					)}
 				</div>
 			</AsyncPanel>
 		</Page>

@@ -48,6 +48,14 @@ export default function AppShell() {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [navOpen]);
 
+	// The page scrolls in this inner container, not the window, so React
+	// Router's own restoration never sees it: scrolling the grid and opening a
+	// listing would otherwise land mid-page. Fresh route, top of the page.
+	const scrollerRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		scrollerRef.current?.scrollTo(0, 0);
+	}, [pathname]);
+
 	// Keyboard journey of the drawer: focus moves into it on open and back to
 	// the hamburger on close. Only below the desktop breakpoint, where the
 	// sidebar actually overlays the page — on desktop it is plain page chrome.
@@ -83,7 +91,7 @@ export default function AppShell() {
 						onMenu={() => setOpenedOn(navOpen ? null : pathname)}
 					/>
 					<Ticker text={events.loading ? tickerFallback(platform) : buildTickerText(events.events, platform)} />
-					<div style={{ flex: 1, overflowY: "auto" }}>
+					<div ref={scrollerRef} style={{ flex: 1, overflowY: "auto" }}>
 						<Outlet />
 					</div>
 				</main>

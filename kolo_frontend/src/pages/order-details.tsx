@@ -289,12 +289,8 @@ export default function OrderDetails() {
 					{flow.map((step) => (
 						<div
 							key={step.t}
-							style={{
-								flex: 1,
-								borderTop: `3px solid ${stepColor[step.state]}`,
-								borderRadius: 2,
-								paddingTop: 10,
-							}}
+							className="flow-step"
+							style={{ "--step": stepColor[step.state] } as React.CSSProperties}
 						>
 							<div
 								style={{

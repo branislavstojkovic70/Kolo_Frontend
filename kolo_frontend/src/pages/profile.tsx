@@ -132,6 +132,8 @@ export default function Profile() {
 	// A withdrawal empties the whole available bucket and can't be reversed, so
 	// the button arms first and pays out only after the destination is read back.
 	const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
+	// Which view of the ledger card is open: activity, transfers or account.
+	const [tab, setTab] = useState<"orders" | "transfers" | "account">("orders");
 
 	const now = useNow();
 	const navigate = useNavigate();
@@ -394,12 +396,32 @@ export default function Profile() {
 
 			</div>
 
-			{/* ── activity is the main column; the account rail sits beside it ──
-			    `.layout-detail` already knows how to collapse below 1128px. */}
-			<div className="layout-detail">
-				<div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-				<div className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-					<h2 className="section-head">Order by order</h2>
+			{/* ── one ledger, three views ──────────────────────────────────────
+			    The activity table, the transfer history and the account record
+			    used to jostle as differently-sized cards in a grid. A segmented
+			    control gives each one the full width instead, one at a time. */}
+			<div className="card" style={{ padding: "clamp(16px, 3vw, 24px)", gap: 18 }}>
+				<div className="seg" style={{ alignSelf: "flex-start" }}>
+					<label className="seg-opt">
+						<input type="radio" name="wtab" checked={tab === "orders"} onChange={() => setTab("orders")} />
+						Order by order
+					</label>
+					<label className="seg-opt">
+						<input
+							type="radio"
+							name="wtab"
+							checked={tab === "transfers"}
+							onChange={() => setTab("transfers")}
+						/>
+						Transfers
+					</label>
+					<label className="seg-opt">
+						<input type="radio" name="wtab" checked={tab === "account"} onChange={() => setTab("account")} />
+						Account
+					</label>
+				</div>
+
+				{tab === "orders" && (
 					<AsyncPanel
 						loading={rowsQ.loading}
 						error={rowsQ.error}
@@ -407,13 +429,10 @@ export default function Profile() {
 						isEmpty={(rowsQ.data ?? []).length === 0}
 						emptyMessage="Nothing here yet. Your first sale shows up in this table."
 					>
-						{/* Four columns inside a card is already tight on a phone, so this
-						    one reflows to labelled card rows rather than scrolling. The
-						    sheet's 640px table floor is waived: beside the account rail the
-						    column is ~560px, and hiding the status chips behind a sideways
-						    scroll would be worse than letting the text columns wrap. */}
+						{/* Four columns is already tight on a phone, so this one reflows
+						    to labelled card rows rather than scrolling. */}
 						<div className="table-wrap">
-							<table className="table table-cards" style={{ minWidth: 0 }}>
+							<table className="table table-cards">
 								<thead>
 									<tr>
 										<th>Order</th>
@@ -459,165 +478,197 @@ export default function Profile() {
 							</table>
 						</div>
 					</AsyncPanel>
-				</div>
+				)}
 
-				<div className="card" style={{ padding: 20, gap: 14 }}>
-					<h2 className="section-head">Transfers</h2>
-					<AsyncPanel
-						loading={withdrawalsQ.loading}
-						error={withdrawalsQ.error}
-						onRetry={withdrawalsQ.reload}
-						isEmpty={(withdrawalsQ.data ?? []).length === 0}
-						emptyMessage="No transfers yet."
+				{tab === "transfers" && (
+					<>
+						<AsyncPanel
+							loading={withdrawalsQ.loading}
+							error={withdrawalsQ.error}
+							onRetry={withdrawalsQ.reload}
+							isEmpty={(withdrawalsQ.data ?? []).length === 0}
+							emptyMessage="No transfers yet."
+						>
+							<div style={{ display: "flex", flexDirection: "column" }}>
+								{(withdrawalsQ.data ?? []).map((w) => {
+									const tag = withdrawalStatusTag(w.status);
+									return (
+										<div
+											key={w.id}
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: 12,
+												padding: "12px 0",
+												borderBottom: "1px solid var(--hairline-soft)",
+												flexWrap: "wrap",
+											}}
+										>
+											<span style={{ fontSize: 16, fontWeight: 600, minWidth: 90 }}>
+												{money(w.amountUsd)}
+											</span>
+											{/* Shrinkable, so the count and date break inside the row
+											    instead of shoving the status chip off the card. */}
+											<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
+												{w.orderCount} {w.orderCount === 1 ? "order" : "orders"} · {formatDate(w.createdAt)}
+											</span>
+											<span style={{ marginLeft: "auto" }}>
+												<StatusTag label={tag.label} color={tag.color} />
+											</span>
+										</div>
+									);
+								})}
+							</div>
+						</AsyncPanel>
+						<div className="text-muted" style={{ fontSize: 14 }}>
+							Each transfer bundles every order that has finished clearing. If one fails, the money
+							goes straight back to your ready balance.
+						</div>
+					</>
+				)}
+
+				{tab === "account" && (
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))",
+							gap: "24px 48px",
+							alignItems: "start",
+						}}
 					>
-						<div style={{ display: "flex", flexDirection: "column" }}>
-							{(withdrawalsQ.data ?? []).map((w) => {
-								const tag = withdrawalStatusTag(w.status);
-								return (
+						<div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+							<div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+								<BlockAvatar
+									name={user.username ?? user.email}
+									imageUrl={user.imageUrl}
+									size={48}
+									fontSize={18}
+								/>
+								<div style={{ minWidth: 0 }}>
+									<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+										<span style={{ fontSize: 17, fontWeight: 600 }}>{user.username ?? user.email}</span>
+										{isAdmin && <span className="tag tag-neutral">Admin</span>}
+									</div>
 									<div
-										key={w.id}
+										className="text-muted"
+										style={{ fontSize: 13, marginTop: 2, overflowWrap: "anywhere" }}
+									>
+										{user.email}
+									</div>
+								</div>
+							</div>
+
+							{!editing ? (
+								<div>
+									<div className="text-muted" style={{ fontSize: 13 }}>
+										Chat handle for resolution requests
+									</div>
+									<div
 										style={{
 											display: "flex",
 											alignItems: "center",
-											gap: 12,
-											padding: "12px 0",
-											borderBottom: "1px solid var(--hairline-soft)",
+											gap: 8,
+											marginTop: 2,
 											flexWrap: "wrap",
 										}}
 									>
-										<span style={{ fontSize: 16, fontWeight: 600, minWidth: 90 }}>
-											{money(w.amountUsd)}
+										<span style={{ fontSize: 15 }}>
+											{user.telegramUsername ? `@${user.telegramUsername}` : "Not set"}
 										</span>
-										{/* Shrinkable, so the count and date break inside the row
-										    instead of shoving the status chip off the card. */}
-										<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
-											{w.orderCount} {w.orderCount === 1 ? "order" : "orders"} · {formatDate(w.createdAt)}
-										</span>
-										<span style={{ marginLeft: "auto" }}>
-											<StatusTag label={tag.label} color={tag.color} />
-										</span>
+										<button
+											className="btn btn-ghost btn-sm"
+											onClick={() => {
+												setUsername(user.username ?? "");
+												setTelegram(user.telegramUsername ?? "");
+												setEditing(true);
+											}}
+										>
+											Edit profile
+										</button>
 									</div>
-								);
-							})}
-						</div>
-					</AsyncPanel>
-					<div className="text-muted" style={{ fontSize: 14 }}>
-						Each transfer bundles every order that has finished clearing. If one fails, the money
-						goes straight back to your ready balance.
-					</div>
-				</div>
-				</div>
+								</div>
+							) : (
+								<div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+									<div className="field">
+										<label htmlFor="pf-name">Display name</label>
+										<input
+											id="pf-name"
+											className="input"
+											value={username}
+											onChange={(e) => setUsername(e.target.value)}
+										/>
+									</div>
+									<div className="field">
+										<label htmlFor="pf-chat">Chat handle (without @)</label>
+										<input
+											id="pf-chat"
+											className="input"
+											value={telegram}
+											onChange={(e) => setTelegram(e.target.value)}
+										/>
+									</div>
+									<div style={{ display: "flex", gap: 10 }}>
+										<button
+											className="btn btn-primary"
+											style={{ flex: 1 }}
+											onClick={saveProfile}
+											disabled={busy}
+										>
+											Save
+										</button>
+										<button
+											className="btn btn-secondary"
+											style={{ flex: 1 }}
+											onClick={() => setEditing(false)}
+											disabled={busy}
+										>
+											Cancel
+										</button>
+									</div>
+								</div>
+							)}
 
-				{/* ── the account rail: who you are and your record, off to the side
-				    the way a money product keeps it — the balance is the page. */}
-				<aside className="card" style={{ padding: 20, gap: 0, display: "flex", flexDirection: "column" }}>
-					<div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-						<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={48} fontSize={18} />
-						<div style={{ minWidth: 0 }}>
-							<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-								<span style={{ fontSize: 17, fontWeight: 600 }}>{user.username ?? user.email}</span>
-								{isAdmin && <span className="tag tag-neutral">Admin</span>}
-							</div>
-							<div className="text-muted" style={{ fontSize: 13, marginTop: 2, overflowWrap: "anywhere" }}>
-								{user.email}
-							</div>
-						</div>
-					</div>
-
-					<div style={{ height: 1, background: "var(--hairline-soft)", margin: "16px 0 6px" }} />
-
-					{[
-						{ label: "Bought", value: String(statsQ.data?.purchases.length ?? "…") },
-						{ label: "Sold", value: String(statsQ.data?.sales.length ?? "…") },
-						{
-							label: "Requests decided against you",
-							value: String(statsQ.data ? disputesLost : "…"),
-							color: disputesLost > 0 ? "var(--error)" : undefined,
-						},
-						{ label: "Paid out to date", value: money(balance?.withdrawn ?? 0) },
-						{ label: "Member for", value: `${memberMonths} month${memberMonths === 1 ? "" : "s"}` },
-					].map((row) => (
-						<div
-							key={row.label}
-							style={{
-								display: "flex",
-								justifyContent: "space-between",
-								gap: 12,
-								fontSize: 14,
-								padding: "8px 0",
-							}}
-						>
-							<span className="text-muted">{row.label}</span>
-							<span style={{ color: row.color, fontWeight: 600 }}>{row.value}</span>
-						</div>
-					))}
-
-					<div style={{ height: 1, background: "var(--hairline-soft)", margin: "6px 0 14px" }} />
-
-					{!editing ? (
-						<>
 							<div className="text-muted" style={{ fontSize: 13 }}>
-								Chat handle for resolution requests
+								Every sale clears for {platform?.vestingDays ?? "…"} days before it can be withdrawn.
+								That window is what makes Buyer Protection possible.
 							</div>
-							<div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
-								<span style={{ fontSize: 15 }}>
-									{user.telegramUsername ? `@${user.telegramUsername}` : "Not set"}
-								</span>
-								<button
-									className="btn btn-ghost btn-sm"
-									style={{ marginLeft: "auto" }}
-									onClick={() => {
-										setUsername(user.username ?? "");
-										setTelegram(user.telegramUsername ?? "");
-										setEditing(true);
+						</div>
+
+						<div style={{ minWidth: 0 }}>
+							{[
+								{ label: "Bought", value: String(statsQ.data?.purchases.length ?? "…") },
+								{ label: "Sold", value: String(statsQ.data?.sales.length ?? "…") },
+								{
+									label: "Requests decided against you",
+									value: String(statsQ.data ? disputesLost : "…"),
+									color: disputesLost > 0 ? "var(--error)" : undefined,
+								},
+								{ label: "Paid out to date", value: money(balance?.withdrawn ?? 0) },
+								{
+									label: "Member for",
+									value: `${memberMonths} month${memberMonths === 1 ? "" : "s"}`,
+								},
+							].map((row, i) => (
+								<div
+									key={row.label}
+									style={{
+										display: "flex",
+										justifyContent: "space-between",
+										gap: 12,
+										fontSize: 14,
+										padding: "10px 0",
+										borderTop: i === 0 ? undefined : "1px solid var(--hairline-soft)",
 									}}
 								>
-									Edit profile
-								</button>
-							</div>
-						</>
-					) : (
-						<div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-							<div className="field">
-								<label htmlFor="pf-name">Display name</label>
-								<input
-									id="pf-name"
-									className="input"
-									value={username}
-									onChange={(e) => setUsername(e.target.value)}
-								/>
-							</div>
-							<div className="field">
-								<label htmlFor="pf-chat">Chat handle (without @)</label>
-								<input
-									id="pf-chat"
-									className="input"
-									value={telegram}
-									onChange={(e) => setTelegram(e.target.value)}
-								/>
-							</div>
-							<div style={{ display: "flex", gap: 10 }}>
-								<button className="btn btn-primary" style={{ flex: 1 }} onClick={saveProfile} disabled={busy}>
-									Save
-								</button>
-								<button
-									className="btn btn-secondary"
-									style={{ flex: 1 }}
-									onClick={() => setEditing(false)}
-									disabled={busy}
-								>
-									Cancel
-								</button>
-							</div>
+									<span className="text-muted">{row.label}</span>
+									<span style={{ color: row.color, fontWeight: 600 }}>{row.value}</span>
+								</div>
+							))}
 						</div>
-					)}
-
-					<div className="text-muted" style={{ fontSize: 13, marginTop: 16 }}>
-						Every sale clears for {platform?.vestingDays ?? "…"} days before it can be withdrawn.
-						That window is what makes Buyer Protection possible.
 					</div>
-				</aside>
+				)}
 			</div>
+
 
 			{/* ── buyer savings: the one loud number in the app ───────────────
 			    One plate, one story: the hero figure and the orders behind it live

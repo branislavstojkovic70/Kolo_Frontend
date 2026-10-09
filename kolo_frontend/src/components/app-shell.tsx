@@ -72,6 +72,10 @@ export default function AppShell() {
 
 	return (
 		<EventsContext.Provider value={events}>
+			{/* First tab stop on every page: jump past sidebar, topbar and ticker. */}
+			<a className="skip-link" href="#main">
+				Skip to content
+			</a>
 			<div className="app-frame">
 				<Sidebar
 					unreadCount={events.unreadCount}
@@ -84,17 +88,19 @@ export default function AppShell() {
 					onClick={closeNav}
 					aria-hidden="true"
 				/>
-				<main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+				{/* `main` is the routed view itself — the skip link's target — not the
+				    topbar/ticker chrome around it. */}
+				<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
 					<Topbar
 						menuOpen={navOpen}
 						savings={savings}
 						onMenu={() => setOpenedOn(navOpen ? null : pathname)}
 					/>
 					<Ticker text={events.loading ? tickerFallback(platform) : buildTickerText(events.events, platform)} />
-					<div ref={scrollerRef} style={{ flex: 1, overflowY: "auto" }}>
+					<main id="main" tabIndex={-1} ref={scrollerRef} style={{ flex: 1, overflowY: "auto", outline: "none" }}>
 						<Outlet />
-					</div>
-				</main>
+					</main>
+				</div>
 			</div>
 		</EventsContext.Provider>
 	);

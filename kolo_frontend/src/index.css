@@ -1021,6 +1021,25 @@ select.input {
 	color: inherit;
 }
 
+/* Keyboard users' first tab stop: parked above the viewport until focused. */
+.skip-link {
+	position: fixed;
+	top: 12px;
+	left: 12px;
+	z-index: 100;
+	padding: 10px 16px;
+	font-weight: 600;
+	color: var(--ink);
+	background: var(--surface-card);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--r-btn);
+	text-decoration: none;
+	transform: translateY(-200%);
+}
+.skip-link:focus-visible {
+	transform: none;
+}
+
 /* Screen-reader-only text (unread counts, row context). */
 .visually-hidden {
 	position: absolute;

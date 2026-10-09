@@ -169,6 +169,7 @@ export default function Disputes() {
 					className="input"
 					style={{ flex: 1, maxWidth: 420 }}
 					placeholder="Search by item…"
+					aria-label="Search requests by item"
 					value={controls.searchInput}
 					onChange={(e) => controls.setSearchInput(e.target.value)}
 				/>

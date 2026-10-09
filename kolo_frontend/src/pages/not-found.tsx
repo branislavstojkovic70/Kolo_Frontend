@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import { useDocumentTitle } from "../hooks/use-document-title";
 
 export default function NotFound() {
 	const navigate = useNavigate();
+	useDocumentTitle("Page not found");
 
 	return (
 		<div className="page-frame">

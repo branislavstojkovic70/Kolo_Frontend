@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { listingsApi, type ListingRow, type ListingSort, type Page as Paged } from "../api";
 import AsyncPanel from "../components/async-panel";
 import ListingCard from "../components/listing-card";
@@ -194,6 +195,13 @@ export default function Ads() {
 					scope === "mine"
 						? "You haven't listed anything yet."
 						: "Nothing matches that search just yet."
+				}
+				emptyAction={
+					scope === "mine" ? (
+						<Link to="/ads/new" className="btn btn-primary">
+							List your first subscription
+						</Link>
+					) : undefined
 				}
 			>
 				<div className="card-grid">

@@ -16,6 +16,7 @@ import {
 	TrashIcon,
 } from "../components/icons";
 import { availableOf, isSoldOut } from "../lib/listing-ui";
+import { useDocumentTitle } from "../hooks/use-document-title";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { formatDate } from "../utils/format";
@@ -55,6 +56,7 @@ export default function AdDetails() {
 		[id]
 	);
 	const { data: catalogue } = useAsync(() => listingsApi.list({ limit: 100 }), []);
+	useDocumentTitle(ad?.title);
 
 	const moreFromSeller = useMemo(
 		() =>

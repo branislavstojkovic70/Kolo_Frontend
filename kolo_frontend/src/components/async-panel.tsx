@@ -5,6 +5,8 @@ interface AsyncPanelProps {
 	error?: string;
 	isEmpty?: boolean;
 	emptyMessage?: string;
+	/** A way forward out of the empty state — usually a Link styled as a button. */
+	emptyAction?: ReactNode;
 	/** Re-runs the failed fetch. With it, the error state offers "Try again". */
 	onRetry?: () => void;
 	/** How many placeholder rows the loading silhouette shows. */
@@ -18,6 +20,7 @@ export default function AsyncPanel({
 	error,
 	isEmpty,
 	emptyMessage = "Nothing here yet.",
+	emptyAction,
 	onRetry,
 	skeletonRows = 3,
 	children,
@@ -74,11 +77,15 @@ export default function AsyncPanel({
 
 	if (isEmpty) {
 		return (
-			<div
-				className="text-muted"
-				style={{ padding: "56px 0", textAlign: "center", fontSize: 16 }}
-			>
-				{emptyMessage}
+			<div style={{ padding: "56px 0", textAlign: "center" }}>
+				<div className="text-muted" style={{ fontSize: 16 }}>
+					{emptyMessage}
+				</div>
+				{emptyAction && (
+					<div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
+						{emptyAction}
+					</div>
+				)}
 			</div>
 		);
 	}

@@ -62,6 +62,7 @@ export default function Notifications() {
 					className="input"
 					style={{ flex: 1, maxWidth: 420 }}
 					placeholder="Search your activity…"
+					aria-label="Search your activity"
 					value={controls.searchInput}
 					onChange={(e) => controls.setSearchInput(e.target.value)}
 				/>
@@ -94,6 +95,13 @@ export default function Notifications() {
 					search || status
 						? "Nothing matches those filters."
 						: "Nothing yet. What happens on your orders shows up here."
+				}
+				emptyAction={
+					!search && !status ? (
+						<Link to="/ads" className="btn btn-secondary">
+							Browse the marketplace
+						</Link>
+					) : undefined
 				}
 			>
 				<div style={{ borderTop: "1px solid var(--hairline-soft)" }}>

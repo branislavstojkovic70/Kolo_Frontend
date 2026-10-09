@@ -61,6 +61,7 @@ export default function Orders() {
 					className="input"
 					style={{ flex: 1, maxWidth: 420 }}
 					placeholder="Search your orders…"
+					aria-label="Search your orders"
 					value={controls.searchInput}
 					onChange={(e) => controls.setSearchInput(e.target.value)}
 				/>
@@ -102,6 +103,13 @@ export default function Orders() {
 				isEmpty={rows.length === 0}
 				emptyMessage={
 					search || status ? "No orders match those filters." : "You don't have any orders yet."
+				}
+				emptyAction={
+					!search && !status ? (
+						<Link to="/ads" className="btn btn-primary">
+							Browse the marketplace
+						</Link>
+					) : undefined
 				}
 			>
 				{/* `table-cards` + the `data-label` on every cell is what turns these

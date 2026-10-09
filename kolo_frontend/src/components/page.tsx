@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useDocumentTitle } from "../hooks/use-document-title";
 
 interface PageProps {
 	title: string;
@@ -9,6 +10,8 @@ interface PageProps {
 
 /** Content frame: page title at 28/700, a muted subtitle, then the sections. */
 export default function Page({ title, sub, children }: PageProps) {
+	useDocumentTitle(title);
+
 	return (
 		<div className="page-frame">
 			<div>

@@ -502,6 +502,7 @@ export default function OrderDetails() {
 						value={disputeReason}
 						onChange={(e) => setDisputeReason(e.target.value)}
 						placeholder="e.g. The code had already been used when I tried it."
+						aria-label="What happened with this order"
 						autoFocus
 					/>
 					<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

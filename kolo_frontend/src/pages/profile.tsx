@@ -43,24 +43,76 @@ const bucketCaption: Record<WalletBucket, (vestedAt: string | null) => string> =
 	unavailable: () => "Not available yet",
 };
 
-function BucketCard({
-	label,
-	value,
-	caption,
+/**
+ * Where every dollar on the platform currently sits, as one proportional bar
+ * with a legend — the shape every serious money product (Wise, Mercury) uses
+ * instead of a row of equal stat cards. Colours are the same status colours
+ * the rest of the app already speaks.
+ */
+function BalanceBreakdown({
+	segments,
 }: {
-	label: string;
-	value: number;
-	caption: string;
+	segments: { label: string; value: number; color: string; note?: string }[];
 }) {
+	const total = segments.reduce((sum, s) => sum + s.value, 0);
+	const live = segments.filter((s) => s.value > 0);
+
 	return (
-		<div className="wcard" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-			<span className="text-muted" style={{ fontSize: 14 }}>
-				{label}
-			</span>
-			<span style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>{money(value)}</span>
-			<span className="text-muted" style={{ fontSize: 13 }}>
-				{caption}
-			</span>
+		<div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+			<div
+				role="img"
+				aria-label={segments.map((s) => `${s.label} ${money(s.value)}`).join(", ")}
+				style={{
+					display: "flex",
+					gap: 3,
+					height: 10,
+					borderRadius: "var(--r-pill)",
+					overflow: "hidden",
+				}}
+			>
+				{total > 0 ? (
+					live.map((s) => (
+						<span
+							key={s.label}
+							style={{
+								// 4% floor so a $5 sliver next to $400 stays visible.
+								flex: `${Math.max((s.value / total) * 100, 4)} 0 0`,
+								background: s.color,
+								borderRadius: 2,
+							}}
+						/>
+					))
+				) : (
+					<span style={{ flex: 1, background: "var(--surface-strong)" }} />
+				)}
+			</div>
+			<div style={{ display: "flex", gap: "10px 22px", flexWrap: "wrap" }}>
+				{segments.map((s) => (
+					<span
+						key={s.label}
+						style={{ display: "inline-flex", alignItems: "baseline", gap: 7, fontSize: 14 }}
+					>
+						<span
+							aria-hidden="true"
+							style={{
+								width: 8,
+								height: 8,
+								borderRadius: 2,
+								background: s.value > 0 ? s.color : "var(--surface-strong)",
+								alignSelf: "center",
+								flex: "none",
+							}}
+						/>
+						<span className="text-muted">{s.label}</span>
+						<span style={{ fontWeight: 600 }}>{money(s.value)}</span>
+						{s.note && (
+							<span className="text-muted" style={{ fontSize: 13 }}>
+								{s.note}
+							</span>
+						)}
+					</span>
+				))}
+			</div>
 		</div>
 	);
 }
@@ -186,79 +238,7 @@ export default function Profile() {
 
 	return (
 		<Page title="Wallet" sub="Your money on Kolo: what's ready, what's still clearing, what's been paid out.">
-			<div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-				<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={56} fontSize={22} />
-				{/* `minWidth: 0` so a long e-mail breaks inside the block instead of
-				    widening the row past the viewport. */}
-				<div style={{ minWidth: 0 }}>
-					<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-						<h2 style={{ margin: 0 }}>{user.username ?? user.email}</h2>
-						{isAdmin && <span className="tag tag-neutral">Admin</span>}
-					</div>
-					<div className="text-muted" style={{ fontSize: 14, marginTop: 2 }}>
-						{user.email} · member since {formatDate(user.createdAt)}
-					</div>
-				</div>
-				{/* `mobile-full` drops the auto margin below 744px, so the handle and
-				    its Edit button own a left-aligned row of their own once the
-				    identity block has taken the first one. */}
-				<div className="mobile-full" style={{ marginLeft: "auto", minWidth: 0 }}>
-					<div className="text-muted" style={{ fontSize: 13 }}>
-						Chat handle for resolution requests
-					</div>
-					<div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-						<span style={{ fontSize: 15 }}>
-							{user.telegramUsername ? `@${user.telegramUsername}` : "Not set"}
-						</span>
-						<button
-							className="btn btn-ghost btn-sm"
-							onClick={() => {
-								setUsername(user.username ?? "");
-								setTelegram(user.telegramUsername ?? "");
-								setEditing((v) => !v);
-							}}
-						>
-							Edit profile
-						</button>
-					</div>
-				</div>
-			</div>
-
-			{editing && (
-				<div
-					className="card"
-					style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}
-				>
-					{/* 240px is a preference, not a floor: it shrinks with the card and
-					    goes full-width under 744px via `mobile-full`. */}
-					<div className="field mobile-full" style={{ flex: "0 1 240px", minWidth: 0, maxWidth: "100%" }}>
-						<label htmlFor="pf-name">Display name</label>
-						<input
-							id="pf-name"
-							className="input"
-							value={username}
-							onChange={(e) => setUsername(e.target.value)}
-						/>
-					</div>
-					<div className="field mobile-full" style={{ flex: "0 1 240px", minWidth: 0, maxWidth: "100%" }}>
-						<label htmlFor="pf-chat">Chat handle (without @)</label>
-						<input
-							id="pf-chat"
-							className="input"
-							value={telegram}
-							onChange={(e) => setTelegram(e.target.value)}
-						/>
-					</div>
-					<button className="btn btn-primary" onClick={saveProfile} disabled={busy}>
-						Save
-					</button>
-					<button className="btn btn-secondary" onClick={() => setEditing(false)} disabled={busy}>
-						Cancel
-					</button>
-				</div>
-			)}
-
-			{/* ── the money surface ─────────────────────────────────────────── */}
+			{/* ── the money surface leads; who you are moved to the side rail ── */}
 			{/* Radius and padding now live on `.wallet-scope` in the sheet, where
 			    they can shrink with the viewport. */}
 			<div
@@ -337,6 +317,30 @@ export default function Profile() {
 							</>
 						)}
 					</div>
+
+					{/* Full width under figure and actions: every dollar, one bar. */}
+					<div style={{ flexBasis: "100%", minWidth: 0 }}>
+						<BalanceBreakdown
+							segments={[
+								{ label: "Ready", value: available, color: "var(--success)" },
+								{
+									label: "Clearing",
+									value: usd(balance?.vesting ?? 0),
+									color: "var(--caution)",
+									note:
+										usd(balance?.vesting ?? 0) > 0 && balance?.nextVestingAt
+											? `next ${formatDate(balance.nextVestingAt)}`
+											: undefined,
+								},
+								{ label: "On hold", value: usd(balance?.disputed ?? 0), color: "var(--error)" },
+								{
+									label: "On its way",
+									value: usd(balance?.withdrawing ?? 0),
+									color: "var(--accent)",
+								},
+							]}
+						/>
+					</div>
 				</div>
 
 				{payoutOpen && (
@@ -388,40 +392,13 @@ export default function Profile() {
 					</div>
 				)}
 
-				{/* The sheet's three fixed columns only fold at 744px, which leaves
-				    three cramped cards across a tablet. auto-fit measures the card
-				    rather than the viewport, and the `min()` stops the track from
-				    insisting on 220px inside a 304px phone column. */}
-				<div
-					className="balance-grid"
-					style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))" }}
-				>
-					<BucketCard
-						label="Clearing"
-						value={usd(balance?.vesting ?? 0)}
-						caption={
-							balance?.nextVestingAt
-								? `Available ${formatDate(balance.nextVestingAt)}`
-								: "Nothing clearing right now"
-						}
-					/>
-					<BucketCard
-						label="On hold"
-						value={usd(balance?.disputed ?? 0)}
-						caption={
-							usd(balance?.disputed ?? 0) > 0
-								? "Paused until a resolution request is settled"
-								: "No orders in resolution"
-						}
-					/>
-					<BucketCard
-						label="On its way"
-						value={usd(balance?.withdrawing ?? 0)}
-						caption={`${money(balance?.withdrawn ?? 0)} paid out so far`}
-					/>
-				</div>
+			</div>
 
-				<div className="wcard" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+			{/* ── activity is the main column; the account rail sits beside it ──
+			    `.layout-detail` already knows how to collapse below 1128px. */}
+			<div className="layout-detail">
+				<div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+				<div className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 					<h2 className="section-head">Order by order</h2>
 					<AsyncPanel
 						loading={rowsQ.loading}
@@ -431,9 +408,12 @@ export default function Profile() {
 						emptyMessage="Nothing here yet. Your first sale shows up in this table."
 					>
 						{/* Four columns inside a card is already tight on a phone, so this
-						    one reflows to labelled card rows rather than scrolling. */}
+						    one reflows to labelled card rows rather than scrolling. The
+						    sheet's 640px table floor is waived: beside the account rail the
+						    column is ~560px, and hiding the status chips behind a sideways
+						    scroll would be worse than letting the text columns wrap. */}
 						<div className="table-wrap">
-							<table className="table table-cards">
+							<table className="table table-cards" style={{ minWidth: 0 }}>
 								<thead>
 									<tr>
 										<th>Order</th>
@@ -480,6 +460,163 @@ export default function Profile() {
 						</div>
 					</AsyncPanel>
 				</div>
+
+				<div className="card" style={{ padding: 20, gap: 14 }}>
+					<h2 className="section-head">Transfers</h2>
+					<AsyncPanel
+						loading={withdrawalsQ.loading}
+						error={withdrawalsQ.error}
+						onRetry={withdrawalsQ.reload}
+						isEmpty={(withdrawalsQ.data ?? []).length === 0}
+						emptyMessage="No transfers yet."
+					>
+						<div style={{ display: "flex", flexDirection: "column" }}>
+							{(withdrawalsQ.data ?? []).map((w) => {
+								const tag = withdrawalStatusTag(w.status);
+								return (
+									<div
+										key={w.id}
+										style={{
+											display: "flex",
+											alignItems: "center",
+											gap: 12,
+											padding: "12px 0",
+											borderBottom: "1px solid var(--hairline-soft)",
+											flexWrap: "wrap",
+										}}
+									>
+										<span style={{ fontSize: 16, fontWeight: 600, minWidth: 90 }}>
+											{money(w.amountUsd)}
+										</span>
+										{/* Shrinkable, so the count and date break inside the row
+										    instead of shoving the status chip off the card. */}
+										<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
+											{w.orderCount} {w.orderCount === 1 ? "order" : "orders"} · {formatDate(w.createdAt)}
+										</span>
+										<span style={{ marginLeft: "auto" }}>
+											<StatusTag label={tag.label} color={tag.color} />
+										</span>
+									</div>
+								);
+							})}
+						</div>
+					</AsyncPanel>
+					<div className="text-muted" style={{ fontSize: 14 }}>
+						Each transfer bundles every order that has finished clearing. If one fails, the money
+						goes straight back to your ready balance.
+					</div>
+				</div>
+				</div>
+
+				{/* ── the account rail: who you are and your record, off to the side
+				    the way a money product keeps it — the balance is the page. */}
+				<aside className="card" style={{ padding: 20, gap: 0, display: "flex", flexDirection: "column" }}>
+					<div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+						<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={48} fontSize={18} />
+						<div style={{ minWidth: 0 }}>
+							<div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+								<span style={{ fontSize: 17, fontWeight: 600 }}>{user.username ?? user.email}</span>
+								{isAdmin && <span className="tag tag-neutral">Admin</span>}
+							</div>
+							<div className="text-muted" style={{ fontSize: 13, marginTop: 2, overflowWrap: "anywhere" }}>
+								{user.email}
+							</div>
+						</div>
+					</div>
+
+					<div style={{ height: 1, background: "var(--hairline-soft)", margin: "16px 0 6px" }} />
+
+					{[
+						{ label: "Bought", value: String(statsQ.data?.purchases.length ?? "…") },
+						{ label: "Sold", value: String(statsQ.data?.sales.length ?? "…") },
+						{
+							label: "Requests decided against you",
+							value: String(statsQ.data ? disputesLost : "…"),
+							color: disputesLost > 0 ? "var(--error)" : undefined,
+						},
+						{ label: "Paid out to date", value: money(balance?.withdrawn ?? 0) },
+						{ label: "Member for", value: `${memberMonths} month${memberMonths === 1 ? "" : "s"}` },
+					].map((row) => (
+						<div
+							key={row.label}
+							style={{
+								display: "flex",
+								justifyContent: "space-between",
+								gap: 12,
+								fontSize: 14,
+								padding: "8px 0",
+							}}
+						>
+							<span className="text-muted">{row.label}</span>
+							<span style={{ color: row.color, fontWeight: 600 }}>{row.value}</span>
+						</div>
+					))}
+
+					<div style={{ height: 1, background: "var(--hairline-soft)", margin: "6px 0 14px" }} />
+
+					{!editing ? (
+						<>
+							<div className="text-muted" style={{ fontSize: 13 }}>
+								Chat handle for resolution requests
+							</div>
+							<div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
+								<span style={{ fontSize: 15 }}>
+									{user.telegramUsername ? `@${user.telegramUsername}` : "Not set"}
+								</span>
+								<button
+									className="btn btn-ghost btn-sm"
+									style={{ marginLeft: "auto" }}
+									onClick={() => {
+										setUsername(user.username ?? "");
+										setTelegram(user.telegramUsername ?? "");
+										setEditing(true);
+									}}
+								>
+									Edit profile
+								</button>
+							</div>
+						</>
+					) : (
+						<div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+							<div className="field">
+								<label htmlFor="pf-name">Display name</label>
+								<input
+									id="pf-name"
+									className="input"
+									value={username}
+									onChange={(e) => setUsername(e.target.value)}
+								/>
+							</div>
+							<div className="field">
+								<label htmlFor="pf-chat">Chat handle (without @)</label>
+								<input
+									id="pf-chat"
+									className="input"
+									value={telegram}
+									onChange={(e) => setTelegram(e.target.value)}
+								/>
+							</div>
+							<div style={{ display: "flex", gap: 10 }}>
+								<button className="btn btn-primary" style={{ flex: 1 }} onClick={saveProfile} disabled={busy}>
+									Save
+								</button>
+								<button
+									className="btn btn-secondary"
+									style={{ flex: 1 }}
+									onClick={() => setEditing(false)}
+									disabled={busy}
+								>
+									Cancel
+								</button>
+							</div>
+						</div>
+					)}
+
+					<div className="text-muted" style={{ fontSize: 13, marginTop: 16 }}>
+						Every sale clears for {platform?.vestingDays ?? "…"} days before it can be withdrawn.
+						That window is what makes Buyer Protection possible.
+					</div>
+				</aside>
 			</div>
 
 			{/* ── buyer savings: the one loud number in the app ───────────────
@@ -562,99 +699,6 @@ export default function Profile() {
 				</div>
 			)}
 
-			{/* Same reasoning one level up: a half-width Transfers list is unreadable
-			    on a tablet, so the pair goes single file as soon as a column would
-			    drop under 360px instead of waiting for the 744px breakpoint.
-			    `start`, not stretch: the two cards rarely have the same amount to
-			    say, and the shorter one dragging a half-empty border down to match
-			    its neighbour read as a layout mistake. */}
-			<div
-				className="layout-two"
-				style={{
-					gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))",
-					alignItems: "start",
-				}}
-			>
-				<div className="card" style={{ padding: 20, gap: 14 }}>
-					<h2 className="section-head">Transfers</h2>
-					<AsyncPanel
-						loading={withdrawalsQ.loading}
-						error={withdrawalsQ.error}
-						onRetry={withdrawalsQ.reload}
-						isEmpty={(withdrawalsQ.data ?? []).length === 0}
-						emptyMessage="No transfers yet."
-					>
-						<div style={{ display: "flex", flexDirection: "column" }}>
-							{(withdrawalsQ.data ?? []).map((w) => {
-								const tag = withdrawalStatusTag(w.status);
-								return (
-									<div
-										key={w.id}
-										style={{
-											display: "flex",
-											alignItems: "center",
-											gap: 12,
-											padding: "12px 0",
-											borderBottom: "1px solid var(--hairline-soft)",
-											flexWrap: "wrap",
-										}}
-									>
-										<span style={{ fontSize: 16, fontWeight: 600, minWidth: 90 }}>
-											{money(w.amountUsd)}
-										</span>
-										{/* Shrinkable, so the count and date break inside the row
-										    instead of shoving the status chip off the card. */}
-										<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
-											{w.orderCount} {w.orderCount === 1 ? "order" : "orders"} · {formatDate(w.createdAt)}
-										</span>
-										<span style={{ marginLeft: "auto" }}>
-											<StatusTag label={tag.label} color={tag.color} />
-										</span>
-									</div>
-								);
-							})}
-						</div>
-					</AsyncPanel>
-					<div className="text-muted" style={{ fontSize: 14 }}>
-						Each transfer bundles every order that has finished clearing. If one fails, the money
-						goes straight back to your ready balance.
-					</div>
-				</div>
-
-				<div className="card" style={{ padding: 20, gap: 10 }}>
-					<h2 className="section-head">Your account</h2>
-					{[
-						{ label: "Bought", value: String(statsQ.data?.purchases.length ?? "…") },
-						{ label: "Sold", value: String(statsQ.data?.sales.length ?? "…") },
-						{
-							label: "Requests decided against you",
-							value: String(statsQ.data ? disputesLost : "…"),
-							color: disputesLost > 0 ? "var(--error)" : undefined,
-						},
-						{ label: "Paid out to date", value: money(balance?.withdrawn ?? 0) },
-						{ label: "Member for", value: `${memberMonths} month${memberMonths === 1 ? "" : "s"}` },
-					].map((row, i, all) => (
-						<div
-							key={row.label}
-							style={{
-								display: "flex",
-								justifyContent: "space-between",
-								gap: 12,
-								fontSize: 15,
-								padding: "8px 0",
-								borderBottom: i === all.length - 1 ? undefined : "1px solid var(--hairline-soft)",
-							}}
-						>
-							<span className="text-muted">{row.label}</span>
-							<span style={{ color: row.color }}>{row.value}</span>
-						</div>
-					))}
-					<div className="text-muted" style={{ fontSize: 14, paddingTop: 4 }}>
-						Every sale clears for {platform?.vestingDays ?? "…"} days before it can be withdrawn.
-						That window is what makes Buyer Protection possible.
-					</div>
-				</div>
-			</div>
 		</Page>
 	);
 }

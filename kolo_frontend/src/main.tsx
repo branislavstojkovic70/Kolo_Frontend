@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider } from "@clerk/clerk-react";
 import "./index.css";
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { buildClerkAppearance, CLERK_PUBLISHABLE_KEY, isClerkEnabled } from "./lib/clerk";
 import { applyThemeMode } from "./theme";
 import { useThemeMode } from "./hooks/use-theme";
@@ -11,6 +11,7 @@ import { AuthProvider } from "./components/auth-provider";
 import PlatformConfigProvider from "./components/platform-config-provider";
 import RequireAuth from "./components/require-auth";
 import AppShell from "./components/app-shell";
+import Landing from "./pages/landing";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Ads from "./pages/ads";
@@ -27,6 +28,10 @@ import Admin from "./pages/admin";
 import NotFound from "./pages/not-found";
 
 const router = createBrowserRouter([
+	// The public landing page. It sends signed-in visitors on to /ads itself,
+	// so "/" is marketing for a stranger and the app for a member.
+	{ path: "/", element: <Landing /> },
+
 	// Auth pages render without the app shell. The splat is required by Clerk's
 	// path routing — it mounts sub-steps (2FA, SSO callback) under these paths.
 	{ path: "/login/*", element: <Login /> },
@@ -38,7 +43,6 @@ const router = createBrowserRouter([
 			{
 				element: <AppShell />,
 				children: [
-					{ path: "/", element: <Navigate to="/ads" replace /> },
 					{ path: "/ads", element: <Ads /> },
 					{ path: "/ads/new", element: <CreateAd /> },
 					{ path: "/ads/:id/edit", element: <CreateAd /> },

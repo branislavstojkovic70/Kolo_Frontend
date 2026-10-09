@@ -1,0 +1,280 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Public landing page (/) — the only marketing surface in the app.
+
+   Same token sheet as the product (one accent, hairlines, both themes), its
+   own layout vocabulary. Every class is lp-prefixed so nothing leaks into the
+   app shell. Breakpoints mirror the app: <744 phone, <1128 stacked.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.lp {
+	min-height: 100dvh;
+	background: var(--canvas);
+}
+
+/* ── nav ─────────────────────────────────────────────────────────────────── */
+
+.lp-nav {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-height: 68px;
+	padding: 0 clamp(16px, 4vw, 40px);
+	background: color-mix(in srgb, var(--canvas) 86%, transparent);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border-bottom: 1px solid var(--hairline-soft);
+}
+
+/* ── shared column ───────────────────────────────────────────────────────── */
+
+.lp-main {
+	width: 100%;
+	max-width: 1200px;
+	margin-inline: auto;
+	padding: 0 clamp(16px, 4vw, 40px);
+}
+
+.lp-section {
+	padding: clamp(56px, 9vh, 112px) 0;
+	border-top: 1px solid var(--hairline-soft);
+}
+
+.lp-h2 {
+	font-size: clamp(26px, 3.4vw, 38px);
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	font-weight: 700;
+	margin: 0 0 10px;
+}
+
+/* ── hero: asymmetric 7/5 split ──────────────────────────────────────────── */
+
+.lp-hero {
+	display: grid;
+	grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+	gap: clamp(28px, 5vw, 72px);
+	align-items: center;
+	padding: clamp(44px, 8vh, 96px) 0 clamp(48px, 9vh, 104px);
+}
+
+.lp-h1 {
+	font-size: clamp(34px, 4.2vw, 54px);
+	line-height: 1.06;
+	letter-spacing: -0.025em;
+	font-weight: 700;
+	margin: 0 0 18px;
+	text-wrap: balance;
+}
+
+.lp-sub {
+	font-size: clamp(16px, 1.6vw, 19px);
+	line-height: 1.55;
+	color: var(--body-soft);
+	max-width: 46ch;
+	margin: 0 0 28px;
+}
+
+/* The hero visual: one real listing card with the savings plate tucked
+   behind it. Offset and a slight tilt give the stack physical depth. */
+.lp-stack {
+	position: relative;
+	max-width: 400px;
+	justify-self: end;
+	width: 100%;
+}
+.lp-stack-plate {
+	position: absolute;
+	right: -14px;
+	bottom: -20px;
+	left: 38px;
+	top: 38px;
+	rotate: 2.5deg;
+	z-index: 0;
+}
+.lp-stack-card {
+	position: relative;
+	z-index: 1;
+	rotate: -1deg;
+}
+
+/* ── live strip: chip marquee of real listings ───────────────────────────── */
+
+.lp-strip {
+	overflow: hidden;
+	border-top: 1px solid var(--hairline-soft);
+	padding: 14px 0;
+}
+.lp-strip-chip {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 8px;
+	flex: none;
+	margin-right: 10px;
+	padding: 8px 14px;
+	font-size: 14px;
+	border: 1px solid var(--hairline-soft);
+	border-radius: var(--r-pill);
+	background: var(--surface-card);
+	white-space: nowrap;
+}
+
+/* ── how it works: 5/7 split, numbered hairline rows ─────────────────────── */
+
+.lp-how {
+	display: grid;
+	grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+	gap: clamp(28px, 5vw, 72px);
+	align-items: start;
+}
+.lp-step {
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr);
+	gap: 16px;
+	padding: 20px 0;
+	border-bottom: 1px solid var(--hairline-soft);
+}
+.lp-step:last-child {
+	border-bottom: 0;
+}
+.lp-step-no {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	border-radius: var(--r-pill);
+	background: var(--surface-strong);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+/* ── deals: horizontal scroll-snap row ───────────────────────────────────── */
+
+.lp-deals {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: clamp(228px, 23vw, 276px);
+	gap: 16px;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	-webkit-overflow-scrolling: touch;
+	padding: 4px 4px 12px;
+	margin: 0 -4px;
+}
+.lp-deals > * {
+	scroll-snap-align: start;
+}
+
+/* ── stats band: steps down to the money surface ─────────────────────────── */
+
+.lp-band {
+	background: var(--wallet-ground);
+	border-radius: var(--r-wallet);
+	padding: clamp(28px, 5vw, 48px);
+	display: flex;
+	gap: clamp(24px, 5vw, 64px);
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+.lp-band-figure {
+	font-size: clamp(32px, 5vw, 52px);
+	font-weight: 700;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+}
+
+/* ── sell split: text + real catalogue imagery ───────────────────────────── */
+
+.lp-sell {
+	display: grid;
+	grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
+	gap: clamp(28px, 5vw, 72px);
+	align-items: center;
+}
+.lp-sell-collage {
+	display: grid;
+	grid-template-columns: 3fr 2fr;
+	gap: 14px;
+}
+.lp-sell-collage img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: var(--r-card);
+	border: 1px solid var(--hairline-soft);
+}
+.lp-sell-collage img:first-child {
+	aspect-ratio: 4 / 3;
+}
+.lp-sell-collage img:last-child {
+	aspect-ratio: 3 / 4;
+	margin-top: 28px;
+}
+
+/* ── final band + footer ─────────────────────────────────────────────────── */
+
+.lp-cta-band {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 24px;
+	flex-wrap: wrap;
+}
+
+.lp-footer {
+	border-top: 1px solid var(--hairline-soft);
+	padding: 28px clamp(16px, 4vw, 40px) 40px;
+}
+
+/* ── scroll reveal (JS adds .lp-in when the block enters the viewport).
+     Transitions, not animations, so the global reduced-motion kill switch
+     collapses them to instant. ─────────────────────────────────────────── */
+
+.lp-reveal {
+	opacity: 0;
+	transform: translateY(18px);
+	transition:
+		opacity 0.6s ease,
+		transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-reveal.lp-in {
+	opacity: 1;
+	transform: none;
+}
+
+/* ── collapse ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1127.98px) {
+	.lp-hero,
+	.lp-how,
+	.lp-sell {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.lp-stack {
+		justify-self: start;
+		margin-top: 8px;
+	}
+	.lp-sell-collage {
+		order: -1;
+	}
+}
+
+@media (max-width: 743.98px) {
+	.lp-section {
+		padding: 48px 0;
+	}
+	.lp-hero {
+		padding: 36px 0 56px;
+	}
+	.lp-stack {
+		max-width: 100%;
+	}
+	.lp-stack-plate {
+		right: 0;
+	}
+	.lp-cta-band .btn {
+		width: 100%;
+	}
+}

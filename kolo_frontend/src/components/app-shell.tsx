@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { statsApi } from "../api";
+import { useAsync } from "../hooks/use-async";
 import { EventsContext, useEvents } from "../hooks/use-events";
 import { buildTickerText, tickerFallback } from "../lib/events";
 import { usePlatformConfig } from "../hooks/use-platform-config";
+import { usd } from "../utils/money";
 import Sidebar from "./sidebar";
 import Ticker from "./ticker";
 import Topbar from "./topbar";
@@ -12,6 +15,13 @@ export default function AppShell() {
 	const platform = usePlatformConfig();
 	const events = useEvents();
 	const { pathname } = useLocation();
+
+	// The buyer's lifetime savings. Sharing subscriptions to save money is the
+	// whole product, so the figure is worn by the chrome (topbar + sidebar),
+	// not buried on the wallet page. Fetched once here, shown twice.
+	const savingsQ = useAsync(() => statsApi.savings(), []);
+	const savings =
+		savingsQ.data && usd(savingsQ.data.totalSavedUsd) > 0 ? savingsQ.data : undefined;
 
 	/**
 	 * Below 1128px the sidebar is a drawer toggled from the topbar's hamburger.
@@ -55,14 +65,23 @@ export default function AppShell() {
 	return (
 		<EventsContext.Provider value={events}>
 			<div className="app-frame">
-				<Sidebar unreadCount={events.unreadCount} open={navOpen} onNavigate={closeNav} />
+				<Sidebar
+					unreadCount={events.unreadCount}
+					savings={savings}
+					open={navOpen}
+					onNavigate={closeNav}
+				/>
 				<div
 					className={`nav-backdrop${navOpen ? " show" : ""}`}
 					onClick={closeNav}
 					aria-hidden="true"
 				/>
 				<main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-					<Topbar menuOpen={navOpen} onMenu={() => setOpenedOn(navOpen ? null : pathname)} />
+					<Topbar
+						menuOpen={navOpen}
+						savings={savings}
+						onMenu={() => setOpenedOn(navOpen ? null : pathname)}
+					/>
 					<Ticker text={events.loading ? tickerFallback(platform) : buildTickerText(events.events, platform)} />
 					<div style={{ flex: 1, overflowY: "auto" }}>
 						<Outlet />

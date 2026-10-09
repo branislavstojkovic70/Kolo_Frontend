@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import type { Savings } from "../api";
+import { money } from "../utils/money";
 import { MenuIcon, PlusIcon } from "./icons";
 import ThemeToggle from "./theme-toggle";
 
@@ -16,7 +18,16 @@ function crumbOf(pathname: string): string {
 	return "Browse";
 }
 
-export default function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menuOpen?: boolean }) {
+export default function Topbar({
+	onMenu,
+	menuOpen = false,
+	savings,
+}: {
+	onMenu?: () => void;
+	menuOpen?: boolean;
+	/** The buyer's lifetime savings; undefined until loaded or while zero. */
+	savings?: Savings;
+}) {
 	const crumb = crumbOf(useLocation().pathname);
 
 	return (
@@ -65,9 +76,31 @@ export default function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => vo
 				{crumb}
 			</div>
 			<div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
-				<span className="text-muted hide-md" style={{ whiteSpace: "nowrap", fontSize: 14 }}>
-					Every order is covered by Buyer Protection
-				</span>
+				{/* The product's whole point, worn where it's always visible: what
+				    sharing subscriptions has saved this buyer so far. Before the
+				    first purchase, the protection promise fills the slot instead. */}
+				{savings ? (
+					<Link
+						to="/profile"
+						className="hide-md"
+						style={{
+							whiteSpace: "nowrap",
+							fontSize: 14,
+							fontWeight: 600,
+							textDecoration: "none",
+							color: "var(--accent-ink)",
+							background: "var(--accent-tint)",
+							padding: "8px 14px",
+							borderRadius: "var(--r-pill)",
+						}}
+					>
+						You've saved {money(savings.totalSavedUsd)}
+					</Link>
+				) : (
+					<span className="text-muted hide-md" style={{ whiteSpace: "nowrap", fontSize: 14 }}>
+						Every order is covered by Buyer Protection
+					</span>
+				)}
 				<ThemeToggle />
 				<Link
 					to="/ads/new"

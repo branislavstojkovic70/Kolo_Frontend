@@ -138,8 +138,8 @@ export default function Landing() {
 						<div>
 							<h1 className="lp-h1 fade-up">Pay less for what you already use.</h1>
 							<p className="lp-sub fade-up" style={{ animationDelay: "0.08s" }}>
-								Real people sell the spare months on their subscriptions. Your money stays
-								protected until you confirm everything works.
+								People share the spare months on their subscriptions and everyone saves. Your
+								money stays protected until you confirm it works.
 							</p>
 							<div
 								className="fade-up"
@@ -335,7 +335,7 @@ export default function Landing() {
 						<Reveal>
 							<div className="lp-sell">
 								<div>
-									<h2 className="lp-h2">Sell the months you won't use.</h2>
+									<h2 className="lp-h2">Share the months you won't use.</h2>
 									<p style={{ fontSize: 16, maxWidth: "48ch" }}>
 										List a subscription in about a minute. When it sells, the money clears to you{" "}
 										{platform ? `${platform.vestingDays} days` : "days"} after payment, minus the{" "}

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { walletApi } from "../api";
+import { walletApi, type Savings } from "../api";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { formatDate } from "../utils/format";
@@ -30,12 +30,14 @@ function sectionOf(pathname: string): Section {
 
 interface SidebarProps {
 	unreadCount: number;
+	/** The buyer's lifetime savings; undefined until loaded or while zero. */
+	savings?: Savings;
 	/** Drawer state on narrow viewports; ignored on desktop. */
 	open?: boolean;
 	onNavigate?: () => void;
 }
 
-export default function Sidebar({ unreadCount, open = false, onNavigate }: SidebarProps) {
+export default function Sidebar({ unreadCount, savings, open = false, onNavigate }: SidebarProps) {
 	const { user, isAdmin, logout } = useAuth();
 	const navigate = useNavigate();
 	const active = sectionOf(useLocation().pathname);
@@ -160,7 +162,7 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 						overflowWrap: "anywhere",
 					}}
 				>
-					{balance ? money(balance.available) : "—"}
+					{balance ? money(balance.available) : "…"}
 				</div>
 				<div className="text-muted" style={{ fontSize: 13, marginTop: 6 }}>
 					{clearing !== undefined && clearing > 0
@@ -170,6 +172,37 @@ export default function Sidebar({ unreadCount, open = false, onNavigate }: Sideb
 						: "Nothing clearing right now"}
 				</div>
 			</Link>
+
+			{/* The headline of the whole idea: sharing subscriptions saves money,
+			    and this is what it has saved YOU. Accent plate, on every screen. */}
+			{savings && (
+				<Link
+					to="/profile"
+					className="link-plain deal-card"
+					onClick={() => onNavigate?.()}
+					style={{ display: "block", margin: "12px 4px 0", padding: 16 }}
+				>
+					<div className="text-muted" style={{ fontSize: 13 }}>
+						You've saved
+					</div>
+					<div
+						style={{
+							fontSize: 24,
+							fontWeight: 700,
+							lineHeight: 1.2,
+							marginTop: 2,
+							color: "var(--accent-ink)",
+							overflowWrap: "anywhere",
+						}}
+					>
+						{money(savings.totalSavedUsd)}
+					</div>
+					<div className="text-muted" style={{ fontSize: 13, marginTop: 6 }}>
+						{savings.savedPercent}% off regular prices, across {savings.orderCount}{" "}
+						{savings.orderCount === 1 ? "order" : "orders"}
+					</div>
+				</Link>
+			)}
 
 			<div style={{ flex: 1 }} />
 

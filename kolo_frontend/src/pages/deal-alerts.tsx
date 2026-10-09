@@ -80,8 +80,8 @@ function AlertCard({ alert, msLeft, onCancel, busy }: AlertCardProps) {
 			{matched && (
 				<>
 					<div style={{ fontSize: 15 }}>
-						Found at <b>{paid ? money(paid) : "—"}</b>
-						{saved !== null && ` — ${saved}% under the regular price`}. One is held for you.
+						Found at <b>{paid ? money(paid) : "-"}</b>
+						{saved !== null && `, ${saved}% under the regular price`}. One is held for you.
 					</div>
 					{clock ? (
 						<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -92,7 +92,7 @@ function AlertCard({ alert, msLeft, onCancel, busy }: AlertCardProps) {
 						</div>
 					) : (
 						<div style={{ fontSize: 14, color: "var(--body-soft)" }}>
-							Reservation lapsed — your alert will re-arm automatically.
+							Reservation lapsed. Your alert will re-arm automatically.
 						</div>
 					)}
 					<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
@@ -202,9 +202,9 @@ export default function DealAlerts() {
 				expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : undefined,
 			});
 			if (created.status === "MATCHED") {
-				toast.success("Found one already — pay the link to make it yours");
+				toast.success("Found one already. Pay the link to make it yours");
 			} else {
-				toast.success("Alert set — we'll buy it the moment the price is right");
+				toast.success("Alert set. We'll buy it the moment the price is right");
 			}
 			setProductId("");
 			setMaxPrice("");
@@ -213,7 +213,7 @@ export default function DealAlerts() {
 		} catch (err) {
 			// 409 is the one error worth its own sentence: the alert already exists.
 			if (err instanceof ApiError && err.statusCode === 409) {
-				toast.error("You're already watching this one — change that alert instead.");
+				toast.error("You're already watching this one. Change that alert instead.");
 			} else {
 				toast.error(err instanceof Error ? err.message : "Could not set that alert");
 			}
@@ -230,7 +230,7 @@ export default function DealAlerts() {
 			list.reload();
 		} catch (err) {
 			if (err instanceof ApiError && err.statusCode === 409) {
-				toast.error("This one already found a deal — let the reservation expire to cancel.");
+				toast.error("This one already found a deal. Let the reservation expire to cancel.");
 			} else {
 				toast.error(err instanceof Error ? err.message : "Could not cancel that alert");
 			}
@@ -277,7 +277,7 @@ export default function DealAlerts() {
 						emptyMessage={
 							status
 								? "No alerts with that status."
-								: "No alerts yet — set one up and we'll watch the marketplace for you."
+								: "No alerts yet. Set one up and we'll watch the marketplace for you."
 						}
 					>
 						<div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -327,7 +327,7 @@ export default function DealAlerts() {
 							{product
 								? `Regular price ${money(product.retailPriceUsd)}${
 										priceNum > 0 && priceNum < usd(product.retailPriceUsd)
-											? ` — you'd save ${money(usd(product.retailPriceUsd) - priceNum)}`
+											? `, you'd save ${money(usd(product.retailPriceUsd) - priceNum)}`
 											: ""
 									}`
 								: "Pick something to see its regular price"}
@@ -354,7 +354,7 @@ export default function DealAlerts() {
 						<BellIcon size={15} style={{ flex: "none", marginTop: 2 }} />
 						<span>
 							Nothing is charged up front. When we find a deal we hold one for{" "}
-							{holdMinutes} minutes and you pay it like any other order — Buyer Protection
+							{holdMinutes} minutes and you pay it like any other order, Buyer Protection
 							included. If you don't pay, the hold is released and the alert carries on
 							watching.
 						</span>

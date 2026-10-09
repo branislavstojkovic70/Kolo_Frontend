@@ -44,7 +44,7 @@ export function buyRequestStatusTag(status: BuyRequestStatus): { label: string; 
 		case "ACTIVE":
 			return { label: "Watching", color: "var(--accent)" };
 		case "MATCHED":
-			return { label: "Deal found — pay now", color: "var(--caution)" };
+			return { label: "Deal found: pay now", color: "var(--caution)" };
 		case "FULFILLED":
 			return { label: "Purchased", color: "var(--success)" };
 		case "CANCELLED":

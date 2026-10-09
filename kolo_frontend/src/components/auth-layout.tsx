@@ -18,7 +18,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 	const promises = [
 		{
 			icon: <ShieldCheckIcon size={18} />,
-			text: "Buyer Protection on every order — a full refund if it isn't as described.",
+			text: "Buyer Protection on every order: a full refund if it isn't as described.",
 		},
 		{
 			icon: <LockIcon size={18} />,
@@ -72,7 +72,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 							maxWidth: "min(46ch, 100%)",
 						}}
 					>
-						Buy a verified subscription from someone with spare capacity — and keep the safety net
+						Buy a verified subscription from someone with spare capacity, and keep the safety net
 						of a shop while you do it.
 					</p>
 					<div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>

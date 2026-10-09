@@ -89,7 +89,7 @@ export default function CreateAd() {
 		// the server still has the last word and its message is shown as-is.
 		if (quantityNum < soldCount + heldUnits) {
 			return toast.error(
-				`${soldCount + heldUnits} of these are already sold or being paid for — the number can't go below that`
+				`${soldCount + heldUnits} of these are already sold or being paid for. The number can't go below that`
 			);
 		}
 
@@ -117,7 +117,7 @@ export default function CreateAd() {
 			const listing = await listingsApi.create({ ...common, productId });
 			if (asDraft) {
 				await listingsApi.update(listing.id, { status: "PAUSED" });
-				toast.success("Saved as a draft — make it live whenever you're ready");
+				toast.success("Saved as a draft. Make it live whenever you're ready");
 			} else {
 				toast.success("Your listing is live");
 			}
@@ -158,7 +158,7 @@ export default function CreateAd() {
 							<input
 								id="ad-product"
 								className="input"
-								value={product ? `${product.name} · ${product.category}` : "—"}
+								value={product ? `${product.name} · ${product.category}` : "-"}
 								disabled
 							/>
 							<span className="text-muted" style={{ fontSize: 13 }}>
@@ -190,7 +190,7 @@ export default function CreateAd() {
 								{product
 									? discount !== null
 										? `${discount}% under the ${money(retail)} regular price`
-										: `The regular price is ${money(retail)} — go under it to stand out`
+										: `The regular price is ${money(retail)}. Go under it to stand out`
 									: "Pick a subscription to see the regular price"}
 							</span>
 						</div>
@@ -223,7 +223,7 @@ export default function CreateAd() {
 					</div>
 					<div className="field">
 						<label htmlFor="ad-delivery">
-							Access details — shown to the buyer only after they pay
+							Access details, shown to the buyer only after they pay
 							{isEdit ? " · leave blank to keep what's saved" : ""}
 						</label>
 						<textarea
@@ -235,7 +235,7 @@ export default function CreateAd() {
 						/>
 					</div>
 					<div className="field">
-						<label htmlFor="ad-image">Cover photo link — shown on your card</label>
+						<label htmlFor="ad-image">Cover photo link, shown on your card</label>
 						<input
 							id="ad-image"
 							className="input"
@@ -316,7 +316,7 @@ export default function CreateAd() {
 						</div>
 						<div style={rowBetween}>
 							<span className="text-muted">Clearing period</span>
-							<span>{platform ? `${platform.vestingDays} days` : "—"}</span>
+							<span>{platform ? `${platform.vestingDays} days` : "-"}</span>
 						</div>
 					</div>
 
@@ -334,7 +334,7 @@ export default function CreateAd() {
 							<ShieldCheckIcon size={15} style={{ flex: "none", marginTop: 2 }} />
 							<span>
 								Drafts stay hidden until you make them live. Money from each sale clears for{" "}
-								{platform?.vestingDays ?? "—"} days before you can withdraw it — that's what backs
+								{platform?.vestingDays ?? "-"} days before you can withdraw it. That's what backs
 								Buyer Protection.
 							</span>
 						</div>

@@ -163,7 +163,7 @@ export default function Orders() {
 										<td data-label="Progress">
 											<div
 												role="img"
-												aria-label={`${chip.label} — step ${steps.filled} of 5`}
+												aria-label={`${chip.label}, step ${steps.filled} of 5`}
 												style={{ display: "flex", gap: 3, width: 88, maxWidth: "100%", flex: "none" }}
 											>
 												{Array.from({ length: 5 }, (_, i) => (

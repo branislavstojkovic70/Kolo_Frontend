@@ -93,7 +93,7 @@ export default function Notifications() {
 				emptyMessage={
 					search || status
 						? "Nothing matches those filters."
-						: "Nothing yet — what happens on your orders shows up here."
+						: "Nothing yet. What happens on your orders shows up here."
 				}
 			>
 				<div style={{ borderTop: "1px solid var(--hairline-soft)" }}>

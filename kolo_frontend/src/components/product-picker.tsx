@@ -60,7 +60,7 @@ export default function ProductPicker({
 					<optgroup key={category} label={category}>
 						{items.map((product) => (
 							<option key={product.id} value={product.id}>
-								{product.name} — {money(product.retailPriceUsd)} retail
+								{product.name} - {money(product.retailPriceUsd)} retail
 							</option>
 						))}
 					</optgroup>

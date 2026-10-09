@@ -184,7 +184,7 @@ export default function Disputes() {
 				skeletonRows={4}
 				isEmpty={entries.length === 0}
 				emptyMessage={
-					search || status ? "Nothing matches those filters." : "No open requests — that's a good sign."
+					search || status ? "Nothing matches those filters." : "No open requests. That's a good sign."
 				}
 			>
 				<div className="layout-master">
@@ -314,8 +314,8 @@ export default function Disputes() {
 
 									<MessagePlate role="ADMIN" name="Kolo support">
 										{dispute.telegramInviteLink
-											? "We've opened a private chat for this order. Share anything that helps — screenshots, messages, dates — and we'll take it from there."
-											: "Your request is logged and the payment is on hold. We're setting up the chat now — check back in a moment."}
+											? "We've opened a private chat for this order. Share anything that helps: screenshots, messages, dates. We'll take it from there."
+											: "Your request is logged and the payment is on hold. We're setting up the chat now. Check back in a moment."}
 									</MessagePlate>
 
 									{dispute.status !== "OPEN" && (
@@ -425,7 +425,7 @@ export default function Disputes() {
 										</>
 									) : (
 										<span className="text-muted" style={{ fontSize: 14 }}>
-											The chat isn't ready yet — your payment is on hold regardless, and we'll follow
+											The chat isn't ready yet. Your payment is on hold regardless, and we'll follow
 											up here.
 										</span>
 									)}

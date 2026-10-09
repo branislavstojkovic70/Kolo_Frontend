@@ -95,7 +95,7 @@ export default function AdDetails() {
 		setBusy(true);
 		try {
 			const created = await ordersApi.create(ad.id);
-			toast.success("Order started — finish the payment to confirm it");
+			toast.success("Order started. Finish the payment to confirm it");
 			navigate(`/orders/${created.order.id}`);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Could not start the order");
@@ -245,7 +245,7 @@ export default function AdDetails() {
 								<h2 style={{ margin: "0 0 10px" }}>How buying works</h2>
 								<div style={{ maxWidth: "64ch", display: "flex", flexDirection: "column", gap: 10 }}>
 									{[
-										"Pay for your order — we hold the money, not the seller.",
+										"Pay for your order. We hold the money, not the seller.",
 										"Your access details appear on the order page straight away.",
 										platform
 											? `Check everything works. If it doesn't, ask for help within ${platform.disputeWindowDays} days.`
@@ -322,7 +322,7 @@ export default function AdDetails() {
 							{isOwnAd ? (
 								<>
 									<div className="text-muted" style={{ fontSize: 14 }}>
-										This is your listing — buyers see it{" "}
+										This is your listing. Buyers see it{" "}
 										{ad.status === "ACTIVE"
 											? "right now."
 											: soldOut
@@ -430,7 +430,7 @@ export default function AdDetails() {
 										{ad.status === "ACTIVE"
 											? "Pause listing"
 											: soldOut
-												? "Sold out — edit to restock"
+												? "Sold out, edit to restock"
 												: "Make it live"}
 									</button>
 									<button
@@ -447,7 +447,7 @@ export default function AdDetails() {
 								<>
 									{allUnitsHeld && (
 										<div className="hold-banner" style={{ fontSize: 14, padding: "12px 14px" }}>
-											Currently unavailable — all units are being paid for right now, check back in a
+											Currently unavailable. All units are being paid for right now, check back in a
 											few minutes.
 										</div>
 									)}
@@ -466,7 +466,7 @@ export default function AdDetails() {
 									<div key={row.title} className="trust-row">
 										{row.icon}
 										<span>
-											<b>{row.title}</b> — {row.body}
+											<b>{row.title}</b> - {row.body}
 										</span>
 									</div>
 								))}

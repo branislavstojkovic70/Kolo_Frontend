@@ -40,7 +40,7 @@ function ClerkSignIn() {
 		<AuthLayout>
 			<h1 style={{ margin: "0 0 6px" }}>Welcome back</h1>
 			<div className="text-muted" style={{ fontSize: 15, marginBottom: 28 }}>
-				New here? <Link to="/register">Create an account</Link> — it takes a minute.
+				New here? <Link to="/register">Create an account</Link>, it takes a minute.
 			</div>
 			{/* routing="path" needs the /login/* splat route in main.tsx */}
 			<SignIn routing="path" path="/login" signUpUrl="/register" fallbackRedirectUrl={from} />
@@ -81,7 +81,7 @@ function DevSignIn() {
 			<form onSubmit={handleSubmit}>
 				<h1 style={{ margin: "0 0 6px" }}>Welcome back</h1>
 				<div className="text-muted" style={{ fontSize: 15, marginBottom: 28 }}>
-					New here? <Link to="/register">Create an account</Link> — it takes a minute.
+					New here? <Link to="/register">Create an account</Link>, it takes a minute.
 				</div>
 				<div className="field" style={{ marginBottom: 16 }}>
 					<label htmlFor="login-email">Email</label>

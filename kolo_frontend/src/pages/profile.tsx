@@ -36,7 +36,7 @@ const bucketTag: Record<WalletBucket, { label: string; color: string }> = {
 /** The one-line explanation under each wallet row, by bucket. */
 const bucketCaption: Record<WalletBucket, (vestedAt: string | null) => string> = {
 	available: () => "Ready to withdraw",
-	vesting: (vestedAt) => `Clearing — available ${vestedAt ? formatDate(vestedAt) : "soon"}`,
+	vesting: (vestedAt) => `Clearing, available ${vestedAt ? formatDate(vestedAt) : "soon"}`,
 	disputed: () => "On hold",
 	withdrawing: () => "On its way to you",
 	withdrawn: () => "Paid out",
@@ -185,7 +185,7 @@ export default function Profile() {
 	};
 
 	return (
-		<Page title="Wallet" sub="Your money on Kolo — what's ready, what's still clearing, what's been paid out.">
+		<Page title="Wallet" sub="Your money on Kolo: what's ready, what's still clearing, what's been paid out.">
 			<div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
 				<BlockAvatar name={user.username ?? user.email} imageUrl={user.imageUrl} size={56} fontSize={22} />
 				{/* `minWidth: 0` so a long e-mail breaks inside the block instead of
@@ -343,7 +343,7 @@ export default function Profile() {
 					<div className="wcard" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 						<h2 className="section-head">Payout details</h2>
 						<div className="text-muted" style={{ fontSize: 14 }}>
-							Where should we send your money? Double-check it — transfers can't be reversed.
+							Where should we send your money? Double-check it. Transfers can't be reversed.
 						</div>
 						<div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
 							{/* Basis, not a floor, on all three: the row keeps its desktop
@@ -428,7 +428,7 @@ export default function Profile() {
 						error={rowsQ.error}
 						onRetry={rowsQ.reload}
 						isEmpty={(rowsQ.data ?? []).length === 0}
-						emptyMessage="Nothing here yet — your first sale shows up in this table."
+						emptyMessage="Nothing here yet. Your first sale shows up in this table."
 					>
 						{/* Four columns inside a card is already tight on a phone, so this
 						    one reflows to labelled card rows rather than scrolling. */}
@@ -502,7 +502,7 @@ export default function Profile() {
 							</span>
 						</div>
 						<div style={{ fontSize: 15, marginTop: 10, color: "var(--body-soft)" }}>
-							Across {savings.orderCount} {savings.orderCount === 1 ? "order" : "orders"} —{" "}
+							Across {savings.orderCount} {savings.orderCount === 1 ? "order" : "orders"}:{" "}
 							{money(savings.totalSpentUsd)} paid instead of {money(savings.totalRetailUsd)}.
 						</div>
 					</div>
@@ -550,7 +550,7 @@ export default function Profile() {
 											data-label="Bought"
 											style={{ fontSize: 14, whiteSpace: "nowrap" }}
 										>
-											{item.purchasedAt ? formatDate(item.purchasedAt) : "—"}
+											{item.purchasedAt ? formatDate(item.purchasedAt) : "…"}
 										</td>
 									</tr>
 								))}
@@ -616,11 +616,11 @@ export default function Profile() {
 				<div className="card" style={{ padding: 20, gap: 10 }}>
 					<h2 className="section-head">Your account</h2>
 					{[
-						{ label: "Bought", value: String(statsQ.data?.purchases.length ?? "—") },
-						{ label: "Sold", value: String(statsQ.data?.sales.length ?? "—") },
+						{ label: "Bought", value: String(statsQ.data?.purchases.length ?? "…") },
+						{ label: "Sold", value: String(statsQ.data?.sales.length ?? "…") },
 						{
 							label: "Requests decided against you",
-							value: String(statsQ.data ? disputesLost : "—"),
+							value: String(statsQ.data ? disputesLost : "…"),
 							color: disputesLost > 0 ? "var(--error)" : undefined,
 						},
 						{ label: "Paid out to date", value: money(balance?.withdrawn ?? 0) },
@@ -642,7 +642,7 @@ export default function Profile() {
 						</div>
 					))}
 					<div className="text-muted" style={{ fontSize: 14, paddingTop: 4 }}>
-						Every sale clears for {platform?.vestingDays ?? "—"} days before it can be withdrawn.
+						Every sale clears for {platform?.vestingDays ?? "…"} days before it can be withdrawn.
 						That window is what makes Buyer Protection possible.
 					</div>
 				</div>

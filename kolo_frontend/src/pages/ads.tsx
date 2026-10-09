@@ -95,7 +95,7 @@ export default function Ads() {
 	return (
 		<Page
 			title="Subscriptions, below retail"
-			sub="Buy a subscription from a seller you can hold to account — your payment is protected until you've checked it."
+			sub="Buy a subscription from a seller you can hold to account. Your payment is protected until you've checked it."
 		>
 			{/* `filter-bar` is doing the responsive work here, not the layout: on a
 			    phone it stacks the search pill above the scope toggle and gives
@@ -166,7 +166,7 @@ export default function Ads() {
 				>
 					<option value="any">Any price</option>
 					<option value="under25">Under $25</option>
-					<option value="25to75">$25 – $75</option>
+					<option value="25to75">$25 - $75</option>
 					<option value="over75">Over $75</option>
 				</select>
 				<select

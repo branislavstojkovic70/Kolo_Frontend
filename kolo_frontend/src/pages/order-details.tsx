@@ -58,10 +58,10 @@ function buildFlow(
 		case "EXPIRED":
 			return [
 				{ t: "Payment", d: "not completed in time", state: "bad" },
-				{ t: "Protected", d: "—", state: "future" },
-				{ t: "Delivered", d: "—", state: "future" },
-				{ t: "Clearing", d: "—", state: "future" },
-				{ t: "Seller paid", d: "—", state: "future" },
+				{ t: "Protected", d: "-", state: "future" },
+				{ t: "Delivered", d: "-", state: "future" },
+				{ t: "Clearing", d: "-", state: "future" },
+				{ t: "Seller paid", d: "-", state: "future" },
 			];
 		case "DISPUTED":
 			return [
@@ -201,7 +201,7 @@ export default function OrderDetails() {
 		setBusy(true);
 		try {
 			const created = await disputesApi.open(order.id, disputeReason.trim());
-			toast.success("Request sent — we'll take it from here");
+			toast.success("Request sent. We'll take it from here");
 			reloadDisputes();
 			navigate(`/disputes/${created.dispute.id}`);
 		} catch (err) {
@@ -257,13 +257,13 @@ export default function OrderDetails() {
 				<div className="hold-banner">
 					<span>
 						We're holding this item for you
-						{clock ? " — " : ""}
+						{clock ? ": " : ""}
 						{clock && <span className="hold-clock">{clock}</span>}
 					</span>
 					<span className="text-muted" style={{ fontSize: 14 }}>
 						{clock
 							? "Finish the payment before the timer runs out and it's yours."
-							: "The hold has run out — finish the payment or place the order again."}
+							: "The hold has run out. Finish the payment or place the order again."}
 					</span>
 				</div>
 			)}
@@ -335,7 +335,7 @@ export default function OrderDetails() {
 							<h2 className="section-head">Pay {money(order.amountUsd)}</h2>
 							<div className="text-muted" style={{ fontSize: 15 }}>
 								You'll finish on our secure checkout. The moment it clears, your access details
-								appear here — this page updates itself.
+								appear here. This page updates itself.
 							</div>
 							<a className="btn btn-primary btn-block" href={order.paymentUrl} target="_blank" rel="noreferrer">
 								Complete payment
@@ -397,7 +397,7 @@ export default function OrderDetails() {
 								<LockIcon size={14} style={{ flex: "none", marginTop: 2 }} />
 								<span>
 									Only you can see this. If anything is wrong, ask for help within{" "}
-									{platform?.disputeWindowDays ?? "—"} days of paying — your payment stays put
+									{platform?.disputeWindowDays ?? "-"} days of paying. Your payment stays put
 									until it's sorted.
 								</span>
 							</div>
@@ -414,7 +414,7 @@ export default function OrderDetails() {
 							/>
 							<Row
 								label="Available"
-								value={order.vestedAt ? formatDate(order.vestedAt) : "—"}
+								value={order.vestedAt ? formatDate(order.vestedAt) : "-"}
 							/>
 							<Row
 								label="Status"
@@ -559,10 +559,10 @@ export default function OrderDetails() {
 					{pending
 						? "You can ask for help once your payment has gone through."
 						: canDispute
-							? `Something wrong? Ask for help within ${platform?.disputeWindowDays ?? "—"} days of paying.`
+							? `Something wrong? Ask for help within ${platform?.disputeWindowDays ?? "-"} days of paying.`
 							: dispute
 								? "There's an open help request on this order."
-								: "Nothing to do — the seller is paid automatically once clearing ends."}
+								: "Nothing to do. The seller is paid automatically once clearing ends."}
 				</span>
 			</div>
 		</Page>

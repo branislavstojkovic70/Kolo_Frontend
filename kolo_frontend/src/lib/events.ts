@@ -54,7 +54,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 				time: order.paidAt,
 				title: "Payment confirmed",
 				tag: "Payment",
-				body: `Your payment for “${order.titleSnapshot}” went through — the access details are on the order.`,
+				body: `Your payment for “${order.titleSnapshot}” went through. The access details are on the order.`,
 				href: `/orders/${order.id}`,
 				ticker: `Payment confirmed · ${order.titleSnapshot}`,
 			});
@@ -101,7 +101,7 @@ export async function fetchEvents(): Promise<AppEvent[]> {
 			time: dispute.createdAt,
 			title: "Help requested on an order",
 			tag: "Resolution",
-			body: `“${dispute.order.titleSnapshot}” — ${dispute.reason}`,
+			body: `“${dispute.order.titleSnapshot}”: ${dispute.reason}`,
 			href: `/disputes/${dispute.id}`,
 			ticker: `Help requested · ${dispute.order.titleSnapshot}`,
 		});

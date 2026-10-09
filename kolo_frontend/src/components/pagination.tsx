@@ -75,7 +75,7 @@ export default function Pagination({
 			</label>
 
 			<span className="text-muted" style={{ minWidth: 0, fontSize: 14 }}>
-				Showing {first}–{last} of {total} {noun}
+				Showing {first}-{last} of {total} {noun}
 			</span>
 
 			{/* The pager is not always the width of a page: Resolution puts one in the

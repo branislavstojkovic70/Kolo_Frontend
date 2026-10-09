@@ -80,7 +80,7 @@ function ClerkAuthProvider({ children }: { children: ReactNode }) {
 				const rejected = error instanceof ApiError && error.statusCode === 401;
 				toast.error(
 					rejected
-						? "Signed in with Clerk, but the API rejected the token — check CLERK_SECRET_KEY on the backend"
+						? "Signed in with Clerk, but the API rejected the token. Check CLERK_SECRET_KEY on the backend"
 						: error instanceof Error
 							? error.message
 							: "Could not load your account"

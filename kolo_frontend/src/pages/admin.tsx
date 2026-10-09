@@ -574,7 +574,7 @@ export default function Admin() {
 											<td className="text-muted" style={{ fontSize: 14, whiteSpace: "nowrap" }}>
 												{alert.matchedOrder
 													? `#${shortRef(alert.matchedOrder.id)} · ${money(alert.matchedOrder.amountUsd)}`
-													: "—"}
+													: "…"}
 											</td>
 											<td>
 												<StatusTag {...buyRequestStatusTag(alert.status)} />

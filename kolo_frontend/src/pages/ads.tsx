@@ -154,8 +154,11 @@ export default function Ads() {
 			    past the page; below 744px `filter-bar` stacks them full-width. */}
 			<div className="filter-bar">
 				<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
-					{listing.data?.total ?? 0}{" "}
-					{(listing.data?.total ?? 0) === 1 ? "subscription" : "subscriptions"}
+					{/* No count until there is one — a literal "0 subscriptions" that
+					    jumps to the real total a beat later reads as a glitch. */}
+					{listing.data
+						? `${listing.data.total} ${listing.data.total === 1 ? "subscription" : "subscriptions"}`
+						: "Counting subscriptions…"}
 					{stats ? ` · median ${money(stats.medianPriceUsd)}` : ""}
 				</span>
 				<select

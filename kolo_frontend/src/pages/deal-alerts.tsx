@@ -168,7 +168,8 @@ export default function DealAlerts() {
 	const [expiresAt, setExpiresAt] = useState("");
 	const [busy, setBusy] = useState(false);
 
-	const { data: products } = useAsync(() => productsApi.list(), []);
+	const productsQ = useAsync(() => productsApi.list(), []);
+	const products = productsQ.data;
 	const list = useAsync(
 		() => buyRequestsApi.mine({ status: status || undefined, page, limit }),
 		[status, page, limit]
@@ -312,6 +313,8 @@ export default function DealAlerts() {
 						products={products}
 						value={productId}
 						onChange={setProductId}
+						loadError={productsQ.error ? "The catalogue didn't load." : undefined}
+						onRetryLoad={productsQ.reload}
 					/>
 					<div className="field">
 						<label htmlFor="al-price">The most you'd pay</label>

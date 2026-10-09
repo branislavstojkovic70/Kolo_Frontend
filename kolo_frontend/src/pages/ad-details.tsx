@@ -50,6 +50,9 @@ export default function AdDetails() {
 	const [imageFailed, setImageFailed] = useState(false);
 	const [coverDraft, setCoverDraft] = useState<string>();
 	const [busy, setBusy] = useState(false);
+	// Removing a listing is destructive, so the button arms first — an inline
+	// confirm in the same card, not a browser popup.
+	const [confirmingDelete, setConfirmingDelete] = useState(false);
 
 	const { data: ad, loading, error, reload } = useAsync(
 		() => (id ? listingsApi.get(id) : Promise.reject(new Error("Missing listing id"))),
@@ -138,7 +141,7 @@ export default function AdDetails() {
 	};
 
 	const handleDelete = async () => {
-		if (!ad || !window.confirm("Remove this listing? Buyers will no longer see it.")) return;
+		if (!ad) return;
 		setBusy(true);
 		try {
 			await listingsApi.remove(ad.id);
@@ -435,15 +438,38 @@ export default function AdDetails() {
 												? "Sold out, edit to restock"
 												: "Make it live"}
 									</button>
-									<button
-										className="btn btn-ghost btn-block"
-										onClick={handleDelete}
-										disabled={busy}
-										style={{ color: "var(--error)" }}
-									>
-										<TrashIcon size={15} />
-										Remove listing
-									</button>
+									{!confirmingDelete ? (
+										<button
+											className="btn btn-ghost btn-block"
+											onClick={() => setConfirmingDelete(true)}
+											disabled={busy}
+											style={{ color: "var(--error)" }}
+										>
+											<TrashIcon size={15} />
+											Remove listing
+										</button>
+									) : (
+										<>
+											<div style={{ fontSize: 14, color: "var(--body-soft)" }}>
+												Buyers will no longer see this listing. Paid orders stay untouched.
+											</div>
+											<button
+												className="btn btn-secondary btn-block"
+												onClick={handleDelete}
+												disabled={busy}
+												style={{ color: "var(--error)", borderColor: "var(--error)" }}
+											>
+												Yes, remove it
+											</button>
+											<button
+												className="btn btn-ghost btn-block"
+												onClick={() => setConfirmingDelete(false)}
+												disabled={busy}
+											>
+												Keep the listing
+											</button>
+										</>
+									)}
 								</>
 							) : (
 								<>

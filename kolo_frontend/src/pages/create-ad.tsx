@@ -2,6 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { listingsApi, productsApi } from "../api";
+import AsyncPanel from "../components/async-panel";
 import { ArrowLeftIcon, ShieldCheckIcon } from "../components/icons";
 import Page from "../components/page";
 import ProductPicker from "../components/product-picker";
@@ -35,12 +36,17 @@ export default function CreateAd() {
 	const [imageUrl, setImageUrl] = useState("");
 	const [imageFailed, setImageFailed] = useState(false);
 	const [busy, setBusy] = useState(false);
+	// Field-level validation messages, keyed by field. Set on submit, cleared
+	// the moment the offending field changes — the error never outlives the fix.
+	const [errors, setErrors] = useState<Record<string, string>>({});
 
-	const { data: products } = useAsync(() => productsApi.list(), []);
-	const { data: existing } = useAsync(
+	const productsQ = useAsync(() => productsApi.list(), []);
+	const products = productsQ.data;
+	const existingQ = useAsync(
 		() => (id ? listingsApi.get(id) : Promise.resolve(undefined)),
 		[id]
 	);
+	const existing = existingQ.data;
 
 	// Prefill once the listing arrives, adjusting state during render rather than
 	// from an effect — React re-runs the render before committing, so the form is
@@ -80,17 +86,25 @@ export default function CreateAd() {
 		}
 	};
 
+	const clearError = (key: string) =>
+		setErrors((current) => (current[key] ? { ...current, [key]: "" } : current));
+
 	const submit = async (asDraft: boolean) => {
-		if (!isEdit && !productId) return toast.error("Pick what you're selling first");
-		if (description.trim().length < 10) return toast.error("Describe it in at least 10 characters");
-		if (!(priceNum > 0)) return toast.error("Set a price");
-		if (!(quantityNum >= 1)) return toast.error("You need at least one to sell");
-		// Mirrors the backend rule so the common case never needs a round trip;
-		// the server still has the last word and its message is shown as-is.
-		if (quantityNum < soldCount + heldUnits) {
-			return toast.error(
-				`${soldCount + heldUnits} of these are already sold or being paid for. The number can't go below that`
-			);
+		// Inline, next to the field that failed — a toast names the problem but
+		// not the place. The backend still has the last word on the real rules.
+		const found: Record<string, string> = {};
+		if (!isEdit && !productId) found.product = "Pick what you're selling first.";
+		if (description.trim().length < 10) found.description = "Describe it in at least 10 characters.";
+		if (!(priceNum > 0)) found.price = "Set a price.";
+		if (!(quantityNum >= 1)) found.quantity = "You need at least one to sell.";
+		else if (quantityNum < soldCount + heldUnits) {
+			found.quantity = `${soldCount + heldUnits} of these are already sold or being paid for. The number can't go below that.`;
+		}
+		setErrors(found);
+		const first = ["product", "price", "quantity", "description"].find((key) => found[key]);
+		if (first) {
+			document.getElementById(`ad-${first}`)?.focus();
+			return;
 		}
 
 		setBusy(true);
@@ -148,6 +162,14 @@ export default function CreateAd() {
 				</button>
 			</div>
 
+			{/* On edit the form is prefilled from the listing — a failed or slow
+			    fetch must not paint a half-empty create form instead. */}
+			<AsyncPanel
+				loading={isEdit && existingQ.loading}
+				error={isEdit ? existingQ.error : undefined}
+				onRetry={existingQ.reload}
+				skeletonRows={4}
+			>
 			<div className="layout-form">
 				<div className="card" style={{ padding: 20, gap: 18 }}>
 					<h2 className="section-head">What are you selling?</h2>
@@ -171,8 +193,14 @@ export default function CreateAd() {
 							label="Subscription"
 							products={products}
 							value={productId}
-							onChange={pickProduct}
+							onChange={(next) => {
+								clearError("product");
+								pickProduct(next);
+							}}
 							hint="Buyers browse by product, so your listing sits next to every other offer for it."
+							error={errors.product || undefined}
+							loadError={productsQ.error ? "The catalogue didn't load." : undefined}
+							onRetryLoad={productsQ.reload}
 						/>
 					)}
 					<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
@@ -181,34 +209,56 @@ export default function CreateAd() {
 							<input
 								id="ad-price"
 								className="input"
+								style={{ borderColor: errors.price ? "var(--error)" : undefined }}
+								aria-invalid={errors.price ? true : undefined}
 								value={price}
-								onChange={(e) => setPrice(e.target.value)}
+								onChange={(e) => {
+									clearError("price");
+									setPrice(e.target.value);
+								}}
 								placeholder="0.00"
 								inputMode="decimal"
 							/>
-							<span className="text-muted" style={{ fontSize: 13 }}>
-								{product
-									? discount !== null
-										? `${discount}% under the ${money(retail)} regular price`
-										: `The regular price is ${money(retail)}. Go under it to stand out`
-									: "Pick a subscription to see the regular price"}
-							</span>
+							{errors.price ? (
+								<span role="alert" style={{ fontSize: 13, color: "var(--error)" }}>
+									{errors.price}
+								</span>
+							) : (
+								<span className="text-muted" style={{ fontSize: 13 }}>
+									{product
+										? discount !== null
+											? `${discount}% under the ${money(retail)} regular price`
+											: `The regular price is ${money(retail)}. Go under it to stand out`
+										: "Pick a subscription to see the regular price"}
+								</span>
+							)}
 						</div>
 						<div className="field">
 							<label htmlFor="ad-quantity">How many can you sell?</label>
 							<input
 								id="ad-quantity"
 								className="input"
+								style={{ borderColor: errors.quantity ? "var(--error)" : undefined }}
+								aria-invalid={errors.quantity ? true : undefined}
 								value={quantity}
-								onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ""))}
+								onChange={(e) => {
+									clearError("quantity");
+									setQuantity(e.target.value.replace(/[^0-9]/g, ""));
+								}}
 								placeholder="1"
 								inputMode="numeric"
 							/>
-							<span className="text-muted" style={{ fontSize: 13 }}>
-								{soldCount + heldUnits > 0
-									? `${soldCount} sold${heldUnits > 0 ? `, ${heldUnits} being paid for` : ""} · ${Math.max(quantityNum - soldCount, 0)} left after this change`
-									: "It leaves the marketplace once they're all sold"}
-							</span>
+							{errors.quantity ? (
+								<span role="alert" style={{ fontSize: 13, color: "var(--error)" }}>
+									{errors.quantity}
+								</span>
+							) : (
+								<span className="text-muted" style={{ fontSize: 13 }}>
+									{soldCount + heldUnits > 0
+										? `${soldCount} sold${heldUnits > 0 ? `, ${heldUnits} being paid for` : ""} · ${Math.max(quantityNum - soldCount, 0)} left after this change`
+										: "It leaves the marketplace once they're all sold"}
+								</span>
+							)}
 						</div>
 					</div>
 					<div className="field">
@@ -216,10 +266,20 @@ export default function CreateAd() {
 						<textarea
 							id="ad-description"
 							className="input"
+							style={{ borderColor: errors.description ? "var(--error)" : undefined }}
+							aria-invalid={errors.description ? true : undefined}
 							value={description}
-							onChange={(e) => setDescription(e.target.value)}
+							onChange={(e) => {
+								clearError("description");
+								setDescription(e.target.value);
+							}}
 							placeholder="What exactly does the buyer get, how do you hand it over (invite, key, login), and what's covered if something stops working?"
 						/>
+						{errors.description && (
+							<span role="alert" style={{ fontSize: 13, color: "var(--error)" }}>
+								{errors.description}
+							</span>
+						)}
 					</div>
 					<div className="field">
 						<label htmlFor="ad-delivery">
@@ -341,6 +401,7 @@ export default function CreateAd() {
 					</div>
 				</div>
 			</div>
+			</AsyncPanel>
 		</Page>
 	);
 }

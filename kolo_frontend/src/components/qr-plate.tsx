@@ -25,6 +25,11 @@ function qrToken(name: string, fallback: string): string {
 
 export default function QrPlate({ value }: { value: string }) {
 	const [src, setSrc] = useState<string>();
+	// Distinguishes "still generating" from "generation failed" — the latter
+	// must not sit on "Preparing QR…" forever. Tagged with the value it failed
+	// for, so a new link resets it by derivation, not by a setState in the effect.
+	const [failedFor, setFailedFor] = useState<string>();
+	const failed = failedFor === value;
 
 	useEffect(() => {
 		let cancelled = false;
@@ -36,7 +41,12 @@ export default function QrPlate({ value }: { value: string }) {
 			.then((url) => {
 				if (!cancelled) setSrc(url);
 			})
-			.catch(() => setSrc(undefined));
+			.catch(() => {
+				if (!cancelled) {
+					setSrc(undefined);
+					setFailedFor(value);
+				}
+			});
 		return () => {
 			cancelled = true;
 		};
@@ -73,7 +83,7 @@ export default function QrPlate({ value }: { value: string }) {
 						color: "var(--qr-plate-muted)",
 					}}
 				>
-					Preparing QR…
+					{failed ? "The QR couldn't be drawn. Use the payment link instead." : "Preparing QR…"}
 				</span>
 			)}
 		</div>

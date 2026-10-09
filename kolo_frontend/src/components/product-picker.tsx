@@ -12,6 +12,11 @@ interface ProductPickerProps {
 	disabled?: boolean;
 	/** One quiet line under the control. */
 	hint?: string;
+	/** Validation message; replaces the hint and marks the control invalid. */
+	error?: string;
+	/** Catalogue fetch error; the picker shows it with a retry instead of loading forever. */
+	loadError?: string;
+	onRetryLoad?: () => void;
 }
 
 /**
@@ -28,6 +33,9 @@ export default function ProductPicker({
 	onChange,
 	disabled = false,
 	hint,
+	error,
+	loadError,
+	onRetryLoad,
 }: ProductPickerProps) {
 	// The API already sorts by category then name, so grouping is a single pass.
 	const groups = useMemo(() => {
@@ -50,12 +58,24 @@ export default function ProductPicker({
 			<select
 				id={id}
 				className="input"
-				style={{ minWidth: 0, maxWidth: "100%", textOverflow: "ellipsis" }}
+				style={{
+					minWidth: 0,
+					maxWidth: "100%",
+					textOverflow: "ellipsis",
+					borderColor: error ? "var(--error)" : undefined,
+				}}
 				value={value}
 				disabled={disabled || !products}
+				aria-invalid={error ? true : undefined}
 				onChange={(e) => onChange(e.target.value)}
 			>
-				<option value="">{products ? "Choose a subscription…" : "Loading the catalogue…"}</option>
+				<option value="">
+					{products
+						? "Choose a subscription…"
+						: loadError
+							? "The catalogue didn't load"
+							: "Loading the catalogue…"}
+				</option>
 				{groups.map(([category, items]) => (
 					<optgroup key={category} label={category}>
 						{items.map((product) => (
@@ -66,10 +86,30 @@ export default function ProductPicker({
 					</optgroup>
 				))}
 			</select>
-			{hint && (
-				<span className="text-muted" style={{ fontSize: 13 }}>
-					{hint}
+			{!products && loadError ? (
+				<span role="alert" style={{ fontSize: 13, color: "var(--error)" }}>
+					{loadError}{" "}
+					{onRetryLoad && (
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm"
+							style={{ minHeight: 28, padding: "0 6px" }}
+							onClick={onRetryLoad}
+						>
+							Try again
+						</button>
+					)}
 				</span>
+			) : error ? (
+				<span role="alert" style={{ fontSize: 13, color: "var(--error)" }}>
+					{error}
+				</span>
+			) : (
+				hint && (
+					<span className="text-muted" style={{ fontSize: 13 }}>
+						{hint}
+					</span>
+				)
 			)}
 		</div>
 	);

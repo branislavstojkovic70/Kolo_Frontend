@@ -190,10 +190,16 @@ export default function OrderDetails() {
 		!!order.paidAt &&
 		now - new Date(order.paidAt).getTime() < disputeWindowDays * 86_400_000;
 
-	const copyPaymentUrl = () => {
+	const copyPaymentUrl = async () => {
 		if (!order.paymentUrl) return;
-		void navigator.clipboard.writeText(order.paymentUrl);
-		toast.success("Payment link copied");
+		// Clipboard access can be denied (permissions, non-secure context) — only
+		// claim success when the write actually landed.
+		try {
+			await navigator.clipboard.writeText(order.paymentUrl);
+			toast.success("Payment link copied");
+		} catch {
+			toast.error("Couldn't copy the link. Select and copy it from the checkout instead");
+		}
 	};
 
 	const submitDispute = async () => {

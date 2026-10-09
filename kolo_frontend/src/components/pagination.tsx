@@ -1,5 +1,8 @@
 import { PAGE_SIZES } from "../lib/pagination";
 
+/** The smallest selectable size — at or under it, a single page needs no pager. */
+const MIN_PAGE_SIZE = Math.min(...PAGE_SIZES);
+
 interface PaginationProps {
 	page: number;
 	pages: number;
@@ -25,7 +28,11 @@ export default function Pagination({
 	onLimit,
 	noun,
 }: PaginationProps) {
+	// No chrome for three rows: with everything on one page and nothing a
+	// smaller page size could change, the pager has no job to do. (Doing what
+	// the doc above always promised.)
 	if (total === 0) return null;
+	if (page === 1 && total <= MIN_PAGE_SIZE && total <= limit) return null;
 
 	const first = (page - 1) * limit + 1;
 	const last = Math.min(page * limit, total);

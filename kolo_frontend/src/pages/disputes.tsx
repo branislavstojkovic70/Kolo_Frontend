@@ -74,7 +74,11 @@ function MessagePlate({
 				>
 					{ROLES[role].label}
 				</span>
-				<span style={{ whiteSpace: "nowrap", flex: "none", fontSize: 15, fontWeight: 600 }}>{name}</span>
+				{/* Support messages pass the role AS the name — printing it twice
+				    ("Kolo support Kolo support") helped nobody. */}
+				{name !== ROLES[role].label && (
+					<span style={{ whiteSpace: "nowrap", flex: "none", fontSize: 15, fontWeight: 600 }}>{name}</span>
+				)}
 				{time && (
 					<span className="text-muted" style={{ whiteSpace: "nowrap", marginLeft: "auto", fontSize: 13 }}>
 						{time}
@@ -269,8 +273,9 @@ export default function Disputes() {
 							onLimit={controls.setLimit}
 							noun="requests"
 						/>
-						<div className="card" style={{ gap: 8 }}>
-							<h2 className="section-head">How this works</h2>
+						{/* A quiet band, not another bordered card competing with the list. */}
+						<div className="poster" style={{ padding: "14px 16px" }}>
+							<div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>How this works</div>
 							<div className="text-muted" style={{ fontSize: 14, lineHeight: 1.5 }}>
 								Asking for help puts the payment on hold, even if the clearing period has already
 								passed. We open a private chat with you, the seller and our team, look at what each
@@ -298,30 +303,63 @@ export default function Disputes() {
 										borderBottom: "1px solid var(--hairline)",
 									}}
 								>
-									<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-										<StatusTag {...disputeStatusTag(dispute.status)} />
-										<Link
-											to={`/orders/${dispute.orderId}`}
-											className="text-muted"
-											style={{ whiteSpace: "nowrap", fontSize: 14 }}
-										>
-											Order #{shortRef(dispute.orderId)}
-										</Link>
-										<span className="text-muted" style={{ whiteSpace: "nowrap", fontSize: 14 }}>
-											Opened {formatDate(dispute.createdAt)} by the buyer
-										</span>
+									{/* The case header: WHAT is disputed and WHAT MONEY is at
+								    stake. The buyer's reason lives in the thread below — it
+								    was printed here verbatim too, twice in a row on screen. */}
+									<div
+										style={{
+											display: "flex",
+											alignItems: "flex-start",
+											gap: "10px 16px",
+											flexWrap: "wrap",
+										}}
+									>
+										<div style={{ minWidth: 0, flex: "1 1 240px" }}>
+											<h2 style={{ margin: 0, fontSize: 20, lineHeight: 1.3 }}>
+												{dispute.order.titleSnapshot}
+											</h2>
+											<div
+												style={{
+													display: "flex",
+													alignItems: "center",
+													gap: 10,
+													flexWrap: "wrap",
+													marginTop: 10,
+												}}
+											>
+												<StatusTag {...disputeStatusTag(dispute.status)} />
+												<Link
+													to={`/orders/${dispute.orderId}`}
+													className="text-muted"
+													style={{ whiteSpace: "nowrap", fontSize: 14 }}
+												>
+													Order #{shortRef(dispute.orderId)}
+												</Link>
+												<span className="text-muted" style={{ whiteSpace: "nowrap", fontSize: 14 }}>
+													Opened {formatDate(dispute.createdAt)} by the buyer
+												</span>
+											</div>
+										</div>
+										<div style={{ flex: "none", marginLeft: "auto", textAlign: "right" }}>
+											<div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>
+												{money(dispute.order.sellerAmountUsd)}
+											</div>
+											<div className="text-muted" style={{ fontSize: 13, marginTop: 2 }}>
+												{dispute.status === "OPEN"
+													? "on hold until this is settled"
+													: dispute.status === "RESOLVED_BUYER"
+														? "refunded to the buyer"
+														: "released to the seller"}
+											</div>
+										</div>
 									</div>
-									<h2 style={{ margin: "12px 0 0", fontSize: 20, lineHeight: 1.35 }}>{dispute.reason}</h2>
 								</div>
 
+								{/* The thread flows with the page — an inner scrollbar here used
+								    to clip whatever came last inside it. The amount on hold now
+								    lives in the header, not repeated under the reason. */}
 								<div
 									style={{
-										// Stacked, this pane is the page: a flat 420px window would
-										// be taller than a phone in landscape and push the footer
-										// CTA off-screen, so the thread never takes more than ~60%
-										// of the viewport it is actually rendered in.
-										maxHeight: "min(420px, 60vh)",
-										overflowY: "auto",
 										padding: "18px clamp(14px, 4vw, 20px)",
 										display: "flex",
 										flexDirection: "column",
@@ -330,9 +368,6 @@ export default function Disputes() {
 								>
 									<MessagePlate role="BUYER" name="Problem reported" time={formatDate(dispute.createdAt)}>
 										{dispute.reason}
-										<div style={{ marginTop: 10, fontSize: 14, color: "var(--muted)" }}>
-											{money(dispute.order.sellerAmountUsd)} is on hold while this is open.
-										</div>
 									</MessagePlate>
 
 									<MessagePlate role="ADMIN" name="Kolo support">
@@ -362,9 +397,22 @@ export default function Disputes() {
 										</div>
 									)}
 
-									{isAdmin && dispute.status === "OPEN" && (
-										<div className="card" style={{ gap: 12 }}>
-											<h2 className="section-head">Decide this request</h2>
+								</div>
+
+								{/* The admin's decision is its own band, outside the thread —
+								    buried between plates it used to scroll out of sight. */}
+								{isAdmin && dispute.status === "OPEN" && (
+									<div
+										style={{
+											padding: "16px clamp(14px, 4vw, 20px) 20px",
+											borderTop: "1px solid var(--hairline)",
+											background: "var(--surface-soft)",
+											display: "flex",
+											flexDirection: "column",
+											gap: 12,
+										}}
+									>
+											<div style={{ fontSize: 16, fontWeight: 600 }}>Decide this request</div>
 											<input
 												className="input"
 												value={note}
@@ -416,7 +464,6 @@ export default function Disputes() {
 											)}
 										</div>
 									)}
-								</div>
 
 								<div
 									className="action-row"

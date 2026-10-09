@@ -482,30 +482,32 @@ export default function Profile() {
 				</div>
 			</div>
 
-			{/* ── buyer savings: the one loud number in the app ─────────────── */}
+			{/* ── buyer savings: the one loud number in the app ───────────────
+			    One plate, one story: the hero figure and the orders behind it live
+			    in the same tinted card — the table used to float detached below. */}
 			{savings && savings.orderCount > 0 && (
-				<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-					<div className="deal-card" style={{ padding: "clamp(18px, 5vw, 28px)" }}>
-						<div style={{ fontSize: 17, fontWeight: 600 }}>You've saved</div>
-						<div
-							style={{
-								display: "flex",
-								alignItems: "baseline",
-								gap: 16,
-								flexWrap: "wrap",
-								marginTop: 6,
-							}}
-						>
-							<span className="savings-hero">{money(savings.totalSavedUsd)}</span>
-							<span style={{ fontSize: 17, fontWeight: 600 }}>
-								{savings.savedPercent}% off the regular price
-							</span>
-						</div>
-						<div style={{ fontSize: 15, marginTop: 10, color: "var(--body-soft)" }}>
-							Across {savings.orderCount} {savings.orderCount === 1 ? "order" : "orders"}:{" "}
-							{money(savings.totalSpentUsd)} paid instead of {money(savings.totalRetailUsd)}.
-						</div>
+				<div className="deal-card" style={{ padding: "clamp(18px, 5vw, 28px)" }}>
+					<div style={{ fontSize: 17, fontWeight: 600 }}>You've saved</div>
+					<div
+						style={{
+							display: "flex",
+							alignItems: "baseline",
+							gap: 16,
+							flexWrap: "wrap",
+							marginTop: 6,
+						}}
+					>
+						<span className="savings-hero">{money(savings.totalSavedUsd)}</span>
+						<span style={{ fontSize: 17, fontWeight: 600 }}>
+							{savings.savedPercent}% off the regular price
+						</span>
 					</div>
+					<div style={{ fontSize: 15, marginTop: 10, color: "var(--body-soft)" }}>
+						Across {savings.orderCount} {savings.orderCount === 1 ? "order" : "orders"}:{" "}
+						{money(savings.totalSpentUsd)} paid instead of {money(savings.totalRetailUsd)}.
+					</div>
+
+					<div style={{ height: 1, background: "var(--deal-border)", margin: "18px 0 4px" }} />
 
 					<div className="table-wrap">
 						<table className="table table-cards">
@@ -562,10 +564,16 @@ export default function Profile() {
 
 			{/* Same reasoning one level up: a half-width Transfers list is unreadable
 			    on a tablet, so the pair goes single file as soon as a column would
-			    drop under 360px instead of waiting for the 744px breakpoint. */}
+			    drop under 360px instead of waiting for the 744px breakpoint.
+			    `start`, not stretch: the two cards rarely have the same amount to
+			    say, and the shorter one dragging a half-empty border down to match
+			    its neighbour read as a layout mistake. */}
 			<div
 				className="layout-two"
-				style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))" }}
+				style={{
+					gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))",
+					alignItems: "start",
+				}}
 			>
 				<div className="card" style={{ padding: 20, gap: 14 }}>
 					<h2 className="section-head">Transfers</h2>

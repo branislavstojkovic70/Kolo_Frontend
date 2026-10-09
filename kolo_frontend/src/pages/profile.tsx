@@ -132,8 +132,8 @@ export default function Profile() {
 	// A withdrawal empties the whole available bucket and can't be reversed, so
 	// the button arms first and pays out only after the destination is read back.
 	const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
-	// Which view of the ledger card is open: activity, transfers or account.
-	const [tab, setTab] = useState<"orders" | "transfers" | "account">("orders");
+	// Which view of the ledger is open: the per-order activity or the transfers.
+	const [tab, setTab] = useState<"orders" | "transfers">("orders");
 
 	const now = useNow();
 	const navigate = useNavigate();
@@ -240,29 +240,28 @@ export default function Profile() {
 
 	return (
 		<Page title="Wallet" sub="Your money on Kolo: what's ready, what's still clearing, what's been paid out.">
-			{/* ── the money surface leads; who you are moved to the side rail ── */}
-			{/* Radius and padding now live on `.wallet-scope` in the sheet, where
-			    they can shrink with the viewport. */}
-			<div
-				className="wallet-scope"
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					gap: 16,
-				}}
-			>
-				<div
-					className="wcard"
-					style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}
-				>
-					<div>
+			{/* ── the money statement ──────────────────────────────────────────
+			    No card around it: the figure IS the page, the way a bank statement
+			    leads with the balance. Whitespace and the breakdown bar do the
+			    work that borders and grounds used to pretend to do. */}
+			<section style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+				<div style={{ display: "flex", alignItems: "flex-end", gap: "16px 32px", flexWrap: "wrap" }}>
+					<div style={{ minWidth: 0 }}>
 						<div className="text-muted" style={{ fontSize: 15 }}>
 							Ready to withdraw
 						</div>
-						<div className="wallet-figure" style={{ marginTop: 4 }}>
+						<div
+							style={{
+								fontSize: "clamp(36px, 7vw, 52px)",
+								fontWeight: 700,
+								lineHeight: 1.05,
+								letterSpacing: "-0.02em",
+								marginTop: 4,
+							}}
+						>
 							$<CountUp to={available} dec={2} />
 						</div>
-						<div className="text-muted" style={{ fontSize: 14, marginTop: 6 }}>
+						<div className="text-muted" style={{ fontSize: 14, marginTop: 8 }}>
 							{platform
 								? `Transfers go out in full, from ${money(platform.minWithdrawalUsd)} upwards.`
 								: "Transfers go out in full."}
@@ -320,33 +319,32 @@ export default function Profile() {
 						)}
 					</div>
 
-					{/* Full width under figure and actions: every dollar, one bar. */}
-					<div style={{ flexBasis: "100%", minWidth: 0 }}>
-						<BalanceBreakdown
-							segments={[
-								{ label: "Ready", value: available, color: "var(--success)" },
-								{
-									label: "Clearing",
-									value: usd(balance?.vesting ?? 0),
-									color: "var(--caution)",
-									note:
-										usd(balance?.vesting ?? 0) > 0 && balance?.nextVestingAt
-											? `next ${formatDate(balance.nextVestingAt)}`
-											: undefined,
-								},
-								{ label: "On hold", value: usd(balance?.disputed ?? 0), color: "var(--error)" },
-								{
-									label: "On its way",
-									value: usd(balance?.withdrawing ?? 0),
-									color: "var(--accent)",
-								},
-							]}
-						/>
-					</div>
 				</div>
 
+				{/* Every dollar, one bar, straight on the canvas. */}
+				<BalanceBreakdown
+					segments={[
+						{ label: "Ready", value: available, color: "var(--success)" },
+						{
+							label: "Clearing",
+							value: usd(balance?.vesting ?? 0),
+							color: "var(--caution)",
+							note:
+								usd(balance?.vesting ?? 0) > 0 && balance?.nextVestingAt
+									? `next ${formatDate(balance.nextVestingAt)}`
+									: undefined,
+						},
+						{ label: "On hold", value: usd(balance?.disputed ?? 0), color: "var(--error)" },
+						{
+							label: "On its way",
+							value: usd(balance?.withdrawing ?? 0),
+							color: "var(--accent)",
+						},
+					]}
+				/>
+
 				{payoutOpen && (
-					<div className="wcard" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+					<div className="poster" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
 						<h2 className="section-head">Payout details</h2>
 						<div className="text-muted" style={{ fontSize: 14 }}>
 							Where should we send your money? Double-check it. Transfers can't be reversed.
@@ -393,141 +391,21 @@ export default function Profile() {
 						</div>
 					</div>
 				)}
+			</section>
 
-			</div>
-
-			{/* ── one ledger, three views ──────────────────────────────────────
-			    The activity table, the transfer history and the account record
-			    used to jostle as differently-sized cards in a grid. A segmented
-			    control gives each one the full width instead, one at a time. */}
-			<div className="card" style={{ padding: "clamp(16px, 3vw, 24px)", gap: 18 }}>
-				<div className="seg" style={{ alignSelf: "flex-start" }}>
-					<label className="seg-opt">
-						<input type="radio" name="wtab" checked={tab === "orders"} onChange={() => setTab("orders")} />
-						Order by order
-					</label>
-					<label className="seg-opt">
-						<input
-							type="radio"
-							name="wtab"
-							checked={tab === "transfers"}
-							onChange={() => setTab("transfers")}
-						/>
-						Transfers
-					</label>
-					<label className="seg-opt">
-						<input type="radio" name="wtab" checked={tab === "account"} onChange={() => setTab("account")} />
-						Account
-					</label>
-				</div>
-
-				{tab === "orders" && (
-					<AsyncPanel
-						loading={rowsQ.loading}
-						error={rowsQ.error}
-						onRetry={rowsQ.reload}
-						isEmpty={(rowsQ.data ?? []).length === 0}
-						emptyMessage="Nothing here yet. Your first sale shows up in this table."
-					>
-						{/* Four columns is already tight on a phone, so this one reflows
-						    to labelled card rows rather than scrolling. */}
-						<div className="table-wrap">
-							<table className="table table-cards">
-								<thead>
-									<tr>
-										<th>Order</th>
-										<th>Amount</th>
-										<th>When</th>
-										<th>Status</th>
-									</tr>
-								</thead>
-								<tbody>
-									{(rowsQ.data ?? []).map((row) => {
-										const tag = bucketTag[row.bucket];
-										return (
-											<tr
-												key={row.orderId}
-												className="row-click"
-												onClick={() => navigate(`/orders/${row.orderId}`)}
-											>
-												<td data-label="">
-													{/* The row's onClick is a mouse convenience; the link is
-													    the real, keyboard-reachable navigation. */}
-													<Link
-														to={`/orders/${row.orderId}`}
-														className="link-plain"
-														style={{ display: "block" }}
-														onClick={(e) => e.stopPropagation()}
-													>
-														<div style={{ fontWeight: 600, fontSize: 15 }}>{row.title}</div>
-													</Link>
-												</td>
-												<td data-label="Amount" style={{ fontSize: 15, whiteSpace: "nowrap" }}>
-													{money(row.amount)}
-												</td>
-												<td className="text-muted" data-label="When" style={{ fontSize: 14 }}>
-													{bucketCaption[row.bucket](row.vestedAt)}
-												</td>
-												<td data-label="Status">
-													<StatusTag label={tag.label} color={tag.color} />
-												</td>
-											</tr>
-										);
-									})}
-								</tbody>
-							</table>
-						</div>
-					</AsyncPanel>
-				)}
-
-				{tab === "transfers" && (
-					<>
-						<AsyncPanel
-							loading={withdrawalsQ.loading}
-							error={withdrawalsQ.error}
-							onRetry={withdrawalsQ.reload}
-							isEmpty={(withdrawalsQ.data ?? []).length === 0}
-							emptyMessage="No transfers yet."
-						>
-							<div style={{ display: "flex", flexDirection: "column" }}>
-								{(withdrawalsQ.data ?? []).map((w) => {
-									const tag = withdrawalStatusTag(w.status);
-									return (
-										<div
-											key={w.id}
-											style={{
-												display: "flex",
-												alignItems: "center",
-												gap: 12,
-												padding: "12px 0",
-												borderBottom: "1px solid var(--hairline-soft)",
-												flexWrap: "wrap",
-											}}
-										>
-											<span style={{ fontSize: 16, fontWeight: 600, minWidth: 90 }}>
-												{money(w.amountUsd)}
-											</span>
-											{/* Shrinkable, so the count and date break inside the row
-											    instead of shoving the status chip off the card. */}
-											<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
-												{w.orderCount} {w.orderCount === 1 ? "order" : "orders"} · {formatDate(w.createdAt)}
-											</span>
-											<span style={{ marginLeft: "auto" }}>
-												<StatusTag label={tag.label} color={tag.color} />
-											</span>
-										</div>
-									);
-								})}
-							</div>
-						</AsyncPanel>
-						<div className="text-muted" style={{ fontSize: 14 }}>
-							Each transfer bundles every order that has finished clearing. If one fails, the money
-							goes straight back to your ready balance.
-						</div>
-					</>
-				)}
-
-				{tab === "account" && (
+			{/* ── the account, always in view: who you are and your record sit
+			    right under the money, not behind a tab. */}
+			<section
+				style={{
+					borderTop: "1px solid var(--hairline-soft)",
+					paddingTop: 22,
+					display: "flex",
+					flexDirection: "column",
+					gap: 16,
+					minWidth: 0,
+				}}
+			>
+				<h2 className="section-head">Account</h2>
 					<div
 						style={{
 							display: "grid",
@@ -666,9 +544,144 @@ export default function Profile() {
 							))}
 						</div>
 					</div>
-				)}
-			</div>
+			</section>
 
+			{/* ── one ledger, three views, on the canvas ──────────────────────
+			    A hairline and the segmented control separate it from the
+			    statement above; the tables carry their own hairlines. No box. */}
+			<section
+				style={{
+					borderTop: "1px solid var(--hairline-soft)",
+					paddingTop: 22,
+					display: "flex",
+					flexDirection: "column",
+					gap: 18,
+					minWidth: 0,
+				}}
+			>
+				<div className="seg" style={{ alignSelf: "flex-start" }}>
+					<label className="seg-opt">
+						<input type="radio" name="wtab" checked={tab === "orders"} onChange={() => setTab("orders")} />
+						Order by order
+					</label>
+					<label className="seg-opt">
+						<input
+							type="radio"
+							name="wtab"
+							checked={tab === "transfers"}
+							onChange={() => setTab("transfers")}
+						/>
+						Transfers
+					</label>
+				</div>
+
+				{tab === "orders" && (
+					<AsyncPanel
+						loading={rowsQ.loading}
+						error={rowsQ.error}
+						onRetry={rowsQ.reload}
+						isEmpty={(rowsQ.data ?? []).length === 0}
+						emptyMessage="Nothing here yet. Your first sale shows up in this table."
+					>
+						{/* Four columns is already tight on a phone, so this one reflows
+						    to labelled card rows rather than scrolling. */}
+						<div className="table-wrap">
+							<table className="table table-cards">
+								<thead>
+									<tr>
+										<th>Order</th>
+										<th>Amount</th>
+										<th>When</th>
+										<th>Status</th>
+									</tr>
+								</thead>
+								<tbody>
+									{(rowsQ.data ?? []).map((row) => {
+										const tag = bucketTag[row.bucket];
+										return (
+											<tr
+												key={row.orderId}
+												className="row-click"
+												onClick={() => navigate(`/orders/${row.orderId}`)}
+											>
+												<td data-label="">
+													{/* The row's onClick is a mouse convenience; the link is
+													    the real, keyboard-reachable navigation. */}
+													<Link
+														to={`/orders/${row.orderId}`}
+														className="link-plain"
+														style={{ display: "block" }}
+														onClick={(e) => e.stopPropagation()}
+													>
+														<div style={{ fontWeight: 600, fontSize: 15 }}>{row.title}</div>
+													</Link>
+												</td>
+												<td data-label="Amount" style={{ fontSize: 15, whiteSpace: "nowrap" }}>
+													{money(row.amount)}
+												</td>
+												<td className="text-muted" data-label="When" style={{ fontSize: 14 }}>
+													{bucketCaption[row.bucket](row.vestedAt)}
+												</td>
+												<td data-label="Status">
+													<StatusTag label={tag.label} color={tag.color} />
+												</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
+					</AsyncPanel>
+				)}
+
+				{tab === "transfers" && (
+					<>
+						<AsyncPanel
+							loading={withdrawalsQ.loading}
+							error={withdrawalsQ.error}
+							onRetry={withdrawalsQ.reload}
+							isEmpty={(withdrawalsQ.data ?? []).length === 0}
+							emptyMessage="No transfers yet."
+						>
+							<div style={{ display: "flex", flexDirection: "column" }}>
+								{(withdrawalsQ.data ?? []).map((w) => {
+									const tag = withdrawalStatusTag(w.status);
+									return (
+										<div
+											key={w.id}
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: 12,
+												padding: "12px 0",
+												borderBottom: "1px solid var(--hairline-soft)",
+												flexWrap: "wrap",
+											}}
+										>
+											<span style={{ fontSize: 16, fontWeight: 600, minWidth: 90 }}>
+												{money(w.amountUsd)}
+											</span>
+											{/* Shrinkable, so the count and date break inside the row
+											    instead of shoving the status chip off the card. */}
+											<span className="text-muted" style={{ fontSize: 14, minWidth: 0 }}>
+												{w.orderCount} {w.orderCount === 1 ? "order" : "orders"} · {formatDate(w.createdAt)}
+											</span>
+											<span style={{ marginLeft: "auto" }}>
+												<StatusTag label={tag.label} color={tag.color} />
+											</span>
+										</div>
+									);
+								})}
+							</div>
+						</AsyncPanel>
+						<div className="text-muted" style={{ fontSize: 14 }}>
+							Each transfer bundles every order that has finished clearing. If one fails, the money
+							goes straight back to your ready balance.
+						</div>
+					</>
+				)}
+
+			</section>
 
 			{/* ── buyer savings: the one loud number in the app ───────────────
 			    One plate, one story: the hero figure and the orders behind it live

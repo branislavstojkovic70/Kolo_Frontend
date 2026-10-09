@@ -198,17 +198,20 @@
 	grid-template-columns: 3fr 2fr;
 	gap: 14px;
 }
-.lp-sell-collage img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
+.lp-sell-collage > div {
+	overflow: hidden;
 	border-radius: var(--r-card);
 	border: 1px solid var(--hairline-soft);
 }
-.lp-sell-collage img:first-child {
+.lp-sell-collage > div:not(.brand-frame) img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.lp-sell-collage > div:first-child {
 	aspect-ratio: 4 / 3;
 }
-.lp-sell-collage img:last-child {
+.lp-sell-collage > div:last-child {
 	aspect-ratio: 3 / 4;
 	margin-top: 28px;
 }

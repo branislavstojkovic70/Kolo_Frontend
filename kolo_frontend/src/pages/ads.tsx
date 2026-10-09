@@ -187,6 +187,8 @@ export default function Ads() {
 			<AsyncPanel
 				loading={listing.loading}
 				error={listing.error}
+				onRetry={listing.reload}
+				skeletonRows={6}
 				isEmpty={items.length === 0}
 				emptyMessage={
 					scope === "mine"

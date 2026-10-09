@@ -77,6 +77,9 @@ export default function Profile() {
 	const [network, setNetwork] = useState("");
 	const [currency, setCurrency] = useState("");
 	const [busy, setBusy] = useState(false);
+	// A withdrawal empties the whole available bucket and can't be reversed, so
+	// the button arms first and pays out only after the destination is read back.
+	const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
 
 	const now = useNow();
 	const navigate = useNavigate();
@@ -145,6 +148,19 @@ export default function Profile() {
 		}
 	};
 
+	// First click: validate and arm. The destination panel opens if the address
+	// is missing, so the fix is on screen instead of behind another button.
+	const startWithdraw = () => {
+		if (address.trim().length < 10) {
+			setPayoutOpen(true);
+			return toast.error("Add the account you want to be paid into");
+		}
+		if (platform && available < usd(platform.minWithdrawalUsd)) {
+			return toast.error(`The smallest transfer is ${money(platform.minWithdrawalUsd)}`);
+		}
+		setConfirmingWithdraw(true);
+	};
+
 	const withdraw = async () => {
 		if (address.trim().length < 10) return toast.error("Add the account you want to be paid into");
 		if (platform && available < usd(platform.minWithdrawalUsd)) {
@@ -163,6 +179,7 @@ export default function Profile() {
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "That transfer didn't go through");
 		} finally {
+			setConfirmingWithdraw(false);
 			setBusy(false);
 		}
 	};
@@ -282,21 +299,43 @@ export default function Profile() {
 							maxWidth: "100%",
 						}}
 					>
-						<button
-							className="btn btn-primary"
-							style={{ whiteSpace: "nowrap" }}
-							onClick={withdraw}
-							disabled={busy || available < usd(platform?.minWithdrawalUsd ?? 0)}
-						>
-							Withdraw {money(available)}
-						</button>
-						<button
-							className="btn btn-ghost btn-sm"
-							style={{ alignSelf: "center" }}
-							onClick={() => setPayoutOpen((v) => !v)}
-						>
-							{payoutOpen ? "Hide payout details" : "Payout details"}
-						</button>
+						{!confirmingWithdraw ? (
+							<>
+								<button
+									className="btn btn-primary"
+									style={{ whiteSpace: "nowrap" }}
+									onClick={startWithdraw}
+									disabled={busy || available < usd(platform?.minWithdrawalUsd ?? 0)}
+								>
+									Withdraw {money(available)}
+								</button>
+								<button
+									className="btn btn-ghost btn-sm"
+									style={{ alignSelf: "center" }}
+									onClick={() => setPayoutOpen((v) => !v)}
+								>
+									{payoutOpen ? "Hide payout details" : "Payout details"}
+								</button>
+							</>
+						) : (
+							<>
+								<div style={{ fontSize: 13, color: "var(--body-soft)" }}>
+									{money(available)} as {currency || platform?.payoutCurrencies[0]} over{" "}
+									{network || platform?.payoutNetworks[0]} to …{address.trim().slice(-6)}. Transfers
+									can't be reversed.
+								</div>
+								<button className="btn btn-primary" onClick={withdraw} disabled={busy}>
+									Confirm transfer
+								</button>
+								<button
+									className="btn btn-secondary"
+									onClick={() => setConfirmingWithdraw(false)}
+									disabled={busy}
+								>
+									Cancel
+								</button>
+							</>
+						)}
 					</div>
 				</div>
 
@@ -387,6 +426,7 @@ export default function Profile() {
 					<AsyncPanel
 						loading={rowsQ.loading}
 						error={rowsQ.error}
+						onRetry={rowsQ.reload}
 						isEmpty={(rowsQ.data ?? []).length === 0}
 						emptyMessage="Nothing here yet — your first sale shows up in this table."
 					>
@@ -532,6 +572,7 @@ export default function Profile() {
 					<AsyncPanel
 						loading={withdrawalsQ.loading}
 						error={withdrawalsQ.error}
+						onRetry={withdrawalsQ.reload}
 						isEmpty={(withdrawalsQ.data ?? []).length === 0}
 						emptyMessage="No transfers yet."
 					>

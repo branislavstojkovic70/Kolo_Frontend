@@ -160,7 +160,13 @@ export default function OrderDetails() {
 	if (!order) {
 		return (
 			<Page title="Order" sub="Payment, delivery and protection">
-				<AsyncPanel loading={loading} error={error} isEmpty emptyMessage="We couldn't find that order.">
+				<AsyncPanel
+				loading={loading}
+				error={error}
+				onRetry={reload}
+				isEmpty
+				emptyMessage="We couldn't find that order."
+			>
 					<span />
 				</AsyncPanel>
 			</Page>

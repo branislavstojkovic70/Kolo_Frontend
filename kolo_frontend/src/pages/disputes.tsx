@@ -120,6 +120,17 @@ export default function Disputes() {
 
 	const dispute = detail.data;
 
+	// Settling moves held money and can't be undone, so the decision is
+	// two-step: pick a winner, read what it does, confirm. The armed choice is
+	// tagged with the request it was made on, so switching to another request
+	// abandons it by derivation — no setState-in-effect.
+	const [pending, setPending] = useState<{ forId: string; winner: "BUYER" | "SELLER" } | null>(
+		null
+	);
+	const pendingWinner = pending && pending.forId === selectedId ? pending.winner : null;
+	const setPendingWinner = (winner: "BUYER" | "SELLER" | null) =>
+		setPending(winner && selectedId ? { forId: selectedId, winner } : null);
+
 	const resolve = async (winner: "BUYER" | "SELLER") => {
 		if (!dispute) return;
 		setBusy(true);
@@ -132,6 +143,7 @@ export default function Disputes() {
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Could not resolve this request");
 		} finally {
+			setPendingWinner(null);
 			setBusy(false);
 		}
 	};
@@ -168,6 +180,8 @@ export default function Disputes() {
 			<AsyncPanel
 				loading={list.loading}
 				error={list.error}
+				onRetry={list.reload}
+				skeletonRows={4}
 				isEmpty={entries.length === 0}
 				emptyMessage={
 					search || status ? "Nothing matches those filters." : "No open requests — that's a good sign."
@@ -334,14 +348,49 @@ export default function Disputes() {
 												onChange={(e) => setNote(e.target.value)}
 												placeholder="Note for both parties (optional)"
 											/>
-											<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-												<button className="btn btn-primary" disabled={busy} onClick={() => resolve("BUYER")}>
-													Refund the buyer
-												</button>
-												<button className="btn btn-secondary" disabled={busy} onClick={() => resolve("SELLER")}>
-													Pay the seller
-												</button>
-											</div>
+											{pendingWinner === null ? (
+												<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+													<button
+														className="btn btn-primary"
+														disabled={busy}
+														onClick={() => setPendingWinner("BUYER")}
+													>
+														Refund the buyer
+													</button>
+													<button
+														className="btn btn-secondary"
+														disabled={busy}
+														onClick={() => setPendingWinner("SELLER")}
+													>
+														Pay the seller
+													</button>
+												</div>
+											) : (
+												<div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+													<div style={{ fontSize: 14, color: "var(--body-soft)" }}>
+														{pendingWinner === "BUYER"
+															? `This returns ${money(dispute.order.amountUsd)} to the buyer and closes the request.`
+															: `This releases ${money(dispute.order.sellerAmountUsd)} to the seller and closes the request.`}{" "}
+														It can't be undone.
+													</div>
+													<div className="action-row" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+														<button
+															className="btn btn-primary"
+															disabled={busy}
+															onClick={() => resolve(pendingWinner)}
+														>
+															{pendingWinner === "BUYER" ? "Yes, refund the buyer" : "Yes, pay the seller"}
+														</button>
+														<button
+															className="btn btn-secondary"
+															disabled={busy}
+															onClick={() => setPendingWinner(null)}
+														>
+															Go back
+														</button>
+													</div>
+												</div>
+											)}
 										</div>
 									)}
 								</div>
@@ -387,6 +436,7 @@ export default function Disputes() {
 								<AsyncPanel
 									loading={detail.loading}
 									error={detail.error}
+									onRetry={detail.reload}
 									isEmpty
 									emptyMessage="Pick a request to see the details."
 								>

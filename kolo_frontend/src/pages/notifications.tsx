@@ -87,6 +87,8 @@ export default function Notifications() {
 			<AsyncPanel
 				loading={loading}
 				error={error}
+				onRetry={reload}
+				skeletonRows={5}
 				isEmpty={visible.length === 0}
 				emptyMessage={
 					search || status

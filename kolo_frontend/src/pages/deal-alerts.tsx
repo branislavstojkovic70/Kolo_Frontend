@@ -272,6 +272,7 @@ export default function DealAlerts() {
 					<AsyncPanel
 						loading={list.loading}
 						error={list.error}
+						onRetry={list.reload}
 						isEmpty={alerts.length === 0}
 						emptyMessage={
 							status

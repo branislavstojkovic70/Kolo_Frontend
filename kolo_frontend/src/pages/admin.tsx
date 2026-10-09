@@ -70,6 +70,9 @@ function StatCell({
 function DisputeQueueItem({ dispute, onResolved }: { dispute: AdminDispute; onResolved: () => void }) {
 	const [note, setNote] = useState("");
 	const [busy, setBusy] = useState(false);
+	// Settling is irreversible and the two buttons sit side by side — a misclick
+	// picks the opposite winner. First click arms, second confirms.
+	const [pendingWinner, setPendingWinner] = useState<"BUYER" | "SELLER" | null>(null);
 
 	const act = async (action: "BUYER" | "SELLER" | "telegram") => {
 		setBusy(true);
@@ -85,6 +88,7 @@ function DisputeQueueItem({ dispute, onResolved }: { dispute: AdminDispute; onRe
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Action failed");
 		} finally {
+			setPendingWinner(null);
 			setBusy(false);
 		}
 	};
@@ -116,12 +120,32 @@ function DisputeQueueItem({ dispute, onResolved }: { dispute: AdminDispute; onRe
 					value={note}
 					onChange={(e) => setNote(e.target.value)}
 				/>
-				<button className="btn btn-primary" disabled={busy} onClick={() => act("BUYER")}>
-					Refund the buyer
-				</button>
-				<button className="btn btn-secondary" disabled={busy} onClick={() => act("SELLER")}>
-					Pay the seller
-				</button>
+				{pendingWinner === null ? (
+					<>
+						<button className="btn btn-primary" disabled={busy} onClick={() => setPendingWinner("BUYER")}>
+							Refund the buyer
+						</button>
+						<button className="btn btn-secondary" disabled={busy} onClick={() => setPendingWinner("SELLER")}>
+							Pay the seller
+						</button>
+					</>
+				) : (
+					<>
+						{/* flexBasis 100%: the sentence takes its own line of the wrapping row. */}
+						<span style={{ fontSize: 14, color: "var(--body-soft)", flexBasis: "100%" }}>
+							{pendingWinner === "BUYER"
+								? `This returns ${money(dispute.order.amountUsd)} to the buyer and closes the request.`
+								: `This releases ${money(dispute.order.sellerAmountUsd)} to the seller and closes the request.`}{" "}
+							It can't be undone.
+						</span>
+						<button className="btn btn-primary" disabled={busy} onClick={() => act(pendingWinner)}>
+							{pendingWinner === "BUYER" ? "Yes, refund the buyer" : "Yes, pay the seller"}
+						</button>
+						<button className="btn btn-secondary" disabled={busy} onClick={() => setPendingWinner(null)}>
+							Go back
+						</button>
+					</>
+				)}
 				{dispute.telegramInviteLink ? (
 					<a className="btn btn-ghost" href={dispute.telegramInviteLink} target="_blank" rel="noreferrer">
 						Open the chat
@@ -323,6 +347,7 @@ export default function Admin() {
 					<AsyncPanel
 						loading={disputesQ.loading}
 						error={disputesQ.error}
+						onRetry={disputesQ.reload}
 						isEmpty={(disputesQ.data?.items ?? []).length === 0}
 						emptyMessage="No requests on the platform."
 					>
@@ -388,6 +413,7 @@ export default function Admin() {
 					<AsyncPanel
 						loading={ordersQ.loading}
 						error={ordersQ.error}
+						onRetry={ordersQ.reload}
 						isEmpty={(ordersQ.data?.items ?? []).length === 0}
 						emptyMessage="No orders yet."
 					>
@@ -455,6 +481,7 @@ export default function Admin() {
 					<AsyncPanel
 						loading={withdrawalsQ.loading}
 						error={withdrawalsQ.error}
+						onRetry={withdrawalsQ.reload}
 						isEmpty={(withdrawalsQ.data?.items ?? []).length === 0}
 						emptyMessage="No transfers yet."
 					>
@@ -517,6 +544,7 @@ export default function Admin() {
 					<AsyncPanel
 						loading={alertsQ.loading}
 						error={alertsQ.error}
+						onRetry={alertsQ.reload}
 						isEmpty={(alertsQ.data?.items ?? []).length === 0}
 						emptyMessage="Nobody is watching anything yet."
 					>

@@ -27,7 +27,7 @@ export default function Orders() {
 	const controls = useListControls<OrderStatus>();
 	const { search, status, page, limit } = controls;
 
-	const { data, loading, error } = useAsync(
+	const { data, loading, error, reload } = useAsync(
 		() =>
 			ordersApi.list({
 				role: tab,
@@ -97,6 +97,8 @@ export default function Orders() {
 			<AsyncPanel
 				loading={loading}
 				error={error}
+				onRetry={reload}
+				skeletonRows={5}
 				isEmpty={rows.length === 0}
 				emptyMessage={
 					search || status ? "No orders match those filters." : "You don't have any orders yet."

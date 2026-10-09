@@ -163,7 +163,13 @@ export default function AdDetails() {
 				</button>
 			</div>
 
-			<AsyncPanel loading={loading} error={error} isEmpty={!ad} emptyMessage="That listing is no longer here.">
+			<AsyncPanel
+				loading={loading}
+				error={error}
+				onRetry={reload}
+				isEmpty={!ad}
+				emptyMessage="That listing is no longer here."
+			>
 				{ad && (
 					/* `has-buy-bar` only when there is actually a bar to make room
 					   for — the seller's own listing shows management controls in the

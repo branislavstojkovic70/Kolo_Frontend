@@ -189,7 +189,9 @@ export default function AdDetails() {
 								<div className="text-muted" style={{ fontSize: 14 }}>
 									{ad.category ?? ad.product.category} · listed {formatDate(ad.createdAt)}
 								</div>
-								<h1 style={{ fontSize: 22, fontWeight: 500, margin: "6px 0 12px" }}>{ad.title}</h1>
+								{/* No size/weight override: the h1 base style (clamp 22–28px, 700)
+							    must outweigh the 22px/600 section heads below it. */}
+							<h1 style={{ margin: "6px 0 12px" }}>{ad.title}</h1>
 								<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
 									<BlockAvatar name={ad.seller.username} imageUrl={ad.seller.imageUrl} size={28} fontSize={12} />
 									<span style={{ fontSize: 15, fontWeight: 600 }}>

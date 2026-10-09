@@ -388,6 +388,12 @@ figure {
 .btn svg {
 	display: block;
 }
+/* The body sets `overflow-wrap: anywhere` for seller-typed strings; a button
+   label is ours and must never break mid-word ("Previo-us"). Wrapping between
+   words stays allowed — the mobile buy bar relies on it. */
+.btn {
+	overflow-wrap: normal;
+}
 .btn:disabled {
 	cursor: not-allowed;
 }

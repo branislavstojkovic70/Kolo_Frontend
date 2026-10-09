@@ -46,26 +46,29 @@ export function withdrawalStatusTag(status: WithdrawalStatus): { label: string; 
 
 /**
  * The 5-step protection bar: Payment → Protected → Delivered → Clearing →
- * Paid out. Steps light up from real order state; a problem paints it red.
+ * Paid out. Steps light up from real order state; `color` is the fill for the
+ * lit segments — accent while the trade is on course, red when something went
+ * wrong, muted when the journey ended without a sale (refund: the bar is over,
+ * not complete, so it must not read like a 5/5 success).
  */
 export function protectionSteps(order: {
 	status: OrderStatus;
 	vestedAt: string | null;
 	withdrawalId: string | null;
-}): { filled: number; bad: boolean } {
+}): { filled: number; color: string } {
 	switch (order.status) {
 		case "PENDING_PAYMENT":
-			return { filled: 0, bad: false };
+			return { filled: 0, color: "var(--accent)" };
 		case "EXPIRED":
-			return { filled: 0, bad: true };
+			return { filled: 0, color: "var(--error)" };
 		case "DISPUTED":
-			return { filled: 2, bad: true };
+			return { filled: 2, color: "var(--error)" };
 		case "REFUNDED":
-			return { filled: 5, bad: false };
+			return { filled: 5, color: "var(--muted-soft)" };
 		case "PAID": {
 			const vested = !!order.vestedAt && new Date(order.vestedAt).getTime() <= Date.now();
-			if (order.withdrawalId) return { filled: 5, bad: false };
-			return { filled: vested ? 4 : 3, bad: false };
+			if (order.withdrawalId) return { filled: 5, color: "var(--accent)" };
+			return { filled: vested ? 4 : 3, color: "var(--accent)" };
 		}
 	}
 }

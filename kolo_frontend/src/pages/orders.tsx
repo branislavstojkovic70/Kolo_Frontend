@@ -134,7 +134,11 @@ export default function Orders() {
 												#{shortRef(order.id)}
 											</div>
 										</td>
-										<td className="text-muted" data-label="Side" style={{ fontSize: 14 }}>
+										<td
+											className="text-muted"
+											data-label="Side"
+											style={{ fontSize: 14, whiteSpace: "nowrap" }}
+										>
 											{order.role}
 										</td>
 										<td data-label="Price" style={{ fontSize: 15, whiteSpace: "nowrap" }}>
@@ -146,7 +150,11 @@ export default function Orders() {
 											)}
 										</td>
 										<td data-label="Progress">
-											<div style={{ display: "flex", gap: 3, width: 88, maxWidth: "100%", flex: "none" }}>
+											<div
+												role="img"
+												aria-label={`${chip.label} — step ${steps.filled} of 5`}
+												style={{ display: "flex", gap: 3, width: 88, maxWidth: "100%", flex: "none" }}
+											>
 												{Array.from({ length: 5 }, (_, i) => (
 													<span
 														key={i}
@@ -155,11 +163,7 @@ export default function Orders() {
 															height: 6,
 															borderRadius: 3,
 															background:
-																i < steps.filled
-																	? steps.bad
-																		? "var(--error)"
-																		: "var(--accent)"
-																	: "var(--hairline-soft)",
+																i < steps.filled ? steps.color : "var(--hairline-soft)",
 														}}
 													/>
 												))}

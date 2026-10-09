@@ -893,6 +893,57 @@ select.input {
 	object-fit: cover;
 }
 
+/* Brand cover art. The catalogue ships each subscription's real logo as a
+   small square mark, which would be a blurry mess stretched across a 4:3
+   photo frame. So the frame is filled with the brand's OWN colours — the
+   same mark blown up and blurred into a backdrop (`--brand-art`) — and the
+   crisp logo sits on top at its natural size. Every product gets cover art
+   that is unmistakably its brand, with no stock photography anywhere.
+   A seller's own uploaded photo keeps the plain `cover` crop above. */
+.brand-frame {
+	position: relative;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	background: var(--surface-soft);
+}
+.brand-frame::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: var(--brand-art);
+	background-size: cover;
+	background-position: center;
+	/* Scaled past the edges so the blur never shows a soft border. */
+	transform: scale(1.6);
+	filter: blur(26px) saturate(1.5);
+	opacity: 0.55;
+}
+.brand-frame img {
+	position: relative;
+	width: clamp(56px, 30%, 92px);
+	height: auto;
+	aspect-ratio: 1;
+	object-fit: contain;
+	border-radius: var(--r-btn);
+	/* Lifts the mark off its own backdrop, one consistent light source. */
+	box-shadow: var(--shadow-card);
+}
+/* The card keeps the media frame's top-only radius. */
+.mcard-media.brand-frame {
+	border-radius: var(--r-card) var(--r-card) 0 0;
+}
+/* The listing detail's hero is a free-standing plate, so it rounds fully and
+   shows the mark a size up. */
+.brand-frame.brand-hero {
+	aspect-ratio: 16 / 9;
+	max-height: clamp(200px, 42vw, 360px);
+	border-radius: var(--r-card);
+}
+.brand-frame.brand-hero img {
+	width: clamp(80px, 22%, 128px);
+}
+
 /* Wallet card — the money surface. 24px radius, no shadow: the contrast with
    the neutral page ground behind it IS the elevation, in both themes. Light
    steps the ground down to grey and keeps the cards white; dark steps the

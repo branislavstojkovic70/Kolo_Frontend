@@ -16,7 +16,11 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 	// Sellers paste any URL they like, so a dead link must not leave a hole.
 	const [imageFailed, setImageFailed] = useState(false);
 
-	const cover = listing.imageUrl ?? listing.product.imageUrl ?? null;
+	// A seller's own cover is photography and fills the frame; falling back to
+	// the catalogue's brand mark means the frame becomes brand cover art.
+	const sellerCover = listing.imageUrl ?? null;
+	const cover = sellerCover ?? listing.product.imageUrl ?? null;
+	const isBrandMark = !sellerCover && !!cover;
 	const showImage = !!cover && !imageFailed;
 	const category = listing.category ?? listing.product.category;
 	const available = availableOf(listing);
@@ -46,7 +50,14 @@ export default function ListingCard({ listing, index, showStatus = false }: List
 				animation: `fadeUp .3s ease ${(Math.min(index, 11) * 0.04).toFixed(2)}s both`,
 			}}
 		>
-			<div className="mcard-media">
+			<div
+				className={`mcard-media${showImage && isBrandMark ? " brand-frame" : ""}`}
+				style={
+					showImage && isBrandMark
+						? ({ "--brand-art": `url(${cover})` } as React.CSSProperties)
+						: undefined
+				}
+			>
 				{showImage ? (
 					<img
 						src={cover ?? undefined}

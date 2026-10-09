@@ -76,7 +76,10 @@ export default function AdDetails() {
 	const fee = previewFee(platform, price);
 	const retail = ad?.product.retailPriceUsd;
 	const saved = ad ? savedPercent(ad.priceUsd, retail) : null;
+	// Seller's own photo fills the frame; the catalogue's brand mark instead
+	// becomes brand cover art (see `.brand-frame`).
 	const cover = ad ? (ad.imageUrl ?? ad.product.imageUrl) : null;
+	const isBrandMark = !!ad && !ad.imageUrl && !!cover;
 	const canBuy = !!ad && ad.status === "ACTIVE" && available > 0;
 	// quantity − soldCount − availableCount: units other buyers are mid-payment on.
 	const heldUnits = ad ? Math.max(ad.quantity - ad.soldCount - ad.availableCount, 0) : 0;
@@ -181,10 +184,21 @@ export default function AdDetails() {
 					   card instead, and gets no fixed bar. */
 					<div className={`layout-detail${isOwnAd ? "" : " has-buy-bar"}`}>
 						<div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-							{cover && !imageFailed && (
+							{cover && !imageFailed && isBrandMark ? (
+								/* The catalogue's brand mark becomes cover art: its own
+								   colours blurred full-bleed, the real logo crisp on top. */
+								<div
+									className="brand-frame brand-hero"
+									style={{ "--brand-art": `url(${cover})` } as React.CSSProperties}
+								>
+									<img src={cover} alt={ad.title} onError={() => setImageFailed(true)} />
+								</div>
+							) : (
+								cover &&
+								!imageFailed && (
 								<img
 									src={cover}
-									alt=""
+									alt={ad.title}
 									onError={() => setImageFailed(true)}
 									style={{
 										width: "100%",
@@ -195,6 +209,7 @@ export default function AdDetails() {
 										borderRadius: "var(--r-card)",
 									}}
 								/>
+								)
 							)}
 							<div>
 								<div className="text-muted" style={{ fontSize: 14 }}>

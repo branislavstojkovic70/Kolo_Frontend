@@ -4,6 +4,7 @@ import { listingsApi, type Listing } from "../api";
 import { useAsync } from "../hooks/use-async";
 import { useAuth } from "../hooks/use-auth";
 import { usePlatformConfig } from "../hooks/use-platform-config";
+import ListingCover from "../components/listing-cover";
 import ThemeToggle from "../components/theme-toggle";
 import { LockIcon, MessageIcon, ShieldCheckIcon } from "../components/icons";
 import { money, savedPercent, usd } from "../utils/money";
@@ -47,13 +48,16 @@ function Reveal({ children }: { children: React.ReactNode }) {
 
 /** Compact listing card for the deals row — real data, links into sign-up. */
 function DealCard({ listing }: { listing: Listing }) {
-	const cover = listing.imageUrl ?? listing.product.imageUrl;
 	const saved = savedPercent(listing.priceUsd, listing.product.retailPriceUsd);
 	return (
 		<Link to="/register" className="card mcard link-plain" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
-			<div className="mcard-media" style={{ aspectRatio: "16 / 10" }}>
-				{cover && <img src={cover} alt={listing.title} loading="lazy" />}
-			</div>
+			<ListingCover
+				listing={listing}
+				className="mcard-media"
+				style={{ aspectRatio: "16 / 10" }}
+				alt={listing.title}
+				imgProps={{ loading: "lazy" }}
+			/>
 			<div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
 				<div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{listing.title}</div>
 				<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -158,13 +162,12 @@ export default function Landing() {
 							<div className="lp-stack fade-up" style={{ animationDelay: "0.2s" }}>
 								<div className="deal-card lp-stack-plate" aria-hidden="true" />
 								<div className="card lp-stack-card" style={{ padding: 0, gap: 0, overflow: "hidden" }}>
-									<div className="mcard-media">
-										<img
-											src={(hero.imageUrl ?? hero.product.imageUrl)!}
-											alt={hero.title}
-											fetchPriority="high"
-										/>
-									</div>
+									<ListingCover
+										listing={hero}
+										className="mcard-media"
+										alt={hero.title}
+										imgProps={{ fetchPriority: "high" }}
+									/>
 									<div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 6 }}>
 										<div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{hero.title}</div>
 										<div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -349,8 +352,8 @@ export default function Landing() {
 								</div>
 								{collage.length === 2 && (
 									<div className="lp-sell-collage" aria-hidden="true">
-										<img src={(collage[0].imageUrl ?? collage[0].product.imageUrl)!} alt="" loading="lazy" />
-										<img src={(collage[1].imageUrl ?? collage[1].product.imageUrl)!} alt="" loading="lazy" />
+										<ListingCover listing={collage[0]} imgProps={{ loading: "lazy" }} />
+										<ListingCover listing={collage[1]} imgProps={{ loading: "lazy" }} />
 									</div>
 								)}
 							</div>

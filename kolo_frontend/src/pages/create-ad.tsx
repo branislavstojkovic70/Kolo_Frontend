@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { listingsApi, productsApi } from "../api";
 import AsyncPanel from "../components/async-panel";
+import ListingCover from "../components/listing-cover";
 import { ArrowLeftIcon, ShieldCheckIcon } from "../components/icons";
 import Page from "../components/page";
 import ProductPicker from "../components/product-picker";
@@ -76,15 +77,8 @@ export default function CreateAd() {
 	const retail = product ? usd(product.retailPriceUsd) : 0;
 	const discount = product ? savedPercent(priceNum, product.retailPriceUsd) : null;
 
-	/** Picking a product seeds the cover photo — the seller can still override it. */
-	const pickProduct = (next: string) => {
-		setProductId(next);
-		const picked = findProduct(products, next);
-		if (picked && !imageUrl.trim()) {
-			setImageUrl(picked.imageUrl ?? "");
-			setImageFailed(false);
-		}
-	};
+	/** The cover stays empty unless the seller pastes a photo — the card then shows the brand mark. */
+	const pickProduct = (next: string) => setProductId(next);
 
 	const clearError = (key: string) =>
 		setErrors((current) => (current[key] ? { ...current, [key]: "" } : current));
@@ -305,7 +299,7 @@ export default function CreateAd() {
 								setImageUrl(e.target.value);
 								setImageFailed(false);
 							}}
-							placeholder="https://example.com/cover.jpg"
+							placeholder="Optional, the brand logo is used without one"
 						/>
 						<div
 							className="grid-plate"
@@ -328,6 +322,11 @@ export default function CreateAd() {
 									alt=""
 									onError={() => setImageFailed(true)}
 									style={{ width: "100%", height: "100%", objectFit: "cover" }}
+								/>
+							) : !imageUrl.trim() && product?.imageUrl ? (
+								<ListingCover
+									listing={{ imageUrl: null, product }}
+									style={{ width: "100%", height: "100%" }}
 								/>
 							) : (
 								<span className="text-muted" style={{ fontSize: 14 }}>

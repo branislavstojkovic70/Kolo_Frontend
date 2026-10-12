@@ -1,103 +1,79 @@
-# Kolo — Crypto Services Marketplace (Frontend)
+# Kolo web app
 
-Kolo is a marketplace for digital services, streaming slots, VPNs, IPTV, software keys, game
-passes, where buyers pay in cryptocurrency via [OxaPay](https://oxapay.com) and the platform
-holds the money in **escrow**. Sellers' earnings **vest** for 30 days per order before they can
-be withdrawn; buyers can open an **admin-arbitrated dispute** (run through a dedicated Telegram
-group) that freezes the escrow until a decision is made. The platform takes a flat **4% fee**.
+The React frontend of [Kolo](../README.md), a marketplace where people share the spare months on
+their subscriptions. Buyers pay a crypto invoice into escrow, sellers are paid after a clearing
+period, and anything that goes wrong is settled by a person in a private Telegram chat.
 
-This repository is the React frontend. It implements the full Kolo design language —
-brutalist/editorial, flat, hard-edged, zero border radius — and runs entirely against the real
-[NestJS backend](../../Kolo_Backend) (no mock data).
-
-```
-PAID. → ESCROWED. → VESTED. → RELEASED.
-```
-
----
+It runs against the real [Kolo backend](https://github.com/branislavstojkovic70/Kolo_Backend)
+(NestJS, Prisma, PostgreSQL). There is no mock data in this app.
 
 ## Contents
 
 - [Screens](#screens)
-- [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
 - [Authentication](#authentication)
 - [Demo walkthrough](#demo-walkthrough)
 - [Project structure](#project-structure)
 - [Architecture notes](#architecture-notes)
 - [Design system](#design-system)
-- [Responsive behavior](#responsive-behavior)
+- [Responsive layout and accessibility](#responsive-layout-and-accessibility)
 - [Environment variables](#environment-variables)
 - [Scripts](#scripts)
-- [Design ↔ backend adaptations](#design--backend-adaptations)
-
----
+- [Deploying](#deploying)
+- [Not built yet](#not-built-yet)
 
 ## Screens
 
-| Route                | View                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `/login`, `/register`| Split screen: orange manifesto poster (live service count) + sign-in / create-account form                     |
-| `/ads`               | **Marketplace** — stat cells with count-up, search + category/price filters, All\|Mine scope, mondrian card grid |
-| `/ads/:id`           | **Service detail** — description, platform guarantees, seller's other listings, sticky order card with fee math; owners get pause/activate/delete |
-| `/ads/new`           | **Post an ad** — controlled form with live listing preview and payout-per-sale math; publish or save as paused draft |
-| `/orders`            | **Orders** — All\|Buying\|Selling tabs, title search, status filter, paging (10/20/50/100), 5-segment escrow-flow bars |
-| `/orders/:id`        | **Order detail** — money-flow strip, OxaPay payment card (QR + checkout link + countdown, self-refreshing), delivery info for the paid buyer, dispute action |
-| `/disputes(/:id)`    | **Disputes** — master-detail list with search / status filter / paging, message plates, ADMIN DECISION plate, "Join dispute chat on Telegram" button; inline resolve controls for admins |
-| `/notifications`     | **Inbox** — real event feed with unread bars synced to the sidebar badge, searchable and filterable by type    |
-| `/profile`           | **Wallet & profile** — balance buckets, withdraw bar, vesting entries table, payout history, account stats, profile editing |
-| `/admin`             | **Arbitration** (admins only) — platform stats, dispute resolve queue, all orders and payouts                  |
+| Route | Screen |
+| --- | --- |
+| `/` | **Landing page** for signed-out visitors, built from live listings and platform numbers. Signed-in users go straight to Browse. |
+| `/login`, `/register` | Sign in and create account: Clerk's widget, or the e-mail dev login (see [Authentication](#authentication)). |
+| `/ads` | **Browse**: search, category chips, price and sort filters, Everything / My listings. |
+| `/ads/:id` | **Listing**: brand cover, savings against retail, Buyer Protection promises, Buy now. Sellers get pause, edit, cover photo and remove (with an inline confirm). |
+| `/ads/new`, `/ads/:id/edit` | **Sell a subscription**: catalogue picker, price, quantity, private access details, live fee preview, inline validation. |
+| `/alerts` | **Deal Alerts**: set a max price for a product; matched deals show a payment countdown. |
+| `/orders` | **Orders**: All / Buying / Selling, search, status filter, a progress bar per order. |
+| `/orders/:id` | **Order**: payment card (QR, checkout link, hold countdown), 5-step protection tracker, access details for the buyer, *Get help with this order*. |
+| `/disputes`, `/disputes/:id` | **Resolution**: help requests and the case view with the Telegram chat button. Admins decide here, with a two-step confirm. |
+| `/notifications` | **Activity**: everything that happened on your orders, requests and transfers. |
+| `/profile` | **Wallet**: ready balance with a breakdown bar, withdraw (with a confirmation step), account details, order-by-order and transfer history. |
+| `/admin` | **Resolution centre** (admins only): platform stats, dispute queue, all orders, transfers and deal alerts. |
 
-Every authed view lives inside the app shell: a 288px sidebar (wordmark, nav with unread badge,
-live wallet summary, escrow-release meter), a topbar with breadcrumb + theme toggle + *Post an
-ad*, and a marquee ticker of real escrow events.
-
-## Tech stack
-
-- **React 19** + **TypeScript**, built with **Vite**
-- **react-router-dom v7** for client routing
-- **react-hot-toast** for notifications
-- **qrcode** for rendering the OxaPay invoice QR
-- Plain CSS design system in [`src/index.css`](src/index.css) — CSS custom properties, no UI
-  framework, no CSS-in-JS library
-- Fonts: **Archivo** (400/600/800) for UI + headings, **IBM Plex Mono** (400/500/600) for
-  numbers, addresses, IDs, timestamps and micro-labels
+Signed-in screens share one shell: a sidebar (navigation, ready-to-withdraw card, savings card),
+a topbar (savings badge, theme toggle, *Sell a subscription*) and a strip of recent activity.
 
 ## Getting started
 
-### 1. Boot the backend
+### 1. Start the backend
 
-The frontend needs the [Kolo backend](../../Kolo_Backend) (NestJS + Prisma + PostgreSQL) running
-on `http://localhost:3000`. From the backend repo:
+The app needs the [Kolo backend](https://github.com/branislavstojkovic70/Kolo_Backend) on
+`http://localhost:3000`. From the backend repo:
 
 ```bash
+cp .env.example .env
 docker compose up -d          # PostgreSQL 16
 npm install
 npx prisma migrate deploy
-npx prisma db seed            # demo users, listings, orders in every state
-npm run start:dev             # API on :3000, Swagger at /docs
+npx prisma db seed            # demo users, listings and orders in every state
+npm run start:dev             # API on :3000, Swagger docs at /docs
 ```
 
-The backend's `.env` should have the demo switches on:
+For a local demo, turn these on in the backend `.env`:
 
-```
-DEV_AUTH_BYPASS=true     # sign in with just an e-mail (see Authentication)
-OXAPAY_MOCK=true         # fake invoices + built-in mock checkout page
-PLATFORM_FEE_PERCENT=4   # matches the UI copy
+```bash
+DEV_AUTH_BYPASS=true   # sign in with just an e-mail
+OXAPAY_MOCK=true       # fake invoices, plus a built-in checkout with a "Simulate payment" button
 ```
 
-### 2. Run the frontend
+### 2. Run the app
 
 ```bash
 npm install
 npm run dev               # http://localhost:5173
 ```
 
-Optional — copy `.env.example` to `.env` if your API isn't on the default URL:
-
-```
-VITE_API_URL=http://localhost:3000/api
-```
+With no `.env`, the app talks to `http://localhost:3000/api` and uses the e-mail dev login. Copy
+[`.env.example`](.env.example) to `.env` to change either.
 
 To open the app from your phone on the same network:
 
@@ -107,220 +83,206 @@ npm run dev -- --host     # then visit http://<your-machine-ip>:5173
 
 ## Authentication
 
-The app has two session models. Which one runs is decided by a single env var,
-`VITE_CLERK_PUBLISHABLE_KEY` — see [`src/lib/clerk.ts`](src/lib/clerk.ts).
+The app has two session models. One env var decides which one runs:
+`VITE_CLERK_PUBLISHABLE_KEY` (see [`src/lib/clerk.ts`](src/lib/clerk.ts)).
 
 ### Clerk (key set)
 
-- `<ClerkProvider>` wraps the app; `/login` and `/register` render Clerk's own
-  [`<SignIn>`](src/pages/login.tsx) / [`<SignUp>`](src/pages/register.tsx), skinned to the Kolo
-  palette. Google OAuth and any other method are enabled in the Clerk dashboard, not in code.
-- Every API request carries `Authorization: Bearer <clerk session token>`; the token is minted
-  per request from Clerk's `getToken()`.
-- The backend's `ClerkAuthGuard` verifies it and JIT-provisions the Kolo row. It **adopts an
-  existing row with the same e-mail**, so a seeded account survives its first real Clerk login.
-- Both routes are mounted as splats (`/login/*`) because Clerk's path routing puts its sub-steps
-  (2FA, SSO callback) underneath them.
+- `<ClerkProvider>` wraps the app, and `/login` and `/register` render Clerk's
+  [`<SignIn>`](src/pages/login.tsx) and [`<SignUp>`](src/pages/register.tsx), restyled to match
+  the active theme. Google sign-in and other methods are switched on in the Clerk dashboard, not in
+  code.
+- Every API request carries `Authorization: Bearer <clerk session token>`, minted per request with
+  Clerk's `getToken()`.
+- The backend verifies the token and creates the Kolo account on first sign-in. It **adopts an
+  existing account with the same e-mail**, so a seeded account keeps its data after its first real
+  Clerk login.
+- Both routes are mounted as splats (`/login/*`) because Clerk puts its sub-steps (2FA, SSO
+  callback) underneath them.
 
-Set the matching `CLERK_SECRET_KEY` in the **backend** `.env` — it must be the same Clerk instance.
+Set the matching `CLERK_SECRET_KEY` in the **backend** `.env`, from the same Clerk instance.
 
-### Dev bypass (key empty)
+### Dev login (key empty)
 
-Fallback so the seeded demo runs without a Clerk account. Requires `DEV_AUTH_BYPASS=true` on the
+A fallback so the seeded demo runs without a Clerk account. Needs `DEV_AUTH_BYPASS=true` on the
 backend.
 
 - Signing in stores the e-mail in `localStorage` (`kolo-session-email`) and calls `GET /api/me`.
-- Every API request sends the stored e-mail as `x-dev-user-email`
+- Every API request sends that e-mail as `x-dev-user-email`
   (see [`src/api/client.ts`](src/api/client.ts)).
-- The **password field on the login screen is decorative** — this path has no password auth.
-- Registering is the same call plus a `PATCH /api/me` to save the chosen display name.
+- The **password field is decorative**: this path has no password check.
+- Registering is the same call plus `PATCH /api/me` to save the display name.
 
-Never both at once: the backend guard checks the dev header first, so a stray e-mail header would
-silently outrank a real token. The client sends one or the other, never both.
+The client sends either the token or the e-mail header, never both: the backend checks the e-mail
+header first, so a stray one would outrank a real token.
 
-Admin rights come from the backend's `ADMIN_EMAILS` env list in either mode.
+Admin rights come from the backend's `ADMIN_EMAILS` list in either mode.
 
 ### Seeded accounts
 
-| E-mail                        | Why you'd use it                                      |
-| ----------------------------- | ----------------------------------------------------- |
-| `elena.petrova@example.com`   | Seller with money in **every** wallet bucket          |
-| `marcus.reid@example.com`     | Seller with one clean payout ready to withdraw        |
-| `tom.becker@example.com`      | Buyer with open (unpaid) invoices                     |
-| `priya.nair@example.com`      | Empty wallet — good for watching a balance fill up    |
-| *first entry of `ADMIN_EMAILS`* | The admin — sees the Arbitration view               |
+`npx prisma db seed` prints a cheat sheet of every demo account when it finishes. The useful ones:
 
-These are dev-bypass logins. With Clerk on, sign in with a real account whose e-mail matches one
-of these rows to inherit its data.
+| Account | Use it for |
+| --- | --- |
+| The main demo account (top of the cheat sheet) | Money in every wallet bucket, plus listings, orders and open requests |
+| `marcus.reid@example.com` | One clean payout ready to withdraw |
+| `tom.becker@example.com` | A buyer with two unpaid invoices |
+| `priya.nair@example.com` | The seller of the Adobe and Notion listings |
+| First entry of `ADMIN_EMAILS` | The admin: sees the Resolution centre |
+
+With Clerk on, sign in with a real account whose e-mail matches one of these to inherit its data.
 
 ## Demo walkthrough
 
-1. **Sign in** as `tom.becker@example.com` and open a service on the marketplace.
-2. **Order it** — the backend creates the order plus an OxaPay invoice and the app jumps to the
-   order view, which shows the payment card: QR of the invoice, a 60-minute countdown and an
-   *Open OxaPay checkout* button.
-3. **Pay** — with `OXAPAY_MOCK=true` the checkout is the backend's mock page; click *Simulate
-   payment*. The signed webhook flips the order to `PAID`, and the order page (which polls every
-   5 s) updates itself: escrow locked, **delivery details unlocked** for the buyer, vesting
-   started.
-4. **Seller side** — sign in as the seller: the sale appears under *Orders → Selling*, the money
-   sits in the wallet's *vesting* bucket, and the inbox/ticker show the event.
-5. **Withdraw** — as `marcus.reid@example.com`, open *Wallet & profile* and withdraw: the whole
-   *available* bucket pays out to the address + network you enter.
-6. **Dispute** — as a buyer of a paid order, *Open a dispute* from the order view: escrow
-   freezes, the dispute appears with a *Join dispute chat on Telegram* button (if Telegram is
-   configured; the dispute works either way).
-7. **Arbitrate** — as the admin, resolve it from */admin* (or inline on the dispute): buyer wins
-   → instant refund withdrawable by the buyer; seller wins → normal vesting resumes.
+With `DEV_AUTH_BYPASS=true` and `OXAPAY_MOCK=true` on the backend:
+
+1. **Buy.** Sign in as `tom.becker@example.com`, open a listing he doesn't own and click
+   *Buy now*. The order page shows the payment card: the invoice QR, a checkout link and a
+   countdown while the unit is held for him (`AUTO_BUY_RESERVATION_MINUTES`, 15 by default).
+2. **Pay.** Open the checkout. With the mock on, it's the backend's own page: click
+   *Simulate payment*. The order page checks every 5 seconds, flips to paid on its own and
+   unlocks the access details.
+3. **Sell.** Sign in as the seller. The sale is under *Orders → Selling* and the money sits in the
+   wallet's *Clearing* part of the balance bar.
+4. **Withdraw.** As `marcus.reid@example.com`, open the Wallet, add payout details and withdraw.
+   The app reads the amount, network and address back before anything is sent. With the mock on,
+   no real money moves.
+5. **Deal Alert.** As a buyer, set an alert at or above a live listing's price. It matches
+   straight away and starts a payment countdown.
+6. **Ask for help.** On a paid order, click *Get help with this order*. The money freezes and the case appears
+   under Resolution, with a Telegram chat button if Telegram is configured on the backend.
+7. **Decide.** As the admin, settle it in the Resolution centre. If the buyer wins, the refund is
+   withdrawable right away; if the seller wins, clearing resumes.
+
+To show a withdrawal from a fresh sale without waiting 30 days, set `VESTING_DAYS=0` on the
+backend before the demo.
 
 ## Project structure
 
 ```
 src/
-  api/                 backend integration
-    client.ts          fetch wrapper: base URL, dev-auth header, error contract
-    types.ts           response shapes mirrored from the backend's Swagger examples
-    index.ts           typed endpoint groups: usersApi, listingsApi, ordersApi,
-                       walletApi, disputesApi, adminApi
+  api/                     backend integration
+    client.ts              fetch wrapper: base URL, auth header, error contract
+    types.ts               response shapes mirrored from the backend
+    index.ts               typed endpoint groups: config, products, users, listings,
+                           orders, wallet, stats, buy requests, disputes, admin
   components/
-    app-shell.tsx      sidebar + topbar + ticker + scrollable outlet (drawer on mobile)
-    sidebar.tsx        nav, wallet mini-summary, escrow-release meter, user row
-    topbar.tsx         breadcrumb, theme toggle, Post-an-ad, mobile hamburger
-    ticker.tsx         marquee of real escrow events
-    page.tsx           page frame: giant uppercase title + mono subtitle + 2px rule
-    auth-layout.tsx    login/register split screen with the orange poster
-    listing-card.tsx   marketplace card (artwork plate, seller row, price footer)
-    qr-plate.tsx       QR of the OxaPay invoice with the animated scan line
-    status-tag.tsx     solid inverted status chip
-    count-up.tsx       ~950ms cubic ease-out number animation
-    async-panel.tsx    uniform loading / error / empty states
-    block-avatar.tsx   hard-edged square avatar
-    icons.tsx          inline Lucide-style SVG icon set
-    auth-provider.tsx  session context (dev-bypass e-mail → GET /me)
-    require-auth.tsx   route guard (+ adminOnly variant)
-  pages/               one file per route (see Screens above)
-  hooks/
-    use-async.ts       loader + loading/error/reload state
-    use-auth.ts        auth context hook
-    use-events.ts      shared event feed + unread count (one instance per shell)
-    use-now.ts         render-stable clock (tick option for countdowns)
+    app-shell.tsx          sidebar + topbar + activity strip + routed view (drawer on mobile)
+    sidebar.tsx            navigation, ready-to-withdraw card, savings card
+    topbar.tsx             breadcrumb, savings badge, theme toggle, Sell a subscription
+    listing-card.tsx       marketplace card
+    listing-cover.tsx      seller photo, or the product's brand mark as cover art
+    product-picker.tsx     catalogue dropdown grouped by category
+    qr-plate.tsx           QR of the payment invoice (light in both themes)
+    async-panel.tsx        shared loading skeleton, error with retry, empty state
+    pagination.tsx         page-size picker and pager
+    platform-config-provider.tsx   loads GET /api/config once for the whole app
+    ...                    auth, avatars, status chips, icons, theme toggle, ticker
+  pages/                   one file per screen (see Screens)
+  hooks/                   async loading, auth, activity feed, list controls,
+                           platform config, theme, media queries, page titles
   lib/
-    events.ts          derives inbox/ticker events from orders, disputes, payouts
-    order-ui.ts        status → chip color maps, 5-step escrow bar logic
-  utils/
-    format.ts          dates, relative time, shortRef ids
-    money.ts           2-decimal USD-string helpers, FEE_PERCENT mirror
-  index.css            the whole design system: tokens, components, animations,
-                       responsive utilities
-  theme.ts             dark/light mode via [data-theme] + localStorage
+    clerk.ts               Clerk on/off switch and theming
+    events.ts              builds the activity feed from orders, disputes and transfers
+    listing-ui.ts          availability, listing and deal-alert status labels, countdowns
+    order-ui.ts            order and transfer status labels, the 5-step tracker logic
+  utils/                   dates, money formatting
+  index.css                the design system: tokens, components, responsive rules
+  landing.css              landing page layout (lp- prefixed)
+  theme.ts                 dark/light switch, persisted to localStorage
+public/
+  brands/                  512px brand icons, one per catalogue product (WebP, two SVG)
+  logo.png                 the Kolo wordmark
 ```
 
 ## Architecture notes
 
 - **Money is never a float.** The API returns 2-decimal USD strings (`"24.99"`); parsing and
-  formatting go through `src/utils/money.ts`. 1 USDT = 1 USD platform-wide.
-- **Notifications are derived, not stored.** The backend has no notifications table, so
-  `src/lib/events.ts` builds the inbox, the unread badge and the ticker from the caller's real
-  orders, disputes and withdrawals. Read state is a last-seen timestamp in `localStorage`. One
-  shared feed instance per app shell keeps the badge and the inbox in sync.
-- **Payment is webhook-driven.** The order view polls every 5 s while an invoice is open, so the
-  OxaPay webhook's `PENDING_PAYMENT → PAID` flip appears without a refresh.
-- **Error contract.** Every backend error is `{ statusCode, message, error }` with a displayable
-  `message`; the client surfaces it directly in toasts and error plates.
-- **`deliveryInfo` is sacred.** The seller's secret (credentials, keys, instructions) appears in
-  exactly one place: the order view, for the buyer, once the order is `PAID`/`DISPUTED`/
-  `REFUNDED` — mirroring the backend's rule.
-
-### Nothing is hardcoded that the backend owns
-
-Fee percentage, vesting days, dispute window, minimum payout and the payout currency/network lists
-all come from `GET /api/config`, loaded once by
-[`PlatformConfigProvider`](src/components/platform-config-provider.tsx) and read through
-[`usePlatformConfig`](src/hooks/use-platform-config.ts). There is no `FEE_PERCENT` constant in this
-repo, and no screen writes "30 days" as literal text — change `PLATFORM_FEE_PERCENT` or
-`VESTING_DAYS` in the backend env and every screen follows.
-
-Marketplace headline numbers (catalogue total, value, median price, category list) come from
-`GET /api/listings/stats`, counted in SQL — the UI never averages a page of results and calls it a
-catalogue median.
+  formatting go through [`src/utils/money.ts`](src/utils/money.ts). 1 USDT = 1 USD.
+- **Nothing the backend owns is hardcoded.** The fee, clearing period, help window, minimum payout,
+  hold time and payout currencies and networks all come from `GET /api/config`, loaded once by
+  [`PlatformConfigProvider`](src/components/platform-config-provider.tsx). Change
+  `PLATFORM_FEE_PERCENT` or `VESTING_DAYS` on the backend and every screen follows.
+  Marketplace headline numbers come from `GET /api/listings/stats`, counted in SQL.
+- **Activity is derived, not stored.** The backend has no notifications table, so
+  [`src/lib/events.ts`](src/lib/events.ts) builds the feed, the unread badge and the activity strip
+  from the user's real orders, disputes and transfers. Read state is a timestamp in `localStorage`.
+- **Payment is webhook-driven.** The order page checks every 5 seconds while an invoice is open,
+  so the payment webhook's flip to paid appears without a refresh.
+- **Access details stay secret.** The seller's access details appear in one place only: the order
+  page, for the buyer, once the order is paid, disputed or refunded. This mirrors the backend.
+- **Covers are brand art or photos.** A listing with no seller photo shows its product's brand mark
+  from `public/brands`, centered on a backdrop made from the logo's own colors
+  ([`ListingCover`](src/components/listing-cover.tsx)). A seller's own photo fills the frame.
+- **Errors are displayable.** Every backend error is `{ statusCode, message, error }`; the app shows
+  `message` directly in toasts and error panels, with a retry where a reload exists.
 
 ### Lists: search, filter, pagination
 
-Orders and disputes page **server-side** — `page`, `limit`, `search` and `status` go to the API and
-come back as `{ items, total, page, limit, pages }`. The inbox pages **client-side**, because its
-events have no table: they are derived from orders, disputes and withdrawals
-([`src/lib/events.ts`](src/lib/events.ts)), so there is nothing to paginate on the server.
+Orders, disputes, deal alerts and the marketplace page **on the server**: `page`, `limit`,
+`search`, `status` and the marketplace filters go to the API and come back as
+`{ items, total, page, limit, pages }`. Page sizes are 10, 20, 50 and 100.
+[`useListControls`](src/hooks/use-list-controls.ts) holds the debounced search, the filter and the
+page, and any filter change returns to page 1.
 
-The controls themselves are shared: [`useListControls`](src/hooks/use-list-controls.ts) holds the
-debounced search term, the status filter and the page state (any filter change snaps back to page 1),
-and [`Pagination`](src/components/pagination.tsx) renders the 10/20/50/100 picker and the pager.
-
-The orders list calls `GET /api/orders?role=all|buying|selling` rather than merging `/purchases`
-and `/sales` — two independently paginated lists cannot be stitched into one page.
-
-The marketplace pages the same way, and its search, category, price range and sort all run in the
-database (`minPrice` / `maxPrice` / `sort`). The admin view gives each of its three tabs its own
-status filter and pager. Admin endpoints take no free-text search, so the UI offers none.
+The activity feed pages **in the browser**, because its events are derived and have no table. The
+orders list calls `GET /api/orders?role=all|buying|selling` instead of merging two separately paged
+lists.
 
 ## Design system
 
-Implemented from the Kolo design handoff (`design_handoff_kolo_app`), which is the source of
-truth for look and behavior:
+Everything lives in [`src/index.css`](src/index.css) as CSS custom properties. There is no UI
+framework or CSS-in-JS library.
 
-- **Tokens** (`src/index.css`): dark theme is default; light is a `[data-theme="light"]`
-  override scope. Neutral and accent ramps are *flipped* on dark (100 = darkest) so tinted fills
-  stay dark. Orange `#f97316` is the single accent.
-- **Zero border radius everywhere.** 2px rules separate major sections, 1px inside components.
-- **Type**: Archivo for UI/headings (800 for display), IBM Plex Mono for all numerals, ids,
-  timestamps and uppercase micro-labels. Body is 16px.
-- **Status chips** are solid inverted blocks: status color background, page-background ink.
-- **Poster panels** are always orange with near-black ink and a drifting diagonal stripe field.
-- **Animations** per the handoff timing spec: staggered `fadeUp` entrances, `growBar` meters,
-  count-up numbers, the ticker marquee (pauses on hover), the QR scan line, progress-bar sheen —
-  all disabled under `prefers-reduced-motion`.
-- **Theme toggle** persists to `localStorage` and transitions surfaces over 250ms.
+- **Two themes.** Dark is the default; light is an override under `[data-theme="light"]`. The
+  choice is stored as `kolo.theme`, and a small script in `index.html` applies it before the first
+  paint so there is no flash.
+- **Tokens are named by role,** not shade (`--surface-card`, `--accent-ink`, `--on-accent`), so the
+  same component reads correctly in both themes.
+- **One accent:** `#ff385c`, for primary actions, savings and the active nav item.
+- **Type:** Inter, weights 400 to 700.
+- **Shape:** 8px radius on buttons and inputs, 14px on cards, fully rounded chips and badges.
+- **Motion:** staggered entrances, count-up numbers and the activity strip. CSS animations and
+  transitions turn off under `prefers-reduced-motion`.
 
-## Responsive behavior
+## Responsive layout and accessibility
 
-The app works from desktop down to phone width (audited at 390px with zero horizontal
-overflow):
-
-- Below **~980px** the sidebar becomes a slide-in drawer with a topbar hamburger and backdrop.
-- Marketplace cards go 3 → 2 → 1 columns; stat cells 4 → 2 → 1; all two-column and
-  master-detail layouts collapse to one column; filter bars wrap; tables scroll horizontally
-  inside their cards.
-- The app frame uses `100dvh` so mobile URL bars don't clip the UI, inputs are 16px on small
-  screens (no iOS focus zoom), giant headlines clamp to the viewport, and *Post an ad* collapses
-  to its icon on tiny screens.
+- **Three widths:** phone below 744px, tablet from 744 to 1127px, desktop from 1128px.
+- **Below 1128px** the sidebar becomes a drawer opened from the topbar, the listing's buy card
+  becomes a fixed bottom bar, and Resolution shows either the list or the case, depending on the
+  route.
+- Checked at 375, 768 and 1140px with no horizontal scrolling.
+- **Keyboard and screen readers:** navigation uses real links, the first tab stop is a
+  *Skip to content* link, the active nav item has `aria-current`, focus moves into the drawer and
+  back, and every screen sets its own page title.
 
 ## Environment variables
 
-| Variable                     | Default                     | Purpose                                                                 |
-| ---------------------------- | --------------------------- | ----------------------------------------------------------------------- |
-| `VITE_API_URL`               | `http://localhost:3000/api` | Base URL of the Kolo backend                                            |
-| `VITE_CLERK_PUBLISHABLE_KEY` | *(empty)*                   | Clerk publishable key (`pk_test_…`/`pk_live_…`). Empty = dev-bypass login |
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:3000/api` | Base URL of the Kolo backend |
+| `VITE_CLERK_PUBLISHABLE_KEY` | *(empty)* | Clerk publishable key (`pk_test_…` or `pk_live_…`). Empty means the e-mail dev login. |
 
-Copy [`.env.example`](.env.example) to `.env` and fill in what you need; `.env` is gitignored.
+Copy [`.env.example`](.env.example) to `.env` and fill in what you need. `.env` is gitignored.
 
 ## Scripts
 
-| Command           | What it does                                |
-| ----------------- | ------------------------------------------- |
-| `npm run dev`     | Vite dev server on `http://localhost:5173`  |
-| `npm run build`   | Type-check (`tsc -b`) + production build    |
-| `npm run preview` | Serve the production build locally          |
-| `npm run lint`    | ESLint (incl. react-hooks purity rules)     |
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server on `http://localhost:5173` |
+| `npm run build` | Type-check (`tsc -b`) and production build |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint, including the React hooks rules |
 
-## Design ↔ backend adaptations
+## Deploying
 
-The design handoff describes a few concepts the backend intentionally doesn't have. The UI keeps
-the visual language but backs every widget with real data:
+The app deploys to Vercel from this `kolo_frontend` folder.
+[`vercel.json`](vercel.json) sends every path to `index.html`, so client-side routes like
+`/orders/abc` load directly. Set `VITE_API_URL` (your deployed backend) and
+`VITE_CLERK_PUBLISHABLE_KEY` in the Vercel project's environment variables.
 
-| Design concept                       | What ships instead                                                                 |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| Reputation scores, tiers, REP chips  | Real account stats (sales, disputes lost, member age) and a real escrow-release meter; vesting is a flat 30 days per order |
-| Reviews & star ratings               | Real "more from this seller" listings and platform guarantees                       |
-| In-app dispute chat with evidence    | The real Telegram arbitration flow: opening plate, admin decision plate, invite-link button |
-| Per-asset payment chips + addresses  | The real OxaPay checkout (100+ assets chosen there) + QR of the actual invoice      |
-| Notifications backend                | Client-derived event feed from orders / disputes / payouts                          |
-| Seller-uploaded artwork              | Deterministic placeholder plates until the backend stores images                    |
+## Not built yet
+
+- Seller ratings and reputation. The clearing period is a flat 30 days for everyone.
+- Card payments. Buyers pay in crypto through OxaPay.
+- A native mobile app. The web app works on phones.
